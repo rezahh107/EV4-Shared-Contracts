@@ -3,31 +3,33 @@
 ## 1. Current Status Summary
 
 ```text
-EV4-Shared-Contracts currently exists as a non-authoritative skeleton.
+EV4-Shared-Contracts currently exists as a non-authoritative shared-contracts handbook skeleton.
 Canonical schema migration remains blocked.
-The skeleton branch is initialized and locally verified.
-GitHub Actions / CI evidence must be checked for the latest commit before claiming CI-verified status.
+PR #2 was merged into main.
+Skeleton Health for PR #2 completed successfully.
+Phase 4 minimal shared governance has started on a dedicated branch.
 ```
 
 - Repository: `rezahh107/EV4-Shared-Contracts`
-- Current branch: `init/non-authoritative-skeleton`
-- Current baseline commit: `f1595091474eacd9d58e8a3f92e364f980c08e58`
-- Previous status-dashboard commit: `0233e677adfef0a27d32c16d004382a765eb5aca`
-- Latest repository-memory hardening commits:
-  - `5d23abc731c76ac662fa35b6d101a9955d1c9335` — hardened `AGENTS.md` with repository memory rule
-  - `82648f244f1593b7b9572eae0be773701e0c99bf` — clarified repository memory files in `README.md`
+- Main branch: `main`
+- Active work branch: `phase4/status-and-minimal-governance`
+- Last merged PR: `#2` — `Add repository memory guidance and status handoff`
+- PR #2 merge commit: `6ec4de7f5bb3a107fc99bb332c5cbdace5e2d66d`
+- PR #2 head commit: `e1bba23cc388c3a94d578634baec37d791abbf34`
+- PR #2 Skeleton Health: `CI_PASSED`
+- Current Phase 4 work commits:
+  - `e4cda4d8f27cbbae4931ee23c5ab69eab5da2c02` — added `docs/GOVERNANCE.md`
+  - `4a9ee7f7d89cc9900de78b974d8004c53f7de629` — linked governance handbook from `README.md`
   - `pending final report` — this status update commit
-- Status: `skeleton verified with limitations`
+- Current status: `minimal governance branch prepared`
 - Canonical migration: `blocked`
-- CI status: `CI_NOT_VERIFIED for latest status update until Skeleton Health evidence is available`
+- CI status for current branch: `CI_NOT_TRIGGERED` until a PR/check run is visible for this branch
 
 ## 2. Mental Model
 
 چهار repo اصلی EV4 مثل چهار کارگاه جدا هستند.
 
-`EV4-Shared-Contracts` مثل دفتر مرکزی تازه‌ساخته است. فعلاً این دفتر فقط نقشه‌ها، چک‌لیست‌ها، inventory و قوانین promotion را نگه می‌دارد.
-
-`AGENTS.md` تابلوی ورودی ساختمان است. `README.md` بروشور معرفی ساختمان است. `docs/EV4_SHARED_CONTRACTS_STATUS.md` تابلوی وضعیت اتاق کنترل است.
+`EV4-Shared-Contracts` مثل دفتر مرکزی قوانین است. اسکلت دفتر ساخته و PR قبلی merge شده است. حالا دفتر دارد آیین‌نامه داخلی خودش را می‌نویسد.
 
 هنوز اداره رسمی ثبت schemaها نیست.
 
@@ -42,23 +44,28 @@ GitHub Actions / CI evidence must be checked for the latest commit before claimi
 - [x] Responsive Golden Reference family/scope linkage was added.
 - [x] EV4-Shared-Contracts repository was created by the user.
 - [x] Non-authoritative skeleton was initialized.
-- [x] Skeleton local checks passed.
+- [x] Skeleton local checks passed during skeleton initialization.
 - [x] No canonical schemas were migrated.
 - [x] Existing EV4 repos were not modified during skeleton initialization.
 - [x] Project status dashboard was added.
 - [x] Repository-level agent guidance was added in `AGENTS.md`.
 - [x] Repository memory rule was added to `AGENTS.md`.
-- [x] README now explains the three memory files: `AGENTS.md`, `README.md`, and `docs/EV4_SHARED_CONTRACTS_STATUS.md`.
+- [x] README explains the three memory files: `AGENTS.md`, `README.md`, and `docs/EV4_SHARED_CONTRACTS_STATUS.md`.
+- [x] PR #2 was merged into `main`.
+- [x] `Skeleton Health` for PR #2 completed with `success`.
+- [x] Phase 4 minimal shared governance branch was started.
+- [x] `docs/GOVERNANCE.md` was added as the minimal shared governance handbook.
+- [x] `README.md` was updated to point to the governance handbook.
 
 ## 4. Known Limitations / Risks
 
 - [!] Full CI evidence across all four EV4 repos is incomplete.  
   The ecosystem-wide validation set is still incomplete, so promotion cannot rely on full cross-repo CI evidence yet.
 
-- [!] EV4-Shared-Contracts skeleton CI must be checked after each new commit.  
-  Do not report the latest branch state as CI-verified until the matching `Skeleton Health` run is visible and successful.
+- [!] EV4-Shared-Contracts branch CI must be checked after opening a PR.  
+  Do not report the current Phase 4 branch as CI-verified until a matching `Skeleton Health` run is visible and successful.
 
-- [!] ev4-builder-context-package@1.0.0 still has historical split risk.  
+- [!] `ev4-builder-context-package@1.0.0` still has historical split risk.  
   This contract/version name has carried different producer and consumer assumptions historically.
 
 - [!] Canonical schema migration is not allowed yet.  
@@ -72,10 +79,10 @@ GitHub Actions / CI evidence must be checked for the latest commit before claimi
 | Phase | Goal | Status | Mental Image | Next Action |
 |---|---|---|---|---|
 | Phase 0 — Cross-repo role alignment | align Architect, CE, Builder, Responsive roles | mostly done, CI incomplete | road signs between workshops were corrected | no conceptual hardening unless CI reveals issues |
-| Phase 1 — Shared repo skeleton | create non-authoritative coordination repo | initialized and locally verified | central office building created, but not legal archive yet | open PR and get CI evidence |
-| Phase 2 — Skeleton PR and merge | review and merge skeleton into main | pending | office documents are waiting for approval stamp | PR from init/non-authoritative-skeleton to main |
-| Phase 3 — Status-driven continuation | continue from repo memory files in a new chat | repo memory files are now explicit | project map pinned to the wall beside the entrance sign | use `AGENTS.md`, `README.md`, and this file as first context in the new chat |
-| Phase 4 — Minimal shared governance | add only low-risk shared policies and vocabulary | future | office creates naming rules before accepting legal documents | propose minimal governance, not schema migration |
+| Phase 1 — Shared repo skeleton | create non-authoritative coordination repo | completed | central office building created, but not legal archive yet | keep skeleton constraints intact |
+| Phase 2 — Skeleton PR and merge | review and merge skeleton into main | completed | office documents received their first approval stamp | no further action unless CI history is needed |
+| Phase 3 — Status-driven continuation | continue from repo memory files in a new chat | completed | project map pinned to the wall beside the entrance sign | continue reading `AGENTS.md`, `README.md`, and this file first |
+| Phase 4 — Minimal shared governance | add only low-risk shared policies and vocabulary | in progress | office writes internal rules before accepting legal documents | open/review PR for `phase4/status-and-minimal-governance` |
 | Phase 5 — First promotion candidate | choose one safe contract/concept for future promotion proposal | future | one document is reviewed before entering the archive | choose low-risk candidate; avoid `ev4-builder-context-package@1.0.0` first |
 | Phase 6 — Canonical migration | migrate canonical schemas only after evidence | blocked | legal archive opens only after all locks are tested | wait for full CI and promotion approval |
 
@@ -89,6 +96,7 @@ Do:
 - document mental model after each phase
 - update this status file after each completed phase or repository-changing task
 - read `AGENTS.md` first when an AI coding agent connects to this repo
+- use `docs/GOVERNANCE.md` as the minimal Phase 4 handbook surface
 
 Do not:
 
@@ -97,32 +105,35 @@ Do not:
 - do not touch the four existing EV4 repos from this branch
 - do not promote `ev4-builder-context-package@1.0.0` first
 - do not claim CI passed without workflow evidence
+- do not treat `docs/GOVERNANCE.md` as authorization for canonical schema migration
 
 ## 7. Latest Completed Task Record
 
 | Field | Value |
 |---|---|
-| Phase/task completed | Repository memory hardening for agent continuation |
-| Commit SHA | `5d23abc731c76ac662fa35b6d101a9955d1c9335`, `82648f244f1593b7b9572eae0be773701e0c99bf`, `pending final report` |
-| PR number or PR URL | `none yet` |
-| CI status | `CI_NOT_VERIFIED` until latest `Skeleton Health` evidence exists |
-| Files changed | `AGENTS.md`, `README.md`, `docs/EV4_SHARED_CONTRACTS_STATUS.md` |
-| Next action | Open PR from `init/non-authoritative-skeleton` to `main`, then check `Skeleton Health` |
-| Simple Persian mental model | repo خودش حافظه پروژه است: ورودی، بروشور، و تابلوی اتاق کنترل کنار هم قرار گرفته‌اند. |
+| Phase/task completed | Phase 4 start — status update and minimal shared governance handbook |
+| Branch | `phase4/status-and-minimal-governance` |
+| Commit SHA | `e4cda4d8f27cbbae4931ee23c5ab69eab5da2c02`, `4a9ee7f7d89cc9900de78b974d8004c53f7de629`, `pending final report` |
+| PR number or PR URL | `pending final report` |
+| CI status | `CI_NOT_TRIGGERED` until this branch has a visible `Skeleton Health` run |
+| Files changed | `docs/GOVERNANCE.md`, `README.md`, `docs/EV4_SHARED_CONTRACTS_STATUS.md` |
+| Remaining blockers | canonical migration blocked; full cross-repo CI incomplete; `ev4-builder-context-package@1.0.0` split risk unresolved |
+| Next action | Open PR from `phase4/status-and-minimal-governance` to `main`, then check `Skeleton Health` |
+| Simple Persian mental model | دفتر ساخته شده؛ حالا آیین‌نامه داخلی روی میز است، ولی هنوز آرشیو رسمی schemaها قفل است. |
 
 ## 8. Next Immediate Step
 
 Open PR:
 
 ```text
-init/non-authoritative-skeleton → main
+phase4/status-and-minimal-governance → main
 ```
 
 Then:
 
 ```text
 Wait for GitHub Actions / Skeleton Health result.
-If CI passes, merge skeleton.
+If CI passes, review and merge the Phase 4 governance PR.
 If CI does not trigger, report CI_NOT_TRIGGERED.
 If CI fails, fix only skeleton-health issues.
 ```
@@ -133,10 +144,11 @@ If CI fails, fix only skeleton-health issues.
 You are helping me continue the EV4-Shared-Contracts workflow.
 
 Read AGENTS.md first.
+Then read docs/EV4_SHARED_CONTRACTS_STATUS.md.
 Then read README.md.
-Then read docs/EV4_SHARED_CONTRACTS_STATUS.md as the current source of project status.
+Then read docs/GOVERNANCE.md.
 
-Do not perform canonical schema migration unless the status file says all promotion blockers are resolved.
+Do not perform canonical schema migration unless the status file and an accepted ADR explicitly unlock the specific promotion.
 
 First, summarize:
 1. current status
@@ -153,10 +165,12 @@ After every completed phase or repository-changing task, update this file:
 
 ```text
 - phase or task completed
+- branch
 - commit SHA
 - PR number or PR URL, or none yet
 - CI status
 - files changed
+- remaining blockers
 - next action
 - one simple Persian mental model
 ```
