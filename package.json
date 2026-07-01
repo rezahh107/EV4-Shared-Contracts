@@ -1,0 +1,10 @@
+{
+  "name": "ev4-shared-contracts",
+  "private": true,
+  "version": "0.0.0-skeleton",
+  "description": "Non-authoritative skeleton for future EV4 shared contracts.",
+  "scripts": {
+    "status": "node scripts/status.js",
+    "validate": "node scripts/validate.js"
+  }
+}
