@@ -149,7 +149,7 @@ Rollback plan:
 | Missing negative fixtures | `open` | Blocks promotion. |
 | Missing rollback guidance | `open` | Blocks promotion. |
 | Missing CI evidence | `open` | Blocks promotion. |
-| `ev4-builder-context-package@1.0.0` split risk | `blocked` / `not applicable` | Must be resolved before this contract can be considered. |
+| `ev4-builder-context-package@1.0.0` split risk | `blocked` / `not applicable` | Must be resolved before `ev4-builder-context-package@1.0.0` can be considered. |
 
 ## 11. Promotion Readiness Checklist
 
