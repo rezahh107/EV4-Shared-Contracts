@@ -9,7 +9,8 @@
 - PR #4 head commit: `eb3f4543b19279eb9feea30479f99a586478f7bf`
 - PR #4 `Skeleton Health`: `CI_PASSED`
 - Current work branch: `audit/fix-status-and-memory-map`
-- Current status: `audit correction branch prepared`
+- Active PR: `#5` — `Fix audit status and memory map`
+- Current status: `audit correction PR open`
 
 ## Current Phase
 
@@ -17,7 +18,7 @@
 |---|---|
 | Phase 4 — Minimal shared governance | completed |
 | Phase 4.1 — Promotion proposal intake | completed |
-| Phase 4.2 — Audit correction | in progress |
+| Phase 4.2 — Audit correction | PR open |
 | Phase 5 — First proposal-only candidate | future |
 | Phase 6 — Shared schema migration | blocked |
 
@@ -34,12 +35,13 @@
 | Item | Value |
 |---|---|
 | Audit branch | `audit/fix-status-and-memory-map` |
+| Active PR | `#5` |
 | Commit — AGENTS update | `426abc2a301dd587953d5fe30cb4153db3f9f6df` |
 | Commit — README update | `720ff6aad6d5b4b64e48a74f199eb2edbe058780` |
-| Commit — this status update | `pending final report` |
+| Commit — status update | `6e24ce5cad4d9ab5734c9d34039607e46e05477e` |
+| Commit — this PR record | `pending final report` |
 | Files changed | `AGENTS.md`, `README.md`, `docs/EV4_SHARED_CONTRACTS_STATUS.md` |
-| CI status for audit branch | `CI_NOT_TRIGGERED` until PR/check is visible |
-| PR number | `none yet` |
+| CI status for PR #5 | `CI_PENDING` until the latest check completes |
 
 ## Remaining Blockers
 
@@ -49,7 +51,7 @@
 
 ## Next Immediate Action
 
-Open a PR from `audit/fix-status-and-memory-map` to `main`, then verify `Skeleton Health`.
+Verify `Skeleton Health` for PR #5, then merge only if checks pass.
 
 ## New Chat Startup Map
 
