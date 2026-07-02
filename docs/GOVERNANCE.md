@@ -163,13 +163,12 @@ Allowed work is limited to readiness reporting, naming/deprecation strategy, or 
 
 After every repository-changing task, update `docs/EV4_SHARED_CONTRACTS_STATUS.md` with:
 
-- current phase
-- completed action
+- phase or task completed
 - branch
-- commit SHA, or `pending final report` when the current SHA is not known at edit time
-- PR number or URL, if available
-- CI/check status
+- commit SHA, or pending final report when the current SHA is not known at edit time
+- PR number or PR URL, or none yet
+- CI status
 - files changed
 - remaining blockers
-- next immediate action
+- next action
 - one simple Persian mental model
