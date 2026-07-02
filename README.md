@@ -141,7 +141,7 @@ EV4-Project-Gate
 ## Implementation Order
 
 ```text
-1. Align README.md and agents.me in all five repositories.
+1. Align README.md and AGENTS.md in all five repositories.
 2. Freeze the first user workflow and Phase 1 boundaries.
 3. Identify real schemas, validators, adapters, and fixtures.
 4. Build the offline-tested Python core.
