@@ -58,13 +58,15 @@ Verify `Skeleton Health` for PR #5, then merge only if checks pass.
 Read in this order:
 
 1. `AGENTS.md`
-2. `docs/EV4_SHARED_CONTRACTS_STATUS.md`
-3. `README.md`
-4. `docs/ROLE_BOUNDARY_MAP.md`
-5. `docs/VALIDATION_STRATEGY.md`
-6. `docs/MIGRATION_READINESS_CHECKLIST.md`
-7. `docs/CONTRACT_INVENTORY.md`
-8. `docs/COMPATIBILITY_MAP.md`
+4. `docs/GOVERNANCE.md`
+5. `docs/ROLE_BOUNDARY_MAP.md`
+6. `docs/VALIDATION_STRATEGY.md`
+7. `docs/templates/PROMOTION_PROPOSAL_TEMPLATE.md`
+8. `docs/MIGRATION_READINESS_CHECKLIST.md`
+9. `docs/CONTRACT_INVENTORY.md`
+10. `docs/COMPATIBILITY_MAP.md`
+11. `docs/PROMOTION_RULES.md`
+12. `docs/ADR/0001-non-authoritative-skeleton.md`
 9. `docs/PROMOTION_RULES.md`
 10. `docs/ADR/0001-non-authoritative-skeleton.md`
 
