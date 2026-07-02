@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EV4 Transition Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "transition_id", "source_stage", "target_stage", "diagnostics", "source_hash", "output_hash", "output"],
+  "properties": {
+    "schema_version": { "const": "transition-result.v1" },
+    "status": { "type": "string", "enum": ["accepted", "failed", "insufficient_evidence"] },
+    "transition_id": { "type": "string" },
+    "source_stage": { "type": ["string", "null"] },
+    "target_stage": { "type": ["string", "null"] },
+    "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": true, "required": ["severity", "code", "message", "path"] } },
+    "source_hash": { "type": ["string", "null"] },
+    "output_hash": { "type": ["string", "null"] },
+    "output": { "type": ["object", "null"] }
+  }
+}

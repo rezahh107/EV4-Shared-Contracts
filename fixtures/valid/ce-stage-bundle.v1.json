@@ -1,0 +1,13 @@
+{
+  "schema_version": "stage-bundle.v1",
+  "bundle_id": "fixture-ce-valid-001",
+  "stage": "ce",
+  "produced_by": { "repository": "rezahh107/EV4-Constructability-Engineer-Repo", "ref": "fixture" },
+  "evidence_status": "complete",
+  "payload": { "project": { "id": "ev4-demo-project", "name": "EV4 Demo Project" }, "handoff": { "summary": "CE-approved Builder handoff." } },
+  "evidence": [
+    { "id": "ce_review", "kind": "report", "state": "validated", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "description": "Synthetic CE review fixture." },
+    { "id": "builder_intake_authorization", "kind": "document", "state": "validated", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "description": "Synthetic Builder intake authorization fixture." }
+  ],
+  "provenance": { "source": "synthetic-fixture", "created_by": "ev4-project-gate", "created_at": "2026-07-02T00:00:00Z" }
+}

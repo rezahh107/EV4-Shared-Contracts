@@ -1,11 +1,11 @@
-name: Skeleton Health
+name: Project Gate Validation
 
 on:
   pull_request:
   push:
     branches:
       - main
-      - init/non-authoritative-skeleton
+      - refactor/python-transition-engine
 
 jobs:
   validate:
@@ -14,40 +14,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 20
+          python-version: '3.11'
 
-      - name: Verify required docs exist
+      - name: Install package
+        run: python -m pip install -e '.[dev]'
+
+      - name: Run tests
+        run: pytest
+
+      - name: CLI smoke validate
+        run: ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+
+      - name: CLI smoke transition
+        run: ev4-transition transition fixtures/valid/architect-stage-bundle.v1.json --transition-id architect-to-ce.v1
+
+      - name: CLI smoke Persian insufficient evidence
         run: |
-          test -f README.md
-          test -f docs/ROLE_BOUNDARY_MAP.md
-          test -f docs/CONTRACT_INVENTORY.md
-          test -f docs/COMPATIBILITY_MAP.md
-          test -f docs/MIGRATION_READINESS_CHECKLIST.md
-          test -f docs/VALIDATION_STRATEGY.md
-          test -f docs/PROMOTION_RULES.md
-          test -f docs/ADR/0001-non-authoritative-skeleton.md
-          test -f schemas/README.md
-          test -f fixtures/README.md
-          test -f scripts/README.md
-
-      - name: Verify package metadata
-        run: node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json ok')"
-
-      - name: Run skeleton status
-        run: npm run status
-
-      - name: Run skeleton validation
-        run: npm run validate
-
-      - name: Verify no canonical schema files exist
-        run: |
-          count=$(find schemas -type f ! -name README.md | wc -l | tr -d ' ')
-          if [ "$count" != "0" ]; then
-            echo "Unexpected schema files found under schemas/."
-            find schemas -type f ! -name README.md
-            exit 1
-          fi
-          echo "No canonical schema files found."
+          set +e
+          output=$(ev4-transition validate fixtures/invalid/insufficient-evidence.v1.json --format persian)
+          status=$?
+          printf '%s\n' "$output"
+          test "$status" -eq 2
+          printf '%s' "$output" | grep 'شواهد کافی نیست'

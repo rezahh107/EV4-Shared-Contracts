@@ -1,0 +1,11 @@
+{
+  "transition_id": "ce-to-builder.v1",
+  "version": "1.0.0",
+  "source_stage": "ce",
+  "target_stage": "builder",
+  "required_evidence_ids": ["ce_review", "builder_intake_authorization"],
+  "field_mappings": [
+    { "from": "/payload/project", "to": "/project", "required": true },
+    { "from": "/payload/handoff", "to": "/handoff", "required": true }
+  ]
+}

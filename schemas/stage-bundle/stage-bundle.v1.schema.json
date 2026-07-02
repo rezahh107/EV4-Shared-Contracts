@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EV4 Stage Evidence Bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_id", "stage", "produced_by", "evidence_status", "payload", "evidence", "provenance"],
+  "properties": {
+    "schema_version": { "const": "stage-bundle.v1" },
+    "bundle_id": { "type": "string", "minLength": 1 },
+    "stage": { "type": "string", "enum": ["architect", "ce", "builder", "responsive"] },
+    "produced_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "ref"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "ref": { "type": "string", "minLength": 1 },
+        "workflow_run": { "type": "string" }
+      }
+    },
+    "evidence_status": { "type": "string", "enum": ["complete", "insufficient_evidence"] },
+    "missing_evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["project", "handoff"],
+      "properties": {
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "name": { "type": "string", "minLength": 1 }
+          }
+        },
+        "handoff": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["summary"],
+          "properties": { "summary": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "state", "sha256", "description"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["document", "schema", "fixture", "validator", "screenshot", "report", "other"] },
+          "state": { "type": "string", "enum": ["observed", "exported", "validated", "resolved", "derived", "proposed", "unverified", "insufficient_evidence"] },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "description": { "type": "string", "minLength": 1 },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source", "created_by"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "created_by": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,6 +1,11 @@
 # Scripts
 
-Only skeleton helper scripts are active in this directory.
+Node scripts are no longer the primary runtime. The active implementation is `src/ev4_transition`.
 
-Shared contract validation scripts are not active yet.
-Future scripts will validate shared contracts after promotion.
+Use:
+
+```bash
+ev4-transition validate <bundle.json>
+ev4-transition transition <bundle.json> --transition-id <transition-id>
+pytest
+```

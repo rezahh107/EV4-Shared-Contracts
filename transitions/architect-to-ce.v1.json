@@ -1,0 +1,11 @@
+{
+  "transition_id": "architect-to-ce.v1",
+  "version": "1.0.0",
+  "source_stage": "architect",
+  "target_stage": "ce",
+  "required_evidence_ids": ["architecture_handoff"],
+  "field_mappings": [
+    { "from": "/payload/project", "to": "/project", "required": true },
+    { "from": "/payload/handoff", "to": "/handoff", "required": true }
+  ]
+}

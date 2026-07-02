@@ -1,55 +1,24 @@
-# EV4 Validation Strategy
+# EV4 Project Gate Validation Strategy
 
-This document defines future validation strategy for shared contracts. No shared schema validation is active yet.
+Project Gate validation has two layers:
 
-## Local Schema Validation
+1. Schema validation for the Stage Evidence bundle envelope.
+2. Transition-specific evidence validation before producing the next-stage input package.
 
-When schemas are eventually promoted, each schema must have local validation commands that parse the schema, validate positive fixtures, and reject negative fixtures.
+If a bundle is structurally valid but lacks required evidence, the result is:
 
-Until promotion approval, local schema validation remains inactive in this repository.
+```yaml
+status: insufficient_evidence
+```
 
-## Cross-Repo Fixture Validation
+This is not a generic failure. It means the engine has enough structure to understand the bundle but not enough evidence to safely transition.
 
-Future shared contracts must be validated against fixtures from the relevant producer and consumer repositories.
+## Commands
 
-Positive fixtures must prove accepted behavior. Negative fixtures must prove boundary rejection.
-
-## Contract Compatibility Matrix
-
-A compatibility matrix must define, for each contract:
-
-- owner repo
-- producer
-- consumer
-- schema version
-- allowed compatibility path
-- blocked compatibility path
-- deprecation behavior
-- migration status
-
-## Producer/Consumer Contract Tests
-
-No shared contract accepted without at least one producer test and one consumer test.
-
-Producer tests must prove the owning repo can emit or carry the contract correctly.
-Consumer tests must prove the downstream repo accepts valid input and rejects invalid or premature input.
-
-## CI Requirement
-
-CI evidence is required before schema promotion.
-
-At minimum, CI must prove:
-
-- `package.json` scripts run successfully
-- schema files parse
-- positive fixtures pass
-- negative fixtures fail as expected
-- producer validation passes
-- consumer validation passes
-- cross-repo compatibility tests pass
-
-## Dependency Boundary
-
-No runtime dependency from existing repos until promotion is approved.
-
-Existing EV4 repositories must not import from this repository until an explicit ADR, migration plan, validation evidence, compatibility policy, and rollback guidance are approved.
+```bash
+python -m pip install -e '.[dev]'
+pytest
+ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+ev4-transition transition fixtures/valid/architect-stage-bundle.v1.json --transition-id architect-to-ce.v1
+ev4-transition validate fixtures/invalid/insufficient-evidence.v1.json --format persian
+```

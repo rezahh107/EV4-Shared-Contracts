@@ -1,0 +1,11 @@
+{
+  "transition_id": "builder-to-responsive.v1",
+  "version": "1.0.0",
+  "source_stage": "builder",
+  "target_stage": "responsive",
+  "required_evidence_ids": ["builder_output", "build_evidence"],
+  "field_mappings": [
+    { "from": "/payload/project", "to": "/project", "required": true },
+    { "from": "/payload/handoff", "to": "/handoff", "required": true }
+  ]
+}

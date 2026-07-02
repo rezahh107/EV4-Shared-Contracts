@@ -1,0 +1,9 @@
+{
+  "schema_version": "stage-bundle.v1",
+  "bundle_id": "fixture-invalid-missing-stage",
+  "produced_by": { "repository": "rezahh107/EV4-Architect-Repo", "ref": "fixture" },
+  "evidence_status": "complete",
+  "payload": { "project": { "id": "ev4-demo-project", "name": "EV4 Demo Project" }, "handoff": { "summary": "This fixture intentionally omits stage." } },
+  "evidence": [{ "id": "architecture_handoff", "kind": "document", "state": "validated", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "description": "Synthetic architecture handoff fixture." }],
+  "provenance": { "source": "synthetic-fixture", "created_by": "ev4-project-gate" }
+}

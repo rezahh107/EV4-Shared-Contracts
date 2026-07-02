@@ -1,10 +1,10 @@
 {
-  "name": "ev4-shared-contracts",
+  "name": "ev4-project-gate-auxiliary",
   "private": true,
-  "version": "0.0.0-skeleton",
-  "description": "Non-authoritative skeleton for future EV4 shared contracts.",
+  "version": "0.1.0",
+  "description": "Auxiliary npm entry points for the Python-based EV4 Project Gate.",
   "scripts": {
-    "status": "node scripts/status.js",
-    "validate": "node scripts/validate.js"
+    "status": "python -m ev4_transition.cli inspect transitions --format persian",
+    "validate": "python -m pytest"
   }
 }
