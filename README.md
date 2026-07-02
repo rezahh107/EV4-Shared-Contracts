@@ -15,6 +15,8 @@ For AI coding agents and future chats:
 - `AGENTS.md` is the building entrance sign: what this repository is, what is allowed, and what is forbidden.
 - `README.md` is the building brochure: the short human-facing overview.
 - `docs/EV4_SHARED_CONTRACTS_STATUS.md` is the control-room status board: current phase, commit/PR/CI evidence, changed files, next action, and simple mental model.
+- `docs/ROLE_BOUNDARY_MAP.md` is the workshop boundary map: who owns what, and what each role must not own.
+- `docs/VALIDATION_STRATEGY.md` is the inspection plan: what future shared contracts must prove before promotion.
 
 Read `AGENTS.md` first.
 Current project status is tracked in `docs/EV4_SHARED_CONTRACTS_STATUS.md`.
@@ -30,6 +32,8 @@ This repository is not yet a canonical shared contract source.
 Use these documents as the current handbook surface:
 
 - `docs/GOVERNANCE.md` — minimal shared governance rules, lifecycle states, evidence labels, and migration lock.
+- `docs/ROLE_BOUNDARY_MAP.md` — role ownership and blocked-output map for EV4 repositories.
+- `docs/VALIDATION_STRATEGY.md` — future validation and evidence strategy for shared contracts.
 - `docs/CONTRACT_INVENTORY.md` — non-authoritative contract and concept inventory.
 - `docs/COMPATIBILITY_MAP.md` — current compatibility boundaries only.
 - `docs/MIGRATION_READINESS_CHECKLIST.md` — gates that must be satisfied before canonical migration.
