@@ -1,0 +1,44 @@
+name: Status After Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: status-after-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  update-status:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update status file
+        env:
+          MERGED_PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED_PR_TITLE: ${{ github.event.pull_request.title }}
+          MERGED_PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGED_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGED_PR_MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: node scripts/update-status-after-merge.js
+
+      - name: Commit status update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: record merged PR #${{ github.event.pull_request.number }} in status"
+          file_pattern: docs/EV4_SHARED_CONTRACTS_STATUS.md
