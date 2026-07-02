@@ -4,13 +4,13 @@
 
 - Repository: `rezahh107/EV4-Shared-Contracts`
 - Main branch: `main`
-- Last merged PR: `#7` — `Automate status file merge ledger updates`
-- PR #7 merge commit: `4b48422bf7f95cc4682c0c4a871d441cef1a17a4`
-- PR #7 head commit: `96548866ec544009645d4b501fba7eb617d666ad`
-- PR #7 `Skeleton Health`: `CI_PASSED`
+- Last merged PR: `#8` — `Fully automate post-merge status finalization`
+- PR #8 merge commit: `e70650453879ac72b04cc38bfeafd5bfa813cdf8`
+- PR #8 head commit: `4f9ee4b1e25bb182f50e1431d0c5260df33a146d`
+- PR #8 `Skeleton Health`: `CI_PASSED`
 - Current work branch: `main`
 - Active PR: `none`
-- Current status: `Status-after-merge automation installed and verified for merge-fact recording; canonical migration remains blocked`
+- Current status: `PR #8 merge fully recorded automatically; governance interpretation remains evidence-based; canonical migration remains blocked`
 - Main status correction commit: `754ff8503bc042de4a8c5bbba0ace0360a1473c5`
 - Phase 5 proposal commit: `02812d3cb1d4c76f25f1783ccfcb14f76b10ed72`
 - Phase 5 status update commit: `80055a6e68074349a7ed3562cb5fcbd27e128b65`
@@ -32,7 +32,7 @@
 | Phase 4.1 — Promotion proposal intake | completed |
 | Phase 4.2 — Audit correction | completed |
 | Phase 5 — First proposal-only candidate | completed as `PROPOSAL_ONLY` |
-| Phase 5.1 — Status-after-merge automation | completed |
+| Phase 5.1 — Status-after-merge automation | completed and active |
 | Phase 6 — Shared schema migration | blocked |
 
 ## Completed in Status Finalization
@@ -98,8 +98,9 @@
 
 This section is updated by GitHub Actions after a pull request is merged. It records merge facts only. It must not be treated as schema promotion, CI proof, or canonical migration approval.
 
-| PR | Title | Head branch | Head commit | Merge commit | Recorded by |
-|---|---|---|---|---|---|
+| PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
+|---|---|---|---|---|---|---|
+| `#8` | `Fully automate post-merge status finalization` | `automation/finalize-status-after-merge` | `4f9ee4b1e25bb182f50e1431d0c5260df33a146d` | `e70650453879ac72b04cc38bfeafd5bfa813cdf8` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Shared-Contracts` |
 | `#7` | `Automate status file merge ledger updates` | `automation/status-after-merge` | `96548866ec544009645d4b501fba7eb617d666ad` | `4b48422bf7f95cc4682c0c4a871d441cef1a17a4` | `rezahh107 on rezahh107/EV4-Shared-Contracts` |
 
 ## Remaining Blockers
