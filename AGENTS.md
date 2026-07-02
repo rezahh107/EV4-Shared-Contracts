@@ -126,22 +126,26 @@ Before ending a repository-changing task, verify the current `main` head, latest
 
 ## Automated Merge Status Rule
 
-The `Status After Merge` workflow may update `docs/EV4_SHARED_CONTRACTS_STATUS.md` after a pull request is merged into `main`.
+The `Status After Merge` workflow updates `docs/EV4_SHARED_CONTRACTS_STATUS.md` automatically after a pull request is merged into `main`.
 
-This automation may record merge facts only:
+This automation may finalize merge bookkeeping:
 
-- PR number and title
+- last merged PR number and title
 - head branch
 - head commit
 - merge commit
-- actor / repository context
+- `Skeleton Health` result when the matching workflow evidence is found
+- current work branch as `main`
+- active PR as `none`
+- automated merge ledger row
+- automation rollout phase only
 
 This automation must not:
 
-- declare CI passed unless visible CI evidence is checked and recorded by a separate verified process
 - mark schema promotion as approved
 - unlock canonical migration
-- change lifecycle phase by inference
+- change contract lifecycle status by inference
+- change Phase 5 / Phase 6 meaning by inference
 - add active schemas, fixtures, shared validation scripts, or runtime dependencies
 
 Human/agent review remains responsible for governance interpretation and promotion readiness.
