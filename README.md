@@ -80,8 +80,8 @@ They are not preserved in the current normalized Builder package.
 
 ```yaml
 finding: required_visual_artifacts_not_preserved
-status: confirmed_contract_inconsistency
-repair_strategy: unresolved
+status: confirmed_contract_incompatibility
+repair_owner: unresolved
 ```
 
 The correct representation may be embedded data or an immutable sidecar reference. That choice is an architecture decision, not a detector decision.
