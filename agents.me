@@ -1,0 +1,17 @@
+# EV4 Project Gate Notes
+
+Status: the workflow is documented; the Python engine and user interface are not implemented.
+
+This repository coordinates the handoff path:
+
+```text
+Architect → Gate → CE → Gate → Builder → Gate → Responsive → Gate
+```
+
+Each specialist repository remains authoritative for its own domain contracts. EV4 Project Gate verifies handoffs, preserves evidence, and prepares either the next-stage package or a repair package.
+
+The planned user experience is upload, check, and download. Normal results are plain Persian. Technical evidence is optional detail.
+
+The future Python engine validates existing evidence and runs official schemas, validators, and adapters. It does not invent missing facts, silently repair outputs, replace repository-local contracts, or claim success without evidence.
+
+Use explicit states such as `validated`, `derived`, `unverified`, and `insufficient_evidence`. Repair ownership remains unresolved unless the contracts and evidence establish it.
