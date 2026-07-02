@@ -5,12 +5,12 @@
 - Repository: `rezahh107/EV4-Shared-Contracts`
 - Main branch: `main`
 - Last merged PR: `#7` — `Automate status file merge ledger updates`
-- PR #6 merge commit: `27a4fab5ea33cd72ade1c626f674ae3166ae3a09`
-- PR #6 head commit: `26ef0122ef79c00ac5a6d5c3b4e5f07b899bcbb9`
-- PR #6 `Skeleton Health`: `CI_PASSED`
+- PR #7 merge commit: `4b48422bf7f95cc4682c0c4a871d441cef1a17a4`
+- PR #7 head commit: `96548866ec544009645d4b501fba7eb617d666ad`
+- PR #7 `Skeleton Health`: `CI_PASSED`
 - Current work branch: `main`
 - Active PR: `none`
-- Current status: `PR #7 merge recorded automatically; governance state still requires human/agent review`
+- Current status: `Status-after-merge automation installed and verified for merge-fact recording; canonical migration remains blocked`
 - Main status correction commit: `754ff8503bc042de4a8c5bbba0ace0360a1473c5`
 - Phase 5 proposal commit: `02812d3cb1d4c76f25f1783ccfcb14f76b10ed72`
 - Phase 5 status update commit: `80055a6e68074349a7ed3562cb5fcbd27e128b65`
@@ -20,7 +20,9 @@
 - Status automation workflow commit: `a2b81a3c528d5a5faa5f986757a01ed30d34d08e`
 - Status automation guardrail commit: `5029c15e1b5e08191586a711203e99c048e59fc5`
 - Status automation status commit: `77292784b0849dd2c41fc8f3a2cf8065e72bc713`
-- Status automation PR-number record commit: `pending final report`
+- Status automation PR-number record commit: `96548866ec544009645d4b501fba7eb617d666ad`
+- Status automation merge-ledger bot update: `confirmed; content sha 6966d33af010e6680464ca5862e5e2d36d05f217`
+- Status automation final rollout commit: `pending final report`
 
 ## Current Phase
 
@@ -30,7 +32,7 @@
 | Phase 4.1 — Promotion proposal intake | completed |
 | Phase 4.2 — Audit correction | completed |
 | Phase 5 — First proposal-only candidate | completed as `PROPOSAL_ONLY` |
-| Phase 5.1 — Status-after-merge automation | PR open |
+| Phase 5.1 — Status-after-merge automation | completed |
 | Phase 6 — Shared schema migration | blocked |
 
 ## Completed in Status Finalization
@@ -56,7 +58,8 @@
 - Added `.github/workflows/status-after-merge.yml` to run after a PR is merged into `main`.
 - Added an explicit `AGENTS.md` guardrail: automation may record merge facts only and must not infer CI success, promotion approval, or canonical migration.
 - Avoided third-party commit actions; the workflow uses native `git commit` / `git push` with `GITHUB_TOKEN`.
-- Opened PR #7 for review.
+- Merged PR #7 after `Skeleton Health` passed.
+- Confirmed the newly installed automation recorded PR #7 in `Automated Merge Ledger`.
 - Did not add active schemas, shared fixtures, shared runtime validation scripts, or runtime dependencies.
 - Did not modify the four existing EV4 ecosystem repositories.
 
@@ -67,18 +70,17 @@
 | Previous merged PR | `#5` |
 | PR #5 merge commit | `ba766ffc2894f6dd2cd98cbcb10b08c446d0149a` |
 | PR #5 `Skeleton Health` | `CI_PASSED` |
-| Last merged PR | `#6` |
-| PR #6 title | `Add reference paradigm lock readiness proposal` |
-| PR #6 head branch | `phase5/proposal-reference-paradigm-lock` |
-| PR #6 head commit | `26ef0122ef79c00ac5a6d5c3b4e5f07b899bcbb9` |
+| Previous merged PR | `#6` |
 | PR #6 merge commit | `27a4fab5ea33cd72ade1c626f674ae3166ae3a09` |
-| PR #6 changed files | `docs/EV4_SHARED_CONTRACTS_STATUS.md`, `docs/proposals/0001-reference-paradigm-lock-readiness.md` |
 | PR #6 `Skeleton Health` | `CI_PASSED` |
-| Main status correction commit | `754ff8503bc042de4a8c5bbba0ace0360a1473c5` |
-| Phase 5 final status commit | `22c98695f2acf396528bdbfe5902cec1fea6c26c` |
-| Phase 5.1 branch | `automation/status-after-merge` |
-| Phase 5.1 active PR | `#7` |
-| Phase 5.1 changed files | `.github/workflows/status-after-merge.yml`, `AGENTS.md`, `docs/EV4_SHARED_CONTRACTS_STATUS.md`, `scripts/update-status-after-merge.js` |
+| Last merged PR | `#7` |
+| PR #7 title | `Automate status file merge ledger updates` |
+| PR #7 head branch | `automation/status-after-merge` |
+| PR #7 head commit | `96548866ec544009645d4b501fba7eb617d666ad` |
+| PR #7 merge commit | `4b48422bf7f95cc4682c0c4a871d441cef1a17a4` |
+| PR #7 changed files | `.github/workflows/status-after-merge.yml`, `AGENTS.md`, `docs/EV4_SHARED_CONTRACTS_STATUS.md`, `scripts/update-status-after-merge.js` |
+| PR #7 `Skeleton Health` | `CI_PASSED` |
+| PR #7 automated ledger row | `confirmed` |
 | Status automation local smoke test | `passed in scratch environment` |
 | Canonical migration | `blocked` |
 
@@ -86,9 +88,11 @@
 
 - `Skeleton Health` for PR #5: `CI_PASSED`.
 - `Skeleton Health` for PR #6: `CI_PASSED`.
+- `Skeleton Health` for PR #7: `CI_PASSED`.
 - Local smoke test by this Phase 5.1 pass: `node --check scripts/update-status-after-merge.js` passed in a scratch environment.
 - Local smoke test by this Phase 5.1 pass: `node scripts/update-status-after-merge.js` updated a temporary sample status file with merge env vars.
-- CI/check status for PR #7: `CI_PENDING` until a matching workflow run is visible.
+- Status automation after PR #7 merge: `confirmed` for merge-fact recording.
+- CI/check status for this final direct status-file commit: `CI_NOT_VERIFIED` until a matching workflow run is visible.
 
 ## Automated Merge Ledger
 
@@ -108,7 +112,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 ## Next Immediate Action
 
-Review and validate PR #7. Merge only if `Skeleton Health` passes and the workflow remains limited to merge-fact recording.
+Start a source-evidence audit for `reference_paradigm_lock` in `rezahh107/EV4-Constructability-Engineer-Repo` and `rezahh107/EV4-Builder-Assistant-Repo`. The output must remain evidence/readiness-only and must not modify those repositories unless explicitly requested.
 
 ## New Chat Startup Map
 
@@ -131,6 +135,6 @@ Read in this order:
 
 این repo مثل دفتر قوانین مشترک است.
 
-از این به بعد یک منشی ماشینی می‌تواند بعد از merge، شماره PR و commitها را در دفتر ثبت کند.
+از merge بعدی، یک منشی ماشینی شماره PR و commitها را در دفتر ثبت می‌کند.
 
 اما منشی حق ندارد مهر CI، promotion یا canonical migration بزند؛ آن مهرها هنوز فقط با شواهد و review انسانی/agent زده می‌شوند.
