@@ -2,86 +2,7 @@
 
 ## Repository Purpose
 
-EV4-Shared-Contracts is currently a non-authoritative skeleton repository for future EV4 shared contracts.
-It is not yet the canonical source of truth for schemas.
-Existing repo-local schemas remain authoritative until explicitly promoted.
-Canonical migration is blocked.
-
-Keep this file concise and operational. Put long project history in `docs/EV4_SHARED_CONTRACTS_STATUS.md`, not here.
-
-## First Files to Read
-
-Read files in this order:
-
-1. `AGENTS.md`
-2. `docs/EV4_SHARED_CONTRACTS_STATUS.md`
-3. `README.md`
-4. `docs/GOVERNANCE.md`
-5. `docs/ROLE_BOUNDARY_MAP.md`
-6. `docs/VALIDATION_STRATEGY.md`
-7. `docs/templates/PROMOTION_PROPOSAL_TEMPLATE.md`
-8. `docs/MIGRATION_READINESS_CHECKLIST.md`
-9. `docs/CONTRACT_INVENTORY.md`
-10. `docs/COMPATIBILITY_MAP.md`
-11. `docs/PROMOTION_RULES.md`
-12. `docs/ADR/0001-non-authoritative-skeleton.md`
-
-## Current Operating Mode
-
-Current mode: skeleton / non-authoritative / coordination-only.
-No canonical schemas are active.
-No runtime dependencies should point to this repo yet.
-
-## Repository Memory Model
-
-Use these files as the repository's memory:
-
-- `AGENTS.md` is the building entrance sign: where this is, what is allowed, and what is forbidden.
-- `README.md` is the building brochure: what this repository is for.
-- `docs/EV4_SHARED_CONTRACTS_STATUS.md` is the control-room status board: current phase, evidence, blockers, and next action.
-- `docs/ROLE_BOUNDARY_MAP.md` is the workshop boundary map: who owns what, and what each role must not own.
-- `docs/VALIDATION_STRATEGY.md` is the inspection plan: what evidence future shared contracts must prove before promotion.
-
-A new chat should be able to continue safely by reading these files first.
-
-## EV4 Pipeline Mental Model
-
-```text
-Architect → Constructability Engineer → Builder → Responsive Architect
-```
-
-Architect designs and hands off intent.
-Constructability Engineer proves execution readiness.
-Builder executes only validated runtime intake or normalized CE executable packages.
-Responsive Architect handles scoped responsive adaptation.
-EV4-Shared-Contracts currently documents coordination rules only.
-
-## Allowed Actions
-
-Agents may:
-
-- update documentation
-- update the status dashboard
-- update checklist status after verified work
-- improve non-authoritative inventory clarity
-- run skeleton checks
-- fix skeleton-health workflow issues
-- prepare promotion proposals as documents only, when explicitly requested
-
-## Forbidden Actions
-
-Agents must not:
-
-- migrate canonical schemas
-- add active schema files under `schemas/`
-- declare this repository authoritative
-- modify the four existing EV4 ecosystem repositories
-- create runtime dependencies from existing repos to this repo
-- promote any contract without explicit ADR, migration plan, rollback guidance, and CI evidence
-- mark CI as passed without visible workflow evidence
-- treat docs inventory as canonical schema authority
-
-Existing EV4 ecosystem repositories that must not be modified from this branch:
+`EV4-Shared-Contracts` is a non-authoritative cross-repository compatibility gate for:
 
 ```text
 rezahh107/EV4-Architect-Repo
@@ -90,82 +11,113 @@ rezahh107/EV4-Builder-Assistant-Repo
 rezahh107/EV4-Responsive-Architect
 ```
 
-## Validation Commands
+The four repositories remain authoritative for their own schemas, validators, adapters, fixtures, and runtime behavior.
 
-```bash
-npm run status
-npm run validate
+```yaml
+current_mode: role_transition_complete_python_not_started
+canonical_schema_owner: false
+runtime_dependency: false
+repair_authority: false
 ```
 
-These are skeleton-health checks only.
-They do not validate canonical schemas because no canonical schemas are active yet.
+## Read First
 
-## Directory Rules
+1. `AGENTS.md`
+2. `README.md`
+3. relevant compatibility manifests and rules, when present
+4. exact producer and consumer contracts in the owning repositories
+5. generated reports, when present
 
-- `schemas/` must contain `README.md` only until schema promotion is explicitly approved.
-- `fixtures/` must contain `README.md` only until shared fixture migration is approved.
-- `scripts/` may contain `README.md` and approved skeleton-health helper scripts only until shared validation scripts are approved.
+Documents about canonical promotion or the previous skeleton role are historical context when they conflict with `README.md` or this file.
 
-Do not add active schema files, shared fixtures, or shared validation scripts without explicit promotion approval.
+## Operating Scope
 
-## Status Update Rule
+This repository may host:
 
-After every completed phase or repository-changing task, update `docs/EV4_SHARED_CONTRACTS_STATUS.md` with:
+- deterministic Python compatibility verification;
+- versioned compatibility manifests and rules;
+- Producer → Adapter → Consumer execution tests;
+- field-preservation and semantic-invariant checks;
+- controlled synthetic fixtures identified as synthetic;
+- canonical JSON reports with pinned repository refs and SHA-256 evidence;
+- CI for cross-repository compatibility verification.
 
-- phase or task completed
-- commit SHA
-- PR number or PR URL, or `none yet`
-- CI status, using `CI_PASSED`, `CI_FAILED`, `CI_PENDING`, `CI_NOT_TRIGGERED`, or `CI_NOT_VERIFIED`
-- files changed
-- next action
-- one simple Persian mental model
+This repository does not own canonical EV4 schemas, replace repo-local validators, act as a runtime dependency, repair the four repositories automatically, or choose architectural authority.
 
-If the current commit SHA or PR number is not known at edit time, write `pending final report` and update it in the next status pass.
-
-Before ending a repository-changing task, verify the current `main` head, latest relevant PR state, and matching `Skeleton Health` evidence when available.
-
-## Automated Merge Status Rule
-
-The `Status After Merge` workflow updates `docs/EV4_SHARED_CONTRACTS_STATUS.md` automatically after a pull request is merged into `main`.
-
-This automation may finalize merge bookkeeping:
-
-- last merged PR number and title
-- head branch
-- head commit
-- merge commit
-- `Skeleton Health` result when the matching workflow evidence is found
-- current work branch as `main`
-- active PR as `none`
-- automated merge ledger row
-- automation rollout phase only
-
-This automation must not:
-
-- mark schema promotion as approved
-- unlock canonical migration
-- change contract lifecycle status by inference
-- change Phase 5 / Phase 6 meaning by inference
-- add active schemas, fixtures, shared validation scripts, or runtime dependencies
-
-Human/agent review remains responsible for governance interpretation and promotion readiness.
-
-## Reporting Rules
-
-Final reports must be in Persian.
-
-Keep repository names, branch names, commit SHAs, file paths, schema names, commands, workflow names, and identifiers in English.
-
-Every report must clearly distinguish:
+## Verification Model
 
 ```text
-confirmed
-static-only
-CI-verified
-blocked
-assumption
+Producer schema and validator
+            ↓
+      validated fixture
+            ↓
+ documented adapter/normalizer
+            ↓
+Consumer schema and validator
+            ↓
+preservation and semantic rules
+            ↓
+deterministic compatibility report
 ```
+
+A schema diff is an observation, not complete compatibility proof.
+
+## Evidence Policy
+
+Findings should retain repository refs, file paths, fixture identity and digest, executed commands, exit codes, rule IDs and versions, and source/target paths when applicable.
+
+Evidence states:
+
+```text
+observed
+validated
+resolved
+derived
+proposed
+unverified
+insufficient_evidence
+```
+
+A shape check is not full Producer validation. Synthetic fixtures are not real Elementor or EV4 exports.
+
+Keep these findings distinct:
+
+```text
+structural_difference
+intentional_compatible_transformation
+confirmed_contract_incompatibility
+repair_owner_unresolved
+```
+
+## Initial Python Phase
+
+```text
+CE valid fixture
+→ CE schema and validator
+→ Builder adapter
+→ Builder schema and validator
+→ preservation checks
+→ semantic checks
+→ canonical JSON report
+```
+
+Initial diagnostic targets:
+
+```text
+producer_variant_not_supported_by_adapter
+required_field_lost
+```
+
+Later phases may add generated boundary cases, property-based tests, mutation testing, and issue fingerprinting.
+
+## Determinism
+
+Machine-readable outputs use stable ordering, versioned canonical JSON, SHA-256 over canonical content, explicit UTF-8 and timezone handling, deterministic diagnostics, pinned repository refs, and retained subprocess results.
+
+## Reporting
+
+User-facing reports are written in Persian. Repository names, refs, paths, schema IDs, rule IDs, commands, workflow names, and diagnostic codes remain in English.
 
 ## Guardrail
 
-Canonical migration remains blocked until explicitly unlocked by checklist completion, CI evidence, and promotion ADR.
+This repository verifies compatibility evidence. It is not a fifth architectural authority and does not convert undocumented assumptions into executable truth.
