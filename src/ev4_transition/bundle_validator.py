@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -38,10 +39,12 @@ class BundleValidator:
             )
             return self._result(bundle, None, diagnostics)
 
+        diagnostics.extend(_non_finite_number_diagnostics(bundle))
+
         for err in self._schema_errors(bundle):
             diagnostics.append(err)
 
-        if not diagnostics:
+        if not any(item.severity == "error" for item in diagnostics):
             diagnostics.extend(self._semantic_diagnostics(bundle, required_evidence_ids or []))
 
         return self._result(bundle, bundle, diagnostics)
@@ -58,6 +61,17 @@ class BundleValidator:
                     "$",
                     line=exc.lineno,
                     column=exc.colno,
+                )
+            ]
+            return self._result(None, None, diagnostics)
+        except OSError as exc:
+            diagnostics = [
+                diagnostic(
+                    "FILE_READ_ERROR",
+                    "error",
+                    "File could not be read.",
+                    "$",
+                    error_type=type(exc).__name__,
                 )
             ]
             return self._result(None, None, diagnostics)
@@ -147,7 +161,30 @@ class BundleValidator:
     def _safe_payload_hash(bundle: dict[str, Any] | None) -> dict[str, str] | None:
         if not bundle or not isinstance(bundle.get("payload"), dict):
             return None
-        return canonical_payload_hash(bundle["payload"])
+        try:
+            return canonical_payload_hash(bundle["payload"])
+        except CanonicalJsonError:
+            return None
+
+
+def _non_finite_number_diagnostics(value: Any, path: str = "$") -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    if isinstance(value, float) and not math.isfinite(value):
+        diagnostics.append(
+            diagnostic(
+                "NON_FINITE_NUMBER",
+                "error",
+                "NaN and infinity are not valid canonical JSON values.",
+                path,
+            )
+        )
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            diagnostics.extend(_non_finite_number_diagnostics(child, f"{path}.{key}"))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            diagnostics.extend(_non_finite_number_diagnostics(child, f"{path}[{index}]"))
+    return diagnostics
 
 
 def _json_path(parts: list[Any]) -> str:
