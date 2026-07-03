@@ -12,6 +12,54 @@ def validator() -> BundleValidator:
     return BundleValidator(ROOT / "schemas")
 
 
+def valid_bundle() -> dict:
+    return {
+        "schema_version": "stage-evidence-bundle.v1",
+        "bundle_id": "synthetic-architect-valid-001",
+        "stage": "architect",
+        "payload_schema": {
+            "id": "ev4.synthetic.architect.payload",
+            "version": "0.1.0",
+            "owner_repository": "rezahh107/EV4-Architect-Repo",
+        },
+        "produced_by": {
+            "repository": "rezahh107/EV4-Architect-Repo",
+            "ref": "synthetic-fixture",
+        },
+        "evidence_status": "complete",
+        "payload": {
+            "schema_id": "ev4.synthetic.architect.payload@0.1.0",
+            "data": {
+                "project_id": "ev4-demo",
+                "handoff_summary": "Synthetic architect handoff.",
+            },
+        },
+        "evidence": [
+            {
+                "id": "architecture_handoff",
+                "kind": "document",
+                "state": "validated",
+                "description": "Synthetic architecture handoff fixture.",
+                "artifact_hash": {
+                    "algorithm": "sha256",
+                    "value": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                    "scope": "canonical_json",
+                },
+                "source": {
+                    "type": "synthetic_fixture",
+                    "reference": "fixtures/valid/architect-stage-bundle.v1.json",
+                },
+            }
+        ],
+        "provenance": {
+            "source": "synthetic-fixture",
+            "created_by": "ev4-project-gate-tests",
+            "created_at": "2026-07-02T00:00:00Z",
+        },
+        "synthetic": True,
+    }
+
+
 def test_valid_stage_evidence_bundle():
     result = validator().validate_file(ROOT / "fixtures/valid/architect-stage-bundle.v1.json")
     assert result["status"] == "valid"
@@ -95,3 +143,27 @@ def test_source_bundle_hash_matches_canonical_source():
 def test_transition_result_schema_enforcement_rejects_bad_result():
     with pytest.raises(ResultValidationError):
         validator().validate_result({"schema_version": "transition-result.v1", "status": "valid"})
+
+
+@pytest.mark.parametrize("bad_value", [float("nan"), float("inf"), float("-inf")])
+def test_non_finite_payload_values_are_invalid_without_crash(bad_value):
+    bundle = valid_bundle()
+    bundle["payload"]["data"]["invalid_number"] = bad_value
+
+    result = validator().validate_bundle(bundle)
+
+    assert result["status"] == "invalid"
+    assert result["hashes"]["source_bundle_hash"] is None
+    assert result["hashes"]["canonical_payload_hash"] is None
+    assert result["output"] is None
+    assert any(item["code"] == "NON_FINITE_NUMBER" for item in result["diagnostics"])
+    assert any(item["path"] == "$.payload.data.invalid_number" for item in result["diagnostics"])
+
+
+def test_missing_input_file_returns_structured_invalid_result():
+    result = validator().validate_file(ROOT / "fixtures/invalid/does-not-exist.v1.json")
+
+    assert result["status"] == "invalid"
+    assert result["hashes"]["source_bundle_hash"] is None
+    assert result["hashes"]["canonical_payload_hash"] is None
+    assert result["diagnostics"][0]["code"] == "FILE_READ_ERROR"
