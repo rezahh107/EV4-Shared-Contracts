@@ -88,7 +88,15 @@ def main(argv: list[str] | None = None) -> int:
 
 def _append_external_diagnostics(result: dict[str, Any], diagnostics: list[dict[str, Any]]) -> dict[str, Any]:
     combined = dict(result)
-    combined["diagnostics"] = sorted(result.get("diagnostics", []) + diagnostics, key=lambda d: (d.get("path", "$"), d.get("severity", ""), d.get("code", ""), d.get("message", "")))
+    combined["diagnostics"] = sorted(
+        result.get("diagnostics", []) + diagnostics,
+        key=lambda d: (
+            str(d.get("path") or "$"),
+            str(d.get("severity") or ""),
+            str(d.get("code") or ""),
+            str(d.get("message") or ""),
+        ),
+    )
     if any(item["severity"] == "error" for item in combined["diagnostics"]):
         combined["status"] = "invalid"
         combined["output"] = None
