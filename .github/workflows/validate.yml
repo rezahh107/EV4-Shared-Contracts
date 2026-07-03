@@ -6,9 +6,10 @@ on:
     branches:
       - main
       - init/non-authoritative-skeleton
+      - python-deterministic-core-v1
 
 jobs:
-  validate:
+  skeleton:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,12 +43,49 @@ jobs:
       - name: Run skeleton validation
         run: npm run validate
 
-      - name: Verify no canonical schema files exist
+      - name: Verify no specialist canonical schema files exist
         run: |
-          count=$(find schemas -type f ! -name README.md | wc -l | tr -d ' ')
-          if [ "$count" != "0" ]; then
+          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json)$'
+          unexpected=$(find schemas -type f | grep -Ev "$allowed" || true)
+          if [ -n "$unexpected" ]; then
             echo "Unexpected schema files found under schemas/."
-            find schemas -type f ! -name README.md
+            printf '%s\n' "$unexpected"
             exit 1
           fi
-          echo "No canonical schema files found."
+          echo "Only Project Gate envelope/result schemas found."
+
+  python-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package
+        run: python -m pip install -e '.[dev]'
+
+      - name: Run tests
+        run: pytest
+
+      - name: CLI smoke valid bundle
+        run: ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+
+      - name: CLI smoke invalid array
+        run: |
+          set +e
+          ev4-transition validate fixtures/invalid/array-input.v1.json
+          status=$?
+          test "$status" -eq 1
+
+      - name: CLI smoke Persian insufficient evidence
+        run: |
+          set +e
+          output=$(ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian)
+          status=$?
+          printf '%s\n' "$output"
+          test "$status" -eq 2
+          printf '%s' "$output" | grep 'شواهد کافی نیست'
