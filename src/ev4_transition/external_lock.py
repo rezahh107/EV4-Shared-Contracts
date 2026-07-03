@@ -61,7 +61,10 @@ def _identity_diagnostics(content: bytes, item: dict[str, Any], path: str) -> li
     role = item.get("role")
     expected = item.get("contract_or_schema_id")
     diagnostics: list[Diagnostic] = []
-    text = content.decode("utf-8")
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return [diagnostic("PG_A2C_EXTERNAL_FILE_NOT_UTF8", "error", "Pinned external file is not valid UTF-8.", path, role=role)]
     if role in {"architect_payload_schema", "ce_intake_schema"}:
         try:
             data = json.loads(text)
