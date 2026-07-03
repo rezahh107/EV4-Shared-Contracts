@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -29,7 +30,7 @@ def _run_validator(repo_root: str | Path, script_rel: str, payload: dict[str, An
         write_canonical_json(payload_path, payload)
         env = {"LC_ALL": "C.UTF-8", "LANG": "C.UTF-8", "PYTHONHASHSEED": "0", **{k: v for k, v in os.environ.items() if k in {"PATH", "PYTHONPATH", "HOME"}}}
         completed = subprocess.run(
-            ["python", str(script), "--repo-root", str(root), "--file", str(payload_path), "--format", "json"],
+            [sys.executable, str(script), "--repo-root", str(root), "--file", str(payload_path), "--format", "json"],
             cwd=root,
             text=True,
             capture_output=True,
