@@ -17,19 +17,24 @@ EV4-Responsive-Architect
 
 The specialist repositories remain authoritative for their own schemas, validators, adapters, fixtures, and domain behavior.
 
-This repository owns only cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, and Project Gate CI.
+This repository owns cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, Project Gate CI, and now the initial deterministic Python foundation for Stage Evidence Bundle validation.
 
 ## Current Status
 
 ```yaml
-python_engine: not_implemented
+python_deterministic_core: implemented_initial_v1
+stage_bundle_validation: implemented_initial_v1
+structured_diagnostics: implemented_initial_v1
+canonical_json_sha256: implemented_initial_v1
+real_stage_transitions: not_implemented
+cross_repository_validation: not_implemented
 user_interface: not_implemented
-stage_gates: planned
 canonical_schema_owner: false
 runtime_dependency_of_specialist_repos: false
+node_skeleton: preserved_temporarily
 ```
 
-Do not describe planned behavior as implemented behavior.
+Do not describe planned transitions, real cross-repository validation, or UI behavior as implemented behavior.
 
 ## Read First
 
@@ -38,8 +43,11 @@ Do not describe planned behavior as implemented behavior.
 3. `docs/CONTRACT_INVENTORY.md`
 4. `docs/COMPATIBILITY_MAP.md`
 5. `docs/VALIDATION_STRATEGY.md`
-6. the exact producer and consumer contracts in the owning repositories
-7. generated reports and evidence bundles, when present
+6. `schemas/stage-bundle/stage-bundle.v1.schema.json`
+7. `schemas/transition-result/transition-result.v1.schema.json`
+8. `src/ev4_transition/*`
+9. `tests/*`
+10. the exact producer and consumer contracts in the owning repositories, when reviewing future transition PRs
 
 Older documents about canonical promotion or the previous shared-contract skeleton are historical when they conflict with `README.md` or this file.
 
@@ -56,7 +64,7 @@ Architect output
 → final Gate
 ```
 
-Each gate produces either:
+Each gate eventually produces either:
 
 - an accepted next-stage package built only from validated evidence; or
 - a repair package based on confirmed diagnostics.
@@ -73,7 +81,9 @@ Do not:
 - select a winning schema or architectural authority;
 - silently normalize undocumented differences;
 - mark a stage accepted without executed evidence;
-- hide known incompatibilities because a decision record exists.
+- hide known incompatibilities because a decision record exists;
+- claim real EV4 transition compatibility from the foundation validator alone;
+- remove or disable the legacy Node skeleton until a dedicated retirement PR proves parity.
 
 When a conclusion cannot be established, use:
 
@@ -83,35 +93,41 @@ missing_evidence: explicit
 repair_owner: unresolved
 ```
 
-## Implementation Rules
+## Python Implementation Rules
 
-For the future Python verifier:
-
-- preserve public contracts unless a breaking change is explicitly approved;
-- isolate repository/network access behind mockable interfaces;
-- use stable ordering and versioned canonical JSON;
-- use SHA-256 over canonical UTF-8 content;
-- reject NaN and infinities;
-- use explicit timezone and encoding handling;
-- retain subprocess command, exit code, stdout, and stderr evidence;
-- use deterministic diagnostic IDs and tie-breakers;
-- add stable fixtures and tests for every implemented rule;
-- label synthetic fixtures as synthetic.
-
-Do not implement future Phase 2 features unless explicitly requested.
+- Preserve public contracts unless a breaking change is explicitly approved.
+- Isolate repository/network access behind mockable interfaces.
+- Use stable ordering and versioned canonical JSON.
+- Use SHA-256 over canonical UTF-8 content.
+- Reject NaN and infinities.
+- Do not inject live timestamps in deterministic core logic.
+- If timestamps are accepted, require explicit RFC3339 UTC input.
+- Use deterministic diagnostic codes, ordering, and paths.
+- Validate every emitted validation-result object against its schema.
+- Add stable fixtures and tests for every implemented rule.
+- Label synthetic fixtures as synthetic.
+- Do not implement future transition features unless explicitly requested.
 
 ## Validation
 
-Current repository checks:
+Current Python foundation checks:
+
+```bash
+python -m pip install -e '.[dev]'
+pytest
+ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+ev4-transition validate fixtures/invalid/array-input.v1.json
+ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
+```
+
+Existing Node skeleton checks remain available temporarily:
 
 ```bash
 npm run status
 npm run validate
 ```
 
-The GitHub workflow also verifies required documentation, package metadata, and that this repository does not contain canonical schema files.
-
-After the Python implementation begins, update this section with the exact install, test, coverage, CLI, and packaging commands. Do not claim Python validation before those commands exist and pass.
+The GitHub workflow must keep both the existing skeleton health checks and the Python foundation checks until Node retirement is handled in a later PR.
 
 ## User Experience Boundary
 

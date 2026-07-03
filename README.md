@@ -1,6 +1,6 @@
 # EV4 Project Gate
 
-Status: planned workflow documented; Python engine and user interface are not implemented.
+Status: Python deterministic foundation is implemented for Stage Evidence Bundle validation. Real EV4 stage transitions and the user interface are not implemented.
 
 ## Purpose
 
@@ -13,9 +13,47 @@ Architect → Project Gate → CE → Project Gate → Builder
 
 Each specialist repository remains authoritative for its own schemas, validators, adapters, fixtures, and domain behavior. This repository coordinates cross-repository checks and package handoffs. It is not a canonical shared-schema owner or a fifth architecture authority.
 
+## Implemented now
+
+This repository now contains the first deterministic Python foundation:
+
+```text
+Stage Evidence Bundle JSON
+→ Python envelope validation
+→ structured diagnostics
+→ canonical JSON and SHA-256 hashes
+→ machine-readable result or Persian summary
+```
+
+Implemented components:
+
+- Python package: `src/ev4_transition`
+- CLI: `ev4-transition`
+- Stage Evidence Bundle envelope schema: `schemas/stage-bundle/stage-bundle.v1.schema.json`
+- Validation result schema: `schemas/transition-result/transition-result.v1.schema.json`
+- Synthetic valid, invalid, and insufficient-evidence fixtures
+- Pytest coverage for deterministic hashes, malformed inputs, structured diagnostics, provenance preservation, and result-schema enforcement
+- GitHub Actions Python validation alongside the existing Node skeleton checks
+
+## Not implemented yet
+
+The following remain intentionally out of scope for this foundation PR:
+
+- `architect-to-ce`
+- `ce-to-builder`
+- `builder-to-responsive`
+- real target input package schemas
+- cross-repository semantic mappings
+- UI/upload-download application
+- real artifact validation claims
+- legacy Node retirement
+- specialist-domain validation
+
+Do not claim real EV4 transition compatibility from this repository yet.
+
 ## User Workflow
 
-The intended daily experience is simple:
+The intended daily experience remains:
 
 ```text
 1. Receive the current stage output.
@@ -24,83 +62,63 @@ The intended daily experience is simple:
 4. Download the next-stage package or a repair package.
 ```
 
-A successful screen shows a large success symbol, explicit accepted text, the completed stage, and one action to download the next-stage package.
+The current implementation is a Python package and CLI foundation only. The local browser UI is still not implemented.
 
-A repair-needed screen shows an explicit repair status, a plain Persian explanation, and one action to download the repair package. Meaning must not depend on color alone. Technical evidence is optional detail.
+## CLI
 
-The planned primary interface is a simple local browser application. GitHub Actions is the hidden automation and regression-testing layer, not the normal daily interface.
-
-## Stage Gates
-
-### Architect → CE
-
-```text
-Architect output
-→ Architect validation
-→ accepted: CE Input Package
-→ repair needed: Architect Repair Package
+```bash
+python -m pip install -e '.[dev]'
+ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
+ev4-transition inspect
 ```
 
-### CE → Builder
+Exit codes:
 
 ```text
-CE output
-→ CE validation
-→ official adapter
-→ Builder intake validation
-→ preservation checks
-→ accepted: Builder Input Package
-→ repair needed: CE or evidenced upstream repair package
+0 = valid
+1 = invalid
+2 = insufficient_evidence
 ```
 
-### Builder → Responsive
+## Stage Evidence Bundle
 
-```text
-Builder output plus build evidence
-→ Builder and evidence validation
-→ Responsive intake validation
-→ accepted: Responsive Input Package
-→ repair needed: Builder or evidenced upstream repair package
-```
+The common envelope requires:
 
-### Responsive → Final Evidence
+- explicit stage identity
+- explicit payload schema identity
+- producer repository/ref
+- structured evidence items
+- declared SHA-256 artifact hash records
+- provenance
+- explicit synthetic fixture labeling
 
-```text
-Responsive output plus viewport evidence
-→ responsive and regression checks
-→ accepted: final evidence package
-→ repair needed: Responsive or evidenced upstream repair package
-```
+The envelope validates transport and evidence structure. It does not validate stage-owned specialist semantics.
 
-## Package Loop
+## Hash scope
 
-A repair package will identify the failed stage, explain the problem in plain Persian, retain the original output identity, include deterministic diagnostics, and describe the required complete corrected output. The user gives it to the model connected to the relevant repository and uploads the corrected output for another check.
-
-A next-stage package contains only validated input and retained evidence needed by the next stage.
-
-When responsibility cannot be established, the result remains:
+This foundation uses versioned canonical JSON behavior:
 
 ```yaml
-status: insufficient_evidence
-repair_owner: unresolved
+canonicalization: ev4-canonical-json.v1
+key_ordering: deterministic_lexicographic
+encoding: utf8
+serialization: compact_json
+nan_and_infinity: rejected
 ```
 
-## Planned Python Engine
+Current result hash names are explicit:
 
-The internal verification engine is called `EV4 Contract Watch`.
+- `source_bundle_hash`: SHA-256 over the full canonical source bundle JSON value.
+- `canonical_payload_hash`: SHA-256 over the canonical `payload` object only.
 
-Planned responsibilities:
+No implicit current timestamp is generated by the deterministic core.
 
-```text
-schema and provenance validation
-official validator and adapter execution
-field-lineage and preservation checks
-versioned semantic rules
-deterministic diagnostics and evidence bundles
-repair-package and next-stage package assembly
-```
+## `insufficient_evidence`
 
-It does not invent missing data, silently repair specialist outputs, select a winning schema, or claim success without evidence.
+`insufficient_evidence` is a first-class status. It means the bundle is parseable and structurally understood, but the evidence is not enough for a safe next step.
+
+The validator must not invent missing evidence, silently fill important fields, or repair specialist outputs.
 
 ## Evidence Policy
 
@@ -117,7 +135,7 @@ unverified
 insufficient_evidence
 ```
 
-Compatibility is checked through the real Producer → Adapter → Consumer path. A schema difference alone is not a compatibility verdict. Synthetic fixtures remain clearly identified as synthetic.
+Compatibility is checked through the real Producer → Adapter → Consumer path in later PRs. A schema difference alone is not a compatibility verdict. Synthetic fixtures remain clearly identified as synthetic.
 
 ## Repository Responsibilities
 
@@ -135,29 +153,40 @@ EV4-Responsive-Architect
   post-build responsive validation and repair
 
 EV4-Project-Gate
-  cross-repository verification, user workflow, and evidence packaging
+  deterministic envelope validation, diagnostics, provenance, hashes, and future package orchestration
 ```
 
-## Implementation Order
+## Validation
 
-```text
-1. Align README.md and AGENTS.md in all five repositories.
-2. Freeze the first user workflow and Phase 1 boundaries.
-3. Identify real schemas, validators, adapters, and fixtures.
-4. Build the offline-tested Python core.
-5. Add Architect → CE.
-6. Add CE → Builder.
-7. Add Builder → Responsive and final responsive evidence checks.
-8. Add GitHub Actions regression automation.
+Python foundation checks:
+
+```bash
+python -m pip install -e '.[dev]'
+pytest
+ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
+ev4-transition validate fixtures/invalid/array-input.v1.json
+ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
+```
+
+Existing Node skeleton checks remain available temporarily:
+
+```bash
+npm run status
+npm run validate
 ```
 
 ## Current Status
 
 ```yaml
 repository_role: project_workflow_control_center
-workflow_documentation: in_review
-python_engine: not_implemented
+python_deterministic_core: implemented_initial_v1
+stage_bundle_validation: implemented_initial_v1
+structured_diagnostics: implemented_initial_v1
+canonical_json_sha256: implemented_initial_v1
+real_stage_transitions: not_implemented
+cross_repository_validation: not_implemented
 user_interface: not_implemented
 package_generation: not_implemented
 canonical_schema_owner: false
+node_skeleton: preserved_temporarily
 ```
