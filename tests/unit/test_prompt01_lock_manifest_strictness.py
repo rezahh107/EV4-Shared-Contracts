@@ -55,3 +55,16 @@ def test_lock_manifest_rejects_empty_files_array():
     lock = valid_lock_manifest()
     lock["files"] = []
     assert "PG_LOCK_FILES_EMPTY" in codes(lock)
+
+
+@pytest.mark.parametrize(
+    "mutator",
+    [
+        lambda lock: lock.__setitem__("unexpected", True),
+        lambda lock: lock["files"][0].__setitem__("unexpected", True),
+    ],
+)
+def test_lock_manifest_rejects_unknown_fields(mutator):
+    lock = copy.deepcopy(valid_lock_manifest())
+    mutator(lock)
+    assert "PG_LOCK_UNKNOWN_FIELD" in codes(lock)
