@@ -33,7 +33,12 @@ commits:
   - b2342be6b7b7ecb35d90e79731848cfeab8ff4a0 docs: add prompt 01 handoff
   - b11db5606038dbbb1f276b0397658c15b09e5155 fix: preserve legacy valid Persian wording
   - decece3f6e87663cba565c51e91eb8b0775528b5 docs: refresh prompt 01 handoff after ci feedback
-  - self_reference: docs: record prompt 01 ci success [skip ci]; final commit SHA is reported in the final response.
+  - 7d5c751f6a7a095d4de97eb6bbbaa2402b2f9ffb docs: record prompt 01 ci success [skip ci]
+  - a011399a83e45c41c434a9f449dfae1c8a036c95 fix: enforce lock manifest structural constraints
+  - e1275b82130bb6c088b8c86fd5a4c951dd8f5e34 tests: add fail-closed lock manifest negative tests
+  - 6eadbb53e6a6c64817ff514198f642b61123464a docs: document strict lock manifest diagnostics
+  - c5bee26bdd169658d40686e3be4a3269052b0496 docs: align prompt 01 coverage after inspector finding
+  - self_reference: docs: record inspector lock validation fix; final commit SHA is reported in the final response.
 files_changed:
   - .github/workflows/validate.yml
   - docs/ARCHITECTURE.md
@@ -64,9 +69,12 @@ files_changed:
   - tests/fixtures/stage_bundle/invalid/missing-synthetic-label.v1.json
   - tests/fixtures/stage_bundle/valid/minimal-stage-bundle.v1.json
   - tests/unit/test_prompt01_deterministic_core.py
+  - tests/unit/test_prompt01_lock_manifest_strictness.py
 tests_run:
   - GitHub Actions run 28715773325: skeleton job passed; python-core failed at Run Project Gate Python tests on pre-fix head b2342be6b7b7ecb35d90e79731848cfeab8ff4a0.
   - GitHub Actions run 28715844363: skeleton job passed; python-core passed on code-bearing head decece3f6e87663cba565c51e91eb8b0775528b5.
+  - Inspector review from PR-Inspector commit 524d16df008b5eacdff1435d9f7fe16bc713f041 reported PRF-001 against reviewed head 7d5c751f6a7a095d4de97eb6bbbaa2402b2f9ffb.
+  - Final corrected-head GitHub Actions must run after this handoff commit; do not merge until it passes.
 tests_passed:
   - GitHub Actions run 28715844363: skeleton job succeeded.
   - GitHub Actions run 28715844363: python-core succeeded.
@@ -81,6 +89,7 @@ tests_passed:
   - GitHub Actions run 28715844363: Generated Architect-to-CE transition smoke and CE binding succeeded.
 tests_failed:
   - GitHub Actions run 28715773325: python-core failed at Run Project Gate Python tests before fix commit b11db5606038dbbb1f276b0397658c15b09e5155.
+  - PR-Inspector PRF-001: validate_lock_manifest was weaker than schema/policy on reviewed head 7d5c751f6a7a095d4de97eb6bbbaa2402b2f9ffb.
 tests_not_run:
   - local python -m pip install -e '.[dev]'
   - local pytest
@@ -93,7 +102,7 @@ tests_not_run:
   - local npm run validate
 coverage_rules_advanced:
   - PG-HASH-001: explicit file-byte SHA-256 helper and deterministic canonical JSON regression tests added.
-  - PG-LOCK-001: lock manifest schema and structural lock manifest validator added.
+  - PG-LOCK-001: lock manifest schema, strict structural lock manifest validator, and fail-closed negative tests added.
   - PG-STATUS-001: target status mapping added for icon, semantic tone, Persian label, and exit code; legacy valid compatibility preserved.
   - PG-UNICODE-001: explicit composed/decomposed Unicode no-normalization regression test added.
   - PG-EVIDENCE-001: result model and status matrix carriers added; full future transition accepted-gate enforcement remains incomplete.
@@ -108,12 +117,17 @@ coverage_rules_still_gap:
 new_diagnostics:
   - PG_LOCK_SCHEMA_VERSION_MISSING
   - PG_LOCK_SCHEMA_VERSION_UNKNOWN
+  - PG_LOCK_TRANSITION_ID_INVALID
   - PG_LOCK_FILES_NOT_ARRAY
+  - PG_LOCK_FILES_EMPTY
   - PG_LOCK_ENTRY_NOT_OBJECT
   - PG_LOCK_ROLE_INVALID
   - PG_LOCK_ROLE_DUPLICATE
   - PG_LOCK_FIELD_INVALID
-  - PG_LOCK_HASH_NOT_LOWERCASE
+  - PG_LOCK_REPOSITORY_INVALID
+  - PG_LOCK_COMMIT_INVALID
+  - PG_LOCK_HASH_INVALID
+  - PG_LOCK_SIZE_BYTES_INVALID
 new_or_changed_cli:
   - ev4-transition exit-code mapping now uses src/ev4_transition/presentation/status_mapping.py.
   - no new CLI command added.
@@ -126,15 +140,15 @@ important_design_decisions:
   - Added target accepted/repair_needed/insufficient_evidence/invalid presentation mapping and docs so future transition prompts can migrate deliberately.
   - Kept progress/runtime state out of canonical JSON helpers; no implicit timestamp helper was added.
   - Kept Unicode strings unnormalized; added regression test to distinguish composed and decomposed forms.
-  - A large direct rewrite of src/ev4_transition/architect_to_ce.py was attempted but blocked by the GitHub write safety layer; no commit occurred from that blocked call, and the final design avoided the broad rewrite.
-  - After CI feedback, legacy Persian valid wording was restored to include بسته معتبر while keeping the new accepted mapping.
+  - After Inspector PRF-001, validate_lock_manifest now enforces schema/policy-aligned fail-closed checks without running specialist logic.
 web_sources_used: []
 next_allowed_prompt: PROMPT-02
 blocking_issues:
   - Local tests were not run by the assistant because the container could not resolve github.com and no local repository checkout was available.
   - Existing Architect-to-CE result schema still uses legacy valid/invalid/insufficient_evidence vocabulary; full migration to target transition statuses is deferred to future scoped work.
-  - This final handoff metadata commit was made after the passing code-bearing CI run and used [skip ci].
+  - Final corrected-head GitHub Actions must pass before merge.
 remaining_insufficient_evidence:
+  - final corrected-head GitHub Actions result
   - real Elementor artifact validation
   - real cross-repository validation beyond synthetic fixtures
   - CE-to-Builder Project Gate lock manifest and transition result contract
