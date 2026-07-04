@@ -1,28 +1,11 @@
 prompt_id: PROMPT-02
 branch: project-gate-prompt-02-behavioral-coverage
+handoff_status: updated_after_pr_inspector_yellow_recheck
 commits:
   initial_prompt_02_range: 04331a3da62ef6c877a87dfb9e8ef065253b1d6b..c9133136972bbbeaad3abc8430706f5ca22111b9
-  inspector_followup:
-    - a09d27709b6bac74b404f01c4306f0f76269fa46 fix: resolve behavioral coverage evidence references
-    - 9193bdb841d025182f06ad498b973a8aa5ecc6d7 schemas: add validator evidence schema
-    - 815c51bfab99d7eedf40648907041641a113c7c0 ci: allow validator evidence schema
-    - 1090432281ea720fe06ccda5cd4d7ae47999dc87 fixtures: require complete validator evidence for accepted result
-    - 56594bb5ab289b4f9595366f7e2980b62e4cbb4b fixtures: require complete validator evidence for output success
-    - 033dcf04df9a6c277a08b71df10d3b93f3a7024c fixtures: isolate synthetic-only accepted failure
-    - f18209db8f8bbf118d176d3d3d8deddfe6f9abe7 fixtures: isolate output write failure success-status case
-    - 7b3c4f1ba4e27c171b7c5df5bcf218ba90d62d37 fixtures: add failed validator evidence accepted invalid fixture
-    - fdda3f465e406fc38afc2c0ceed10554b60bafab fixtures: add unknown validator evidence accepted invalid fixture
-    - 3057e666df9a4c2b14faf997b27aa351f6ecb482 fixtures: add incomplete validator evidence accepted invalid fixture
-    - 2dfb720e4ef83b2f5916934c4f4cdaeeddc1f6cc fixtures: add unpinned validator evidence accepted invalid fixture
-    - 5016328280bf60dce1a576eb5e032d2abc72d563 fixtures: add validator hash mismatch accepted invalid fixture
-    - e51736fb2f97f6f7934d6e2ea4cc23afcf5ea07f fixtures: add validator stage mismatch accepted invalid fixture
-    - c6effe2bf2c781344e62120e50a64383f1e2d392 fixtures: add schema registry prefix collision invalid fixture
-    - be7d43fe8dc0984099e3344df5a753b2a958f301 fixtures: bind coverage fixture to exact semantic validator
-    - 7ffa81b5d17f4829865031d8f9a7d97f6da7a01f tests: cover resolved coverage evidence references
-    - 7797a7986165b6bb4876c30c9e43678513c425b8 tests: cover validator evidence and schema registry bypasses
-    - c9c82df0f8e74774c09fe31e542d6d1dc82985ee tests: cover unreadable and invalid coverage schema CLI failures
-    - de7a85ae40df18f19175cc64b02be96e3421ef8c docs: record behavioral coverage inspector fixes
-    - self_reference: docs: update PROMPT-02 handoff after inspector fixes; final commit SHA is reported in final response
+  inspector_followup_range: a09d27709b6bac74b404f01c4306f0f76269fa46..9c07caa2b9ded5548c915f92c49b8ff0d1849d61
+  handoff_consistency_update:
+    - self_reference: docs: record final successful prompt 02 follow-up CI in handoff
 files_changed:
   - .github/workflows/validate.yml
   - docs/BEHAVIORAL_RULE_COVERAGE.md
@@ -59,31 +42,59 @@ tests_run:
   - local isolated generated-tree check before original PR: PYTHONPATH=src python scripts/validate-behavioral-rule-coverage.py docs/BEHAVIORAL_RULE_COVERAGE.md -> exit 0
   - local isolated generated-tree check before original PR: PYTHONPATH=src python -m ev4_transition.cli coverage validate docs/BEHAVIORAL_RULE_COVERAGE.md -> exit 0
   - local isolated generated-tree check before original PR: PYTHONPATH=src pytest -q tests/behavioral_coverage -> 17 passed
-  - GitHub Actions run 28718131721 on head c9133136972bbbeaad3abc8430706f5ca22111b9: success, but Inspector found uncovered negative paths
+  - GitHub Actions run 28718131721 on head c9133136972bbbeaad3abc8430706f5ca22111b9: success, but PR Inspector found uncovered negative paths
   - PR Inspector v1.4.0 break attempts reproduced PRF-001 through PRF-004 against head c9133136972bbbeaad3abc8430706f5ca22111b9
-  - GitHub Actions run 28718821873 on updated head de7a85ae40df18f19175cc64b02be96e3421ef8c: in_progress at handoff update time
+  - GitHub Actions run 28718851101 on reviewed head 9c07caa2b9ded5548c915f92c49b8ff0d1849d61: success
+  - PR Inspector v1.4.0 recheck on head 9c07caa2b9ded5548c915f92c49b8ff0d1849d61: YELLOW_CHANGES_OR_VERIFICATION_REQUIRED due only to stale handoff CI wording
 tests_passed:
-  - Original isolated generated-tree checks before PR #18 creation
+  - Original isolated generated-tree behavioral coverage script check
+  - Original isolated generated-tree behavioral coverage CLI check
+  - Original isolated generated-tree behavioral coverage pytest suite: 17 passed
   - GitHub Actions run 28718131721 on old head c9133136972bbbeaad3abc8430706f5ca22111b9
+  - GitHub Actions run 28718851101 on reviewed head 9c07caa2b9ded5548c915f92c49b8ff0d1849d61
 tests_failed:
-  - PRF-001: fake ci_enforced evidence references were accepted on old head c9133136972bbbeaad3abc8430706f5ca22111b9
-  - PRF-002: failed validator evidence was accepted on old head c9133136972bbbeaad3abc8430706f5ca22111b9
-  - PRF-003: schema ownership prefix collision was accepted on old head c9133136972bbbeaad3abc8430706f5ca22111b9
-  - PRF-004: unreadable/invalid schema path could bypass structured CLI exit behavior on old head c9133136972bbbeaad3abc8430706f5ca22111b9
+  - PRF-001 on old head c9133136972bbbeaad3abc8430706f5ca22111b9: fake ci_enforced evidence references were accepted
+  - PRF-002 on old head c9133136972bbbeaad3abc8430706f5ca22111b9: failed validator evidence was accepted
+  - PRF-003 on old head c9133136972bbbeaad3abc8430706f5ca22111b9: schema ownership prefix collision was accepted
+  - PRF-004 on old head c9133136972bbbeaad3abc8430706f5ca22111b9: unreadable/invalid schema path could bypass structured CLI exit behavior
 tests_not_run:
   - local full repository python -m pip install -e '.[dev]'
   - local full repository pytest after Inspector fixes
   - local full repository ev4-transition coverage validate docs/BEHAVIORAL_RULE_COVERAGE.md after Inspector fixes
   - local npm run status
   - local npm run validate
-  - final GitHub Actions result on updated head after Inspector fixes
+ci_evidence:
+  old_head:
+    head_sha: c9133136972bbbeaad3abc8430706f5ca22111b9
+    run_id: 28718131721
+    workflow: Skeleton Health
+    conclusion: success
+    note: Inspector found uncovered negative paths, so this CI success did not close PRF-001 through PRF-004.
+  reviewed_followup_head:
+    head_sha: 9c07caa2b9ded5548c915f92c49b8ff0d1849d61
+    merge_sha: 06f363c6b7caa2f8e3ba143c2b6dc379df9f9bb9
+    run_id: 28718851101
+    workflow: Skeleton Health
+    conclusion: success
+    successful_jobs:
+      - skeleton
+      - python-core
+    successful_key_steps:
+      - Run Project Gate Python tests
+      - Behavioral coverage validator
+      - Behavioral fixture validation
+      - Verify no specialist canonical schema files exist
+      - Official Architect validator fixture suite
+      - Official CE validator fixture suite
+      - Generated Architect-to-CE transition smoke and CE binding
+  note: This handoff records concrete CI evidence for the reviewed follow-up head. For any later commit, GitHub PR checks remain the source of truth; do not infer future CI status from this static file.
 coverage_rules_advanced:
-  - PG-BRC-001: now resolves repository-relative carriers, validators, fixtures, and CI step references and emits deterministic evidence_records.
-  - PG-EVIDENCE-001: accepted result now requires validator-evidence.v1 records with status=passed, pinning, stage match, hash match, and result digest.
-  - PG-SYNTH-001: synthetic_only_marked_as_real_evidence fixture now isolates synthetic guard with otherwise complete validator evidence.
+  - PG-BRC-001: resolves repository-relative carriers, validators, fixtures, and CI step references and emits deterministic evidence_records.
+  - PG-EVIDENCE-001: accepted result requires validator-evidence.v1 records with status=passed, pinning, stage match, hash match, and result digest.
+  - PG-SYNTH-001: synthetic_only_marked_as_real_evidence fixture isolates synthetic guard with otherwise complete validator evidence.
   - PG-SCHEMA-001: Project Gate-owned schema check moved from prefix matching to exact schema registry; prefix collision fixture added.
   - PG-OUTPUT-001: output write failure with success status remains fixture-tested with complete validator evidence shape.
-  - PG-BOUNDARY-001: schema ownership anti-drift now covers explicit copied schema and prefix-collision cases.
+  - PG-BOUNDARY-001: schema ownership anti-drift covers explicit copied schema and prefix-collision cases.
   - PG-DOWNSTREAM-001: false downstream_contract_enforced claim prevention remains fixture-tested; downstream_contract_enforced is still not claimed.
 coverage_rules_still_gap:
   - PG-ADAPTER-001: runner/official adapter boundary enforcement is deferred to PROMPT-03.
@@ -110,28 +121,36 @@ new_diagnostics:
   - PG_EVIDENCE_VALIDATOR_RESULT_DIGEST_INVALID
   - PG_SCHEMA_REGISTRY_PATH_MISSING
 new_or_changed_cli:
-  - ev4-transition coverage validate now returns exit 2 for unreadable or invalid schema paths via CoverageSourceError.
-  - coverage reports now include deterministic evidence_records for resolved carriers, validators, fixtures, and CI steps.
+  - ev4-transition coverage inspect
+  - ev4-transition coverage validate
+  - ev4-transition coverage validate returns exit 2 for unreadable or invalid schema paths via CoverageSourceError.
+  - coverage reports include deterministic evidence_records for resolved carriers, validators, fixtures, and CI steps.
 new_or_changed_ci:
+  - .github/workflows/validate.yml schema allowlist includes schemas/behavioral-coverage/behavioral-coverage.v1.schema.json.
   - .github/workflows/validate.yml schema allowlist includes schemas/validator-evidence/validator-evidence.v1.schema.json.
+  - .github/workflows/validate.yml runs python scripts/validate-behavioral-rule-coverage.py docs/BEHAVIORAL_RULE_COVERAGE.md.
+  - .github/workflows/validate.yml runs ev4-transition coverage validate docs/BEHAVIORAL_RULE_COVERAGE.md.
+  - .github/workflows/validate.yml runs pytest tests/behavioral_coverage.
 important_design_decisions:
+  - Behavioral coverage validation is separate from normal transition validation in Phase 1 and does not block ordinary user transition validation unless explicitly run.
   - Evidence reference resolution is repository-relative and rejects external, absolute, missing, and traversal-like references.
   - Validator references use file or file::symbol form; unresolved module strings are rejected.
   - Workflow step evidence is resolved from the actual YAML step name.
   - Fixture-to-validator binding is deterministic by validator family and fixture directory.
   - Exact Project Gate schema registry replaced prefix matching for Project Gate-owned schema claims.
   - validator-evidence.v1 is Project Gate-owned evidence metadata; it is not a copied specialist schema.
-  - ci_enforced was not promoted after the Inspector fix because updated-head CI was still pending.
+  - PG-DOWNSTREAM-001 is not marked downstream_contract_enforced; it is fixture_tested only for false downstream enforcement claim prevention.
+  - No CE constructability logic, Builder runtime logic, Responsive repair logic, or new transition orchestration was added.
 web_sources_used: []
-next_allowed_prompt: PROMPT-03 after PR #18 Inspector follow-up is green and reviewed
-blocking_issues:
-  - updated-head GitHub Actions run 28718821873 is still in_progress at handoff update time
-  - PR #18 should not be merged until updated-head CI succeeds and the Inspector blockers are rechecked
+next_allowed_prompt: PROMPT-03 after current PR head CI is green and owner accepts/merges PR #18
+blocking_issues: []
 remaining_insufficient_evidence:
-  - final GitHub Actions result on updated head after Inspector fixes
-  - PR Inspector recheck after updated-head CI
+  - PR Inspector final green recheck after this handoff consistency update
   - real CE-to-Builder downstream rejection evidence
   - real Builder-to-Responsive downstream rejection evidence
   - official Builder adapter execution evidence
   - official Responsive validation evidence
   - final evidence gate policy, fixtures, and CI evidence
+merge_note:
+  - This handoff no longer claims that GitHub Actions run 28718851101 is pending.
+  - Do not merge on this file alone; merge readiness still requires current PR checks and owner confirmation.
