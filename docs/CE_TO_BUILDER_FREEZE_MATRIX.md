@@ -28,11 +28,13 @@ validator_commands:
   role_alignment: python scripts/validate-role-alignment-fixtures.py
 positive_fixtures:
   - tests/role-alignment/valid/executable_visual_reference_package.json
+  - tests/valid/center_anchored_symmetric_pill_cards.json
 negative_fixtures:
   - tests/role-alignment/invalid/builder_package_with_decisions.json
   - tests/role-alignment/invalid/visual_package_missing_golden_reference.json
 normative_tests:
   - tests/test_architect_contract.py
+  - tests/test_ce_builder_producer_contract.py
 ```
 
 ## Builder input contract and adapter
@@ -44,9 +46,16 @@ input_contract: EV4-Builder-Assistant-Repo/input-contracts/BUILDER_CONTEXT_INPUT
 contract_gate:
   file: EV4-Builder-Assistant-Repo/scripts/validate-ce-to-builder-contract-gate.mjs
   command: node scripts/validate-ce-to-builder-contract-gate.mjs
-adapter:
+package_adapter:
+  contract: EV4-Builder-Assistant-Repo/docs/CE_BUILDER_PACKAGE_ADAPTER_CONTRACT.md
   file: EV4-Builder-Assistant-Repo/scripts/normalize-ce-builder-executable-package.mjs
   entrypoint: normalizeCeBuilderExecutablePackage(cePackage)
+reference_map_adapter:
+  contract: EV4-Builder-Assistant-Repo/docs/CE_REFERENCE_MAP_ADAPTER_CONTRACT.md
+  file: EV4-Builder-Assistant-Repo/scripts/normalize-ce-reference-map.mjs
+  validator: EV4-Builder-Assistant-Repo/scripts/validate-ce-reference-map-adapter.mjs
+reference_paradigm_gate:
+  validator: EV4-Builder-Assistant-Repo/scripts/validate-reference-paradigm-gate.mjs
 registry:
   file: EV4-Builder-Assistant-Repo/data/ce-builder-transformation-registry.v1.json
   validator: EV4-Builder-Assistant-Repo/scripts/validate-ce-builder-transformation-registry.mjs
@@ -60,6 +69,8 @@ negative_fixtures:
   - tests/invalid/ce_to_builder_contract_gate_class_map_item_not_object.json
   - tests/invalid/ce_builder_package_adapter_not_executable_ready.json
   - tests/invalid/ce_builder_package_adapter_missing_carriers.json
+  - tests/invalid/ce_reference_map_adapter_missing_anchor.json
+  - tests/invalid/ce_reference_map_adapter_false_direction_terms.json
 ```
 
 ## Future pin and hash recommendation
@@ -72,7 +83,9 @@ ce_required:
   - validator/rules.py
   - scripts/validate-role-alignment-fixtures.py
   - tests/test_architect_contract.py
+  - tests/test_ce_builder_producer_contract.py
   - tests/role-alignment/valid/executable_visual_reference_package.json
+  - tests/valid/center_anchored_symmetric_pill_cards.json
   - tests/role-alignment/invalid/builder_package_with_decisions.json
   - tests/role-alignment/invalid/visual_package_missing_golden_reference.json
 builder_required:
@@ -82,6 +95,7 @@ builder_required:
   - docs/CE_TO_BUILDER_CONTRACT_GATE.md
   - docs/CE_TO_BUILDER_TRANSFORMATION_SPEC.md
   - docs/CE_BUILDER_PACKAGE_ADAPTER_CONTRACT.md
+  - docs/CE_REFERENCE_MAP_ADAPTER_CONTRACT.md
   - data/ce-builder-transformation-registry.v1.json
   - scripts/validate-ce-to-builder-contract-gate.mjs
   - scripts/normalize-ce-builder-executable-package.mjs
@@ -89,6 +103,8 @@ builder_required:
   - scripts/ce-builder-transformation-registry.mjs
   - scripts/validate-ce-builder-transformation-registry.mjs
   - scripts/validate-ce-builder-package-adapter.mjs
+  - scripts/validate-ce-reference-map-adapter.mjs
+  - scripts/validate-reference-paradigm-gate.mjs
   - scripts/validate-package.mjs
   - scripts/validate.mjs
   - tests/valid/ce_to_builder_contract_gate_valid.json
@@ -99,6 +115,8 @@ builder_required:
   - tests/invalid/ce_to_builder_contract_gate_class_map_item_not_object.json
   - tests/invalid/ce_builder_package_adapter_not_executable_ready.json
   - tests/invalid/ce_builder_package_adapter_missing_carriers.json
+  - tests/invalid/ce_reference_map_adapter_missing_anchor.json
+  - tests/invalid/ce_reference_map_adapter_false_direction_terms.json
 recommended_context:
   ce:
     - README.md
