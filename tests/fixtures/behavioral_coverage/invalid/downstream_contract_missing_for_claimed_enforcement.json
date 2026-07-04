@@ -1,0 +1,21 @@
+{
+  "schema_version": "behavioral-coverage.v1",
+  "rules": [
+    {
+      "rule_id": "PG-DOWNSTREAM-001",
+      "rule": "Downstream rejection evidence is required before claiming downstream compatibility.",
+      "risk": "Critical",
+      "status": "downstream_contract_enforced",
+      "target_status": "downstream_contract_enforced",
+      "carriers": ["docs/BEHAVIORAL_RULE_COVERAGE.md"],
+      "validators": ["src/ev4_transition/behavioral_coverage/validator.py"],
+      "valid_fixtures": ["tests/fixtures/behavioral_coverage/valid/critical_rule_fixture_tested.json"],
+      "invalid_fixtures": ["tests/fixtures/behavioral_coverage/invalid/downstream_contract_missing_for_claimed_enforcement.json"],
+      "ci_steps": ["project-gate-validation / Behavioral coverage validator"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "downstream_contract_enforced without owner rejection evidence is a false compatibility claim.",
+      "next_enforcement_step": "Add owner downstream contract and rejection fixture before claiming downstream_contract_enforced."
+    }
+  ]
+}

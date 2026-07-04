@@ -1,0 +1,21 @@
+{
+  "schema_version": "behavioral-coverage.v1",
+  "rules": [
+    {
+      "rule_id": "PG-EVIDENCE-001",
+      "rule": "No accepted result without explicit evidence.",
+      "risk": "Critical",
+      "status": "schema_backed",
+      "target_status": "fixture_tested",
+      "carriers": ["schemas/transition-result/transition-result.v1.schema.json"],
+      "validators": [],
+      "valid_fixtures": [],
+      "invalid_fixtures": [],
+      "ci_steps": [],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "schema-only evidence claims can hide missing behavioral validation.",
+      "next_enforcement_step": ""
+    }
+  ]
+}
