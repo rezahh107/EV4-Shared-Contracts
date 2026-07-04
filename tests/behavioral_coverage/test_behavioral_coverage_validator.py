@@ -41,14 +41,14 @@ def test_high_rule_prose_only_requires_documented_risk():
     rule["valid_fixtures"] = []
     rule["invalid_fixtures"] = []
     rule.pop("documented_risk", None)
-    report = validate_coverage_document(document, "<memory>", SCHEMA)
+    report = validate_coverage_document(document, "<memory>", SCHEMA, repo_root=ROOT)
     assert "PG_BRC_HIGH_PROSE_ONLY_REQUIRES_DOCUMENTED_RISK" in diagnostic_codes(report)
 
 
 def test_invalid_fixture_required_for_critical_rule():
     document = load_fixture("valid/critical_rule_fixture_tested.json")
     document["rules"][0]["invalid_fixtures"] = []
-    report = validate_coverage_document(document, "<memory>", SCHEMA)
+    report = validate_coverage_document(document, "<memory>", SCHEMA, repo_root=ROOT)
     assert "PG_BRC_INVALID_FIXTURE_REQUIRED_FOR_CRITICAL_TARGET" in diagnostic_codes(report)
 
 
@@ -57,7 +57,7 @@ def test_ci_step_required_before_ci_enforced():
     document["rules"][0]["status"] = "ci_enforced"
     document["rules"][0]["target_status"] = "ci_enforced"
     document["rules"][0]["ci_steps"] = []
-    report = validate_coverage_document(document, "<memory>", SCHEMA)
+    report = validate_coverage_document(document, "<memory>", SCHEMA, repo_root=ROOT)
     assert "PG_BRC_CI_STEP_REQUIRED_BEFORE_CI_ENFORCED" in diagnostic_codes(report)
 
 
@@ -66,6 +66,45 @@ def test_downstream_contract_required_before_downstream_contract_enforced():
     codes = diagnostic_codes(report)
     assert "PG_BRC_DOWNSTREAM_CONTRACT_REQUIRED_BEFORE_DOWNSTREAM_ENFORCED" in codes
     assert "PG_BRC_NO_CLAIMED_DOWNSTREAM_ENFORCEMENT_WITHOUT_REJECTION_FIXTURE" in codes
+
+
+def test_ci_enforced_rejects_nonexistent_evidence_references():
+    document = {
+        "schema_version": "behavioral-coverage.v1",
+        "rules": [
+            {
+                "rule_id": "PG-FAKE-001",
+                "rule": "A fake CI enforcement claim.",
+                "risk": "Critical",
+                "status": "ci_enforced",
+                "target_status": "ci_enforced",
+                "carriers": ["does/not/exist.schema.json"],
+                "validators": ["missing.module:missing_validator"],
+                "valid_fixtures": ["missing/valid.json"],
+                "invalid_fixtures": ["missing/invalid.json"],
+                "ci_steps": [".github/workflows/missing.yml / Nonexistent step"],
+                "downstream_contracts": [],
+                "downstream_rejection_fixtures": [],
+                "documented_risk": "Fake references must fail.",
+                "next_enforcement_step": "None."
+            }
+        ]
+    }
+    report = validate_coverage_document(document, "<memory>", SCHEMA, repo_root=ROOT)
+    codes = diagnostic_codes(report)
+    assert report.status == "thresholds_failed"
+    assert "PG_BRC_CARRIER_REFERENCE_INVALID" in codes
+    assert "PG_BRC_VALIDATOR_REFERENCE_INVALID" in codes
+    assert "PG_BRC_FIXTURE_REFERENCE_INVALID" in codes
+    assert "PG_BRC_CI_STEP_REFERENCE_INVALID" in codes
+
+
+def test_coverage_report_includes_deterministic_evidence_records():
+    report = validate_coverage_source(FIXTURES / "valid/critical_rule_fixture_tested.json", SCHEMA)
+    assert report.status == "thresholds_met"
+    assert report.evidence_records
+    assert {record["kind"] for record in report.evidence_records} >= {"carrier", "validator", "fixture"}
+    assert all(len(record["sha256"]) == 64 for record in report.evidence_records)
 
 
 def test_coverage_cli_valid_fixture_thresholds_met():
