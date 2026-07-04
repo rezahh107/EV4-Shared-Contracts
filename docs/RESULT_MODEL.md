@@ -38,6 +38,30 @@ invalid
 
 `presentation/status_mapping.py` normalizes `valid` to `accepted` for exit-code and Persian presentation purposes.
 
+## Status/schema correlation
+
+`transition-result.v1` enforces the target result correlation at carrier level:
+
+```yaml
+accepted:
+  diagnostics: empty or info-only
+  source_bundle_hash: required non-null hashRecord
+  canonical_payload_hash: required non-null hashRecord
+  source_provenance: required non-null object
+  produced_by: required non-null object
+valid:
+  diagnostics: empty or info-only
+  evidence_requirement: legacy compatibility, not a future-transition acceptance rule
+repair_needed:
+  diagnostics: at least one warning
+  forbidden_diagnostics: error, insufficient_evidence
+insufficient_evidence:
+  diagnostics: at least one insufficient_evidence
+  forbidden_diagnostics: error
+invalid:
+  diagnostics: at least one error
+```
+
 ## Diagnostic ordering
 
 Diagnostics must be deterministic. Current ordering is:
