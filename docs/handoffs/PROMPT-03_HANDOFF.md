@@ -16,12 +16,13 @@ commits:
   - ad430869110449fa6cce73fb50e86d74b4cd9227: feat(boundary): add static runner boundary scanner
   - 3c50f0779d7bf52a406b6175a6b86ea7df3d3fc6: test(runners): cover fail-closed official tool execution
   - 6dd8c3f66d4e35ca59f62e976e1e3d0ef442f4ac: test(progress): cover sanitized progress events
-  - d0e2cfb2c436dd914acfd389bcac3bcac3bc881a4c432: test(boundary): cover static runner boundary scanner
+  - d0e2cfb2c436dd914acfd389bcac3bc881a4c432: test(boundary): cover static runner boundary scanner
   - 328242924db1a26cdb512159b50618c5016a054c: ci(runners): run runner boundary and progress tests
   - cac368142f81b1411823878d57fddb8a032030de: docs(boundary): document runner execution boundary
   - de86c54cfe5156b3e2e8888c6dfe36085198311a: docs(result): document official tool execution records
   - de13fd28ef0335ac4b8180f6f1281ecc16735a46: docs(coverage): record runner boundary coverage state
-  - handoff_creation_commit: reported by GitHub contents API in final response
+  - 6ccbdbbe5bc756ee20f86fb9726cab15076c12fc: docs(handoff): record prompt 03 runner boundary work
+  - handoff_consistency_update_commit: reported by GitHub contents API in final response
 files_changed:
   - .github/workflows/validate.yml
   - docs/BEHAVIORAL_RULE_COVERAGE.md
