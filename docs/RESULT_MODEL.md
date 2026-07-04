@@ -44,13 +44,14 @@ invalid
 
 ```yaml
 accepted:
+  source_stage: architect | ce | builder | responsive
   diagnostics: empty or info-only
-  source_bundle_hash: required non-null hashRecord
-  canonical_payload_hash: required non-null hashRecord
-  source_provenance: required non-null object
-  produced_by: required non-null object
+  source_bundle_hash: required non-null hashRecord with scope=source_bundle
+  canonical_payload_hash: required non-null hashRecord with scope=payload
+  source_provenance: required object with non-empty kind
+  produced_by: required object with non-empty tool
 valid:
-  diagnostics: empty or info-only
+  diagnostics: empty, info, or warning
   evidence_requirement: legacy compatibility, not a future-transition acceptance rule
 repair_needed:
   diagnostics: at least one warning
@@ -93,8 +94,10 @@ nan_infinity: rejected
 unicode_normalization: not_applied
 ```
 
+For `accepted`, each hash property has a property-specific scope: `source_bundle_hash.scope` must be `source_bundle`, and `canonical_payload_hash.scope` must be `payload`.
+
 Progress/runtime state must not be appended after final result schema validation and must not be included in canonical result hashes.
 
 ## Evidence rule
 
-No result may be presented as `accepted` unless the required evidence for that result scope is explicit. Missing or unresolved evidence must remain `insufficient_evidence`.
+No result may be presented as `accepted` unless the required evidence for that result scope is explicit. Missing, empty, swapped, or unresolved evidence must remain `insufficient_evidence` or `invalid` according to the diagnostic set.
