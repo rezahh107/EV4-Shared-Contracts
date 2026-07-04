@@ -2,7 +2,7 @@
 
 This document defines validation strategy for EV4 Project Gate.
 
-The current active implementation is limited to the deterministic Python foundation and Stage Evidence Bundle envelope validation. It does not validate real EV4 stage transitions or cross-repository semantic compatibility yet.
+The active implementation includes the deterministic Python foundation, Stage Evidence Bundle envelope validation, and the first narrow synthetic-verified transition: `ev4-architect-to-ce-transition@1.0.0`.
 
 ## Active Foundation Validation
 
@@ -17,6 +17,7 @@ Current Python checks validate:
 - explicit `insufficient_evidence`;
 - provenance preservation;
 - validation-result schema enforcement;
+- Architect-to-CE transition-result schema enforcement;
 - minimal CLI JSON and Persian output.
 
 Current commands:
@@ -36,6 +37,33 @@ npm run status
 npm run validate
 ```
 
+## Architect-to-CE Transition Validation
+
+The first active transition is:
+
+```text
+ev4-architect-to-ce-transition@1.0.0
+```
+
+It validates:
+
+- source Stage Evidence Bundle envelope;
+- exact source stage and payload identity;
+- pinned external contract file hashes;
+- Architect payload schema from the Architect repository;
+- deterministic Architect-to-CE mapping without semantic derivation;
+- CE intake schema from the CE repository;
+- target CE Stage Evidence Bundle envelope;
+- Architect-to-CE transition result schema;
+- official Architect validator and official CE intake validator in CLI/CI.
+
+Required pinned local checkouts:
+
+```text
+rezahh107/EV4-Architect-Repo@b0651668b97f682bb17f66840c8e8c503fd3935d
+rezahh107/EV4-Constructability-Engineer-Repo@d3aadff91d9b6fcb38e2f5d3f4cbc2870484b0f7
+```
+
 ## Local Schema Validation
 
 The active schemas in this repository are Project Gate envelope/result schemas only:
@@ -43,17 +71,25 @@ The active schemas in this repository are Project Gate envelope/result schemas o
 ```text
 schemas/stage-bundle/stage-bundle.v1.schema.json
 schemas/transition-result/transition-result.v1.schema.json
+schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json
 ```
 
 They are not copied specialist-domain schemas and must not be treated as canonical Architect, CE, Builder, or Responsive contracts.
 
 ## Cross-Repo Fixture Validation
 
-Future transition PRs must validate against fixtures from the relevant producer and consumer repositories.
+Transition PRs must validate against fixtures from the relevant producer and consumer repositories.
 
 Positive fixtures must prove accepted behavior. Negative fixtures must prove boundary rejection.
 
-No real EV4 fixture validation is claimed by the current foundation.
+For Architect-to-CE v1:
+
+```yaml
+real_cross_repository_validation: not_available
+verification_state: verified_by_synthetic_fixture
+```
+
+No real EV4 fixture validation is claimed by this transition.
 
 ## Contract Compatibility Matrix
 
@@ -79,7 +115,7 @@ Consumer tests must prove the downstream repo accepts valid input and rejects in
 
 CI evidence is required before schema promotion or transition activation.
 
-At minimum, future transition CI must prove:
+At minimum, transition CI must prove:
 
 - Python package installs
 - unit tests pass

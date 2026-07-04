@@ -57,4 +57,5 @@ def test_cli_inspect_json():
     assert completed.returncode == 0
     payload = json.loads(completed.stdout)
     assert "stage_bundle_validation" in payload["implemented"]
-    assert "architect-to-ce transition" in payload["not_implemented"]
+    assert "architect-to-ce transition" in payload["implemented"]
+    assert "ce-to-builder transition" in payload["not_implemented"]

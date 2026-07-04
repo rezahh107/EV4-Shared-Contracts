@@ -1,6 +1,6 @@
 # EV4 Project Gate
 
-Status: Python deterministic foundation is implemented for Stage Evidence Bundle validation. Real EV4 stage transitions and the user interface are not implemented.
+Status: Python deterministic foundation is implemented for Stage Evidence Bundle validation. The first real transition, `ev4-architect-to-ce-transition@1.0.0`, emits CE intake `ev4-ce-architect-stage-intake@1.1.0` using the CE-owned mapping `ev4-architect-stage-to-ce-intake-mapping@1.1.0`. The user interface is not implemented.
 
 ## Purpose
 
@@ -15,7 +15,7 @@ Each specialist repository remains authoritative for its own schemas, validators
 
 ## Implemented now
 
-This repository now contains the first deterministic Python foundation:
+This repository contains the deterministic Python foundation:
 
 ```text
 Stage Evidence Bundle JSON
@@ -31,38 +31,66 @@ Implemented components:
 - CLI: `ev4-transition`
 - Stage Evidence Bundle envelope schema: `schemas/stage-bundle/stage-bundle.v1.schema.json`
 - Validation result schema: `schemas/transition-result/transition-result.v1.schema.json`
+- Architect-to-CE transition result schema: `schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json`
 - Synthetic valid, invalid, and insufficient-evidence fixtures
-- Pytest coverage for deterministic hashes, malformed inputs, structured diagnostics, provenance preservation, and result-schema enforcement
+- Pytest coverage for deterministic hashes, malformed inputs, structured diagnostics, provenance preservation, lock enforcement, validator order, and result-schema enforcement
 - GitHub Actions Python validation alongside the existing Node skeleton checks
+
+Implemented transition:
+
+```text
+ev4-architect-to-ce-transition@1.0.0
+```
+
+It performs:
+
+```text
+Architect Stage Evidence Bundle
+→ Project Gate envelope validation
+→ source identity validation
+→ expected external pin and file-byte hash verification
+→ pinned Architect payload schema validation
+→ official Architect semantic validation
+→ deterministic Architect-to-CE mapping
+→ pinned CE v1.1 intake schema validation
+→ official CE semantic validation with explicit source-bundle binding
+→ CE Stage Evidence Bundle
+→ transition result schema validation
+```
+
+The transition executes the official Architect and CE validators in CLI/CI when pinned local checkouts are supplied.
+
+## Authoritative pins for Architect → CE
+
+```yaml
+transition_id: ev4-architect-to-ce-transition@1.0.0
+architect:
+  repository: rezahh107/EV4-Architect-Repo
+  commit: b0651668b97f682bb17f66840c8e8c503fd3935d
+  schema: ev4-architect-stage-payload@1.0.0
+ce:
+  repository: rezahh107/EV4-Constructability-Engineer-Repo
+  commit: 546680a2e2a309c0d7e0ddbfc017e9e194ece7cb
+  intake_schema: ev4-ce-architect-stage-intake@1.1.0
+  mapping_contract: ev4-architect-stage-to-ce-intake-mapping@1.1.0
+verification_state: synthetic_cross_repository_fixtures_only
+real_elementor_validation: not_available
+```
 
 ## Not implemented yet
 
-The following remain intentionally out of scope for this foundation PR:
+The following remain intentionally out of scope:
 
-- `architect-to-ce`
 - `ce-to-builder`
 - `builder-to-responsive`
-- real target input package schemas
-- cross-repository semantic mappings
+- CE constructability execution
+- implementation strategy selection
+- Builder authorization
+- real Elementor artifact validation
 - UI/upload-download application
-- real artifact validation claims
 - legacy Node retirement
-- specialist-domain validation
 
-Do not claim real EV4 transition compatibility from this repository yet.
-
-## User Workflow
-
-The intended daily experience remains:
-
-```text
-1. Receive the current stage output.
-2. Upload it to EV4 Project Gate.
-3. Run one check.
-4. Download the next-stage package or a repair package.
-```
-
-The current implementation is a Python package and CLI foundation only. The local browser UI is still not implemented.
+Do not claim real EV4 end-to-end compatibility from synthetic transition fixtures.
 
 ## CLI
 
@@ -70,6 +98,10 @@ The current implementation is a Python package and CLI foundation only. The loca
 python -m pip install -e '.[dev]'
 ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
 ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
+ev4-transition transition architect-to-ce path/to/architect-stage-bundle.json \
+  --architect-repo ../EV4-Architect-Repo \
+  --ce-repo ../EV4-Constructability-Engineer-Repo \
+  --format json
 ev4-transition inspect
 ```
 
@@ -107,10 +139,7 @@ serialization: compact_json
 nan_and_infinity: rejected
 ```
 
-Current result hash names are explicit:
-
-- `source_bundle_hash`: SHA-256 over the full canonical source bundle JSON value.
-- `canonical_payload_hash`: SHA-256 over the canonical `payload` object only.
+Transition hash records cover source bundle, source payload, target payload, target bundle, and external contract lock.
 
 No implicit current timestamp is generated by the deterministic core.
 
@@ -135,7 +164,7 @@ unverified
 insufficient_evidence
 ```
 
-Compatibility is checked through the real Producer → Adapter → Consumer path in later PRs. A schema difference alone is not a compatibility verdict. Synthetic fixtures remain clearly identified as synthetic.
+Compatibility is checked through pinned official contracts, validators, and synthetic cross-repository fixtures. Synthetic fixtures remain clearly identified as synthetic and must not be described as real Elementor artifact validation.
 
 ## Repository Responsibilities
 
@@ -153,12 +182,12 @@ EV4-Responsive-Architect
   post-build responsive validation and repair
 
 EV4-Project-Gate
-  deterministic envelope validation, diagnostics, provenance, hashes, and future package orchestration
+  deterministic envelope validation, diagnostics, provenance, hashes, external pin verification, and package orchestration
 ```
 
 ## Validation
 
-Python foundation checks:
+Python checks:
 
 ```bash
 python -m pip install -e '.[dev]'
@@ -166,6 +195,12 @@ pytest
 ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
 ev4-transition validate fixtures/invalid/array-input.v1.json
 ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
+python scripts/verify-architect-to-ce-lock.py \
+  --architect-repo ../EV4-Architect-Repo \
+  --ce-repo ../EV4-Constructability-Engineer-Repo
+python scripts/transition-smoke.py \
+  --architect-repo ../EV4-Architect-Repo \
+  --ce-repo ../EV4-Constructability-Engineer-Repo
 ```
 
 Existing Node skeleton checks remain available temporarily:
@@ -181,12 +216,12 @@ npm run validate
 repository_role: project_workflow_control_center
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
+architect_to_ce_transition: implemented_v1_ce_intake_v1_1_synthetic_verified
 structured_diagnostics: implemented_initial_v1
 canonical_json_sha256: implemented_initial_v1
-real_stage_transitions: not_implemented
-cross_repository_validation: not_implemented
+real_cross_repository_validation: not_available
 user_interface: not_implemented
-package_generation: not_implemented
+package_generation: architect_to_ce_only
 canonical_schema_owner: false
 node_skeleton: preserved_temporarily
 ```

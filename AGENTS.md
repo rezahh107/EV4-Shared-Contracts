@@ -17,24 +17,26 @@ EV4-Responsive-Architect
 
 The specialist repositories remain authoritative for their own schemas, validators, adapters, fixtures, and domain behavior.
 
-This repository owns cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, Project Gate CI, and now the initial deterministic Python foundation for Stage Evidence Bundle validation.
+This repository owns cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, Project Gate CI, the deterministic Python foundation for Stage Evidence Bundle validation, and the narrow `ev4-architect-to-ce-transition@1.0.0` orchestration.
 
 ## Current Status
 
 ```yaml
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
+architect_to_ce_transition: implemented_v1_ce_intake_v1_1_synthetic_verified
+ce_intake_schema: ev4-ce-architect-stage-intake@1.1.0
+ce_mapping_contract: ev4-architect-stage-to-ce-intake-mapping@1.1.0
 structured_diagnostics: implemented_initial_v1
 canonical_json_sha256: implemented_initial_v1
-real_stage_transitions: not_implemented
-cross_repository_validation: not_implemented
+real_cross_repository_validation: not_available
 user_interface: not_implemented
 canonical_schema_owner: false
 runtime_dependency_of_specialist_repos: false
 node_skeleton: preserved_temporarily
 ```
 
-Do not describe planned transitions, real cross-repository validation, or UI behavior as implemented behavior.
+Do not describe CE → Builder, Builder → Responsive, real Elementor artifact validation, or UI behavior as implemented behavior.
 
 ## Read First
 
@@ -43,11 +45,13 @@ Do not describe planned transitions, real cross-repository validation, or UI beh
 3. `docs/CONTRACT_INVENTORY.md`
 4. `docs/COMPATIBILITY_MAP.md`
 5. `docs/VALIDATION_STRATEGY.md`
-6. `schemas/stage-bundle/stage-bundle.v1.schema.json`
-7. `schemas/transition-result/transition-result.v1.schema.json`
-8. `src/ev4_transition/*`
-9. `tests/*`
-10. the exact producer and consumer contracts in the owning repositories, when reviewing future transition PRs
+6. `contracts/locks/architect-to-ce-transition.v1.lock.json`
+7. `schemas/stage-bundle/stage-bundle.v1.schema.json`
+8. `schemas/transition-result/transition-result.v1.schema.json`
+9. `schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json`
+10. `src/ev4_transition/*`
+11. `tests/*`
+12. the exact producer and consumer contracts in the owning repositories, when reviewing future transition PRs
 
 Older documents about canonical promotion or the previous shared-contract skeleton are historical when they conflict with `README.md` or this file.
 
@@ -71,6 +75,27 @@ Each gate eventually produces either:
 
 Repair ownership remains unresolved unless contracts and evidence establish it.
 
+## Architect → CE Transition Boundary
+
+`ev4-architect-to-ce-transition@1.0.0` may orchestrate only:
+
+```text
+Architect Stage Evidence Bundle
+→ Project Gate envelope validation
+→ source identity validation
+→ expected pin and file-byte hash verification
+→ pinned Architect payload schema validation
+→ official Architect semantic validation
+→ deterministic projection using CE-owned v1.1 mapping contract
+→ pinned CE v1.1 intake schema validation
+→ official CE semantic validation with explicit source-bundle binding
+→ CE Stage Evidence Bundle
+```
+
+It must not create CE constructability findings, proof-state conclusions, implementation strategy, Elementor feasibility conclusions, Builder authorization, Builder readiness, responsive completion, or production readiness.
+
+The lock manifest records pinned external contract bytes. It is Project Gate orchestration metadata, not a competing canonical schema. The lock manifest must be checked against Project Gate-owned expected dependency configuration; it must not authenticate its own repository, commit, path, role, or identity values.
+
 ## Hard Boundaries
 
 Do not:
@@ -82,7 +107,7 @@ Do not:
 - silently normalize undocumented differences;
 - mark a stage accepted without executed evidence;
 - hide known incompatibilities because a decision record exists;
-- claim real EV4 transition compatibility from the foundation validator alone;
+- claim real EV4 transition compatibility from synthetic fixtures;
 - remove or disable the legacy Node skeleton until a dedicated retirement PR proves parity.
 
 When a conclusion cannot be established, use:
@@ -98,12 +123,13 @@ repair_owner: unresolved
 - Preserve public contracts unless a breaking change is explicitly approved.
 - Isolate repository/network access behind mockable interfaces.
 - Use stable ordering and versioned canonical JSON.
-- Use SHA-256 over canonical UTF-8 content.
+- Use SHA-256 over canonical UTF-8 content or explicit file bytes.
 - Reject NaN and infinities.
 - Do not inject live timestamps in deterministic core logic.
 - If timestamps are accepted, require explicit RFC3339 UTC input.
 - Use deterministic diagnostic codes, ordering, and paths.
 - Validate every emitted validation-result object against its schema.
+- Do not append diagnostics, hashes, status, provenance, or output after final transition-result schema validation.
 - Add stable fixtures and tests for every implemented rule.
 - Label synthetic fixtures as synthetic.
 - Do not implement future transition features unless explicitly requested.
@@ -120,6 +146,18 @@ ev4-transition validate fixtures/invalid/array-input.v1.json
 ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
 ```
 
+Architect-to-CE transition checks require pinned local checkouts:
+
+```bash
+python scripts/verify-architect-to-ce-lock.py \
+  --architect-repo path/to/EV4-Architect-Repo \
+  --ce-repo path/to/EV4-Constructability-Engineer-Repo
+
+ev4-transition transition architect-to-ce path/to/architect-stage-bundle.json \
+  --architect-repo path/to/EV4-Architect-Repo \
+  --ce-repo path/to/EV4-Constructability-Engineer-Repo
+```
+
 Existing Node skeleton checks remain available temporarily:
 
 ```bash
@@ -127,7 +165,7 @@ npm run status
 npm run validate
 ```
 
-The GitHub workflow must keep both the existing skeleton health checks and the Python foundation checks until Node retirement is handled in a later PR.
+The GitHub workflow must keep both the existing skeleton health checks and the Python checks until Node retirement is handled in a later PR.
 
 ## User Experience Boundary
 
