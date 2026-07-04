@@ -24,7 +24,9 @@ This repository owns cross-repository verification orchestration, gate configura
 ```yaml
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
-architect_to_ce_transition: implemented_v1_synthetic_verified
+architect_to_ce_transition: implemented_v1_ce_intake_v1_1_synthetic_verified
+ce_intake_schema: ev4-ce-architect-stage-intake@1.1.0
+ce_mapping_contract: ev4-architect-stage-to-ce-intake-mapping@1.1.0
 structured_diagnostics: implemented_initial_v1
 canonical_json_sha256: implemented_initial_v1
 real_cross_repository_validation: not_available
@@ -79,15 +81,20 @@ Repair ownership remains unresolved unless contracts and evidence establish it.
 
 ```text
 Architect Stage Evidence Bundle
-→ pinned Architect payload validation
-→ deterministic projection using CE-owned mapping contract
-→ pinned CE intake validation
+→ Project Gate envelope validation
+→ source identity validation
+→ expected pin and file-byte hash verification
+→ pinned Architect payload schema validation
+→ official Architect semantic validation
+→ deterministic projection using CE-owned v1.1 mapping contract
+→ pinned CE v1.1 intake schema validation
+→ official CE semantic validation with explicit source-bundle binding
 → CE Stage Evidence Bundle
 ```
 
 It must not create CE constructability findings, proof-state conclusions, implementation strategy, Elementor feasibility conclusions, Builder authorization, Builder readiness, responsive completion, or production readiness.
 
-The lock manifest records pinned external contract bytes. It is Project Gate orchestration metadata, not a competing canonical schema.
+The lock manifest records pinned external contract bytes. It is Project Gate orchestration metadata, not a competing canonical schema. The lock manifest must be checked against Project Gate-owned expected dependency configuration; it must not authenticate its own repository, commit, path, role, or identity values.
 
 ## Hard Boundaries
 
@@ -122,6 +129,7 @@ repair_owner: unresolved
 - If timestamps are accepted, require explicit RFC3339 UTC input.
 - Use deterministic diagnostic codes, ordering, and paths.
 - Validate every emitted validation-result object against its schema.
+- Do not append diagnostics, hashes, status, provenance, or output after final transition-result schema validation.
 - Add stable fixtures and tests for every implemented rule.
 - Label synthetic fixtures as synthetic.
 - Do not implement future transition features unless explicitly requested.
@@ -141,6 +149,10 @@ ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1
 Architect-to-CE transition checks require pinned local checkouts:
 
 ```bash
+python scripts/verify-architect-to-ce-lock.py \
+  --architect-repo path/to/EV4-Architect-Repo \
+  --ce-repo path/to/EV4-Constructability-Engineer-Repo
+
 ev4-transition transition architect-to-ce path/to/architect-stage-bundle.json \
   --architect-repo path/to/EV4-Architect-Repo \
   --ce-repo path/to/EV4-Constructability-Engineer-Repo
