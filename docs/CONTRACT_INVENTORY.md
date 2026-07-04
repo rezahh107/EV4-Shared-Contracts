@@ -11,6 +11,7 @@ Allowed status values used here:
 - `blocked-from-promotion`
 - `inventory-only`
 - `project-gate-orchestration`
+- `documented-not-implemented`
 
 | Contract / Concept | Current Owner Repo | Current Status | Promotion Risk | Candidate for Shared? | Notes |
 |---|---|:---:|---|---|---|
@@ -24,6 +25,10 @@ Allowed status values used here:
 | `EV4 Builder Executable Package` | `rezahh107/EV4-Constructability-Engineer-Repo` | `adapter-boundary` | High: promotion could imply shared canonical execution authority too early | Possible later, blocked until evidence | Current CE → Builder adapter-side executable handoff. Use `docs/CE_TO_BUILDER_FREEZE_MATRIX.md` for the future Project Gate pin/hash baseline. |
 | Builder CE→Builder Contract Gate | `rezahh107/EV4-Builder-Assistant-Repo` | `adapter-boundary` | Medium: Project Gate may orchestrate it but not replace it | No | Builder-owned fail-closed gate for CE executable packages before Builder adapter normalization. |
 | Builder CE→Builder adapter | `rezahh107/EV4-Builder-Assistant-Repo` | `adapter-boundary` | Medium: Project Gate may call/pin/hash it but not duplicate it | No | Converts CE Builder Executable Package into Builder Context Package after the Builder gate passes. |
+| Builder action batch / layout check / completion gate / real execution evidence | `rezahh107/EV4-Builder-Assistant-Repo` | `local-authoritative` | Medium: evidence artifacts must not become responsive conclusions | No | Builder-owned evidence surfaces for future Builder→Responsive verification. Use `docs/BUILDER_TO_RESPONSIVE_FREEZE_MATRIX.md`. |
+| Builder→Responsive formal export package | `rezahh107/EV4-Builder-Assistant-Repo` | `documented-not-implemented` | High: inventing it in Project Gate would duplicate Builder authority | No | No single formal Builder-owned Responsive export schema exists yet. |
+| Builder→Responsive input package | `rezahh107/EV4-Responsive-Architect` | `documented-not-implemented` | High: inventing it in Project Gate would duplicate Responsive authority | No | Responsive boundary is documented, but no Builder-specific input schema/validator exists yet. |
+| `ev4-responsive-output@0.3.0` | `rezahh107/EV4-Responsive-Architect` | `local-authoritative` | Medium: Project Gate may validate/pin, not own viewport semantics | No | Responsive output schema validated by Responsive e2e checks. |
 | `ev4-responsive-reference-family@1.0.0` | `rezahh107/EV4-Responsive-Architect` | `local-authoritative` | Medium: requires viewport scope, evidence gates, and family linkage proof | Possible later | Responsive reference-family linkage remains local-authoritative inside Responsive repo. |
 | Golden Reference contract | `rezahh107/EV4-Constructability-Engineer-Repo` / downstream consumption by Builder | `candidate-for-shared` | High: Builder must consume, not invent; source authority must be explicit | Possible later | Must preserve CE/Responsive ownership boundaries and avoid Builder-side invention. |
 | Build Intent Brief | `rezahh107/EV4-Constructability-Engineer-Repo` | `candidate-for-shared` | High: Builder must not invent it; producer evidence required | Possible later | CE carries or produces this concept for executable handoff. |
