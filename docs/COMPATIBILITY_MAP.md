@@ -71,6 +71,34 @@ ev4-builder-executable-package@1.0.0
 
 Project Gate later coordinates file-byte pins, hashes, official validators, official adapters, provenance, diagnostics, and handoff packaging for this route. CE and Builder remain the owners of their specialist behavior.
 
+## Builder → Responsive
+
+Planned Project Gate transition:
+
+```text
+ev4-builder-to-responsive-transition@1.0.0
+```
+
+Implementation status:
+
+```yaml
+implemented: false
+freeze_matrix: docs/BUILDER_TO_RESPONSIVE_FREEZE_MATRIX.md
+builder_formal_responsive_export: not_implemented
+responsive_builder_specific_input_schema: not_implemented
+```
+
+Allowed future route:
+
+```text
+Builder output and build evidence
+→ Project Gate file-byte pin/hash and validator orchestration
+→ Responsive input boundary
+→ Responsive output and viewport evidence
+```
+
+The future Project Gate transition may be implemented as a fail-closed verifier. It must not claim an accepted Builder→Responsive handoff until Builder-owned output/evidence artifacts and Responsive-owned input requirements exist and pass the official validators.
+
 ## Architect
 
 `ev4-builder-context-package@1.0.0` is deprecated compatibility wrapper only.
@@ -95,6 +123,8 @@ CE executable packages are normalized by Builder adapter before runtime use.
 
 Builder rejects Architect-only packages as Builder-ready and rejects CE review-only packages as runtime-ready.
 
+Builder does not yet define a single formal Builder→Responsive export schema. Current Builder action batch, layout check, completion gate, and real Elementor execution evidence artifacts are Builder-owned evidence surfaces only.
+
 ## Responsive Architect
 
 Responsive reference-family linkage is local-authoritative inside Responsive repo for now.
@@ -102,3 +132,5 @@ Responsive reference-family linkage is local-authoritative inside Responsive rep
 It is not yet a canonical shared contract.
 
 Responsive behavior is not inferred from desktop screenshots or raw screenshot authority.
+
+Responsive does not yet define a formal Builder-specific input package schema. Current Builder→Responsive boundary is documented as fail-closed until a formal input package exists or Project Gate transports pinned Builder evidence without treating that transport as Responsive-owned schema.
