@@ -27,9 +27,17 @@
       "tool": "ev4-transition",
       "official_validators": [
         {
-          "name": "owner-validator",
-          "repository": "rezahh107/EV4-Architect-Repo",
-          "status": "passed"
+          "schema_version": "validator-evidence.v1",
+          "validator_id": "architect-owner-validator",
+          "owner_repository": "rezahh107/EV4-Architect-Repo",
+          "accepted_commit": "b0651668b97f682bb17f66840c8e8c503fd3935d",
+          "validator_path": "scripts/check-architect-stage-payload.py",
+          "execution_id": "prompt-02-fixture",
+          "status": "passed",
+          "validated_stage": "architect",
+          "validated_scope": "payload",
+          "validated_hash": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+          "result_digest": "1111111111111111111111111111111111111111111111111111111111111111"
         }
       ]
     }
