@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 Severity = Literal["error", "warning", "info", "insufficient_evidence"]
+ValidationStatus = Literal["valid", "invalid", "insufficient_evidence"]
 ProjectGateStatus = Literal["accepted", "repair_needed", "insufficient_evidence", "invalid"]
 
 _SEVERITY_ORDER: dict[str, int] = {
@@ -50,8 +51,18 @@ def sort_diagnostics(items: list[Diagnostic]) -> list[Diagnostic]:
     return sorted(items, key=lambda item: item.sort_key())
 
 
-def status_from_diagnostics(items: list[Diagnostic]) -> ProjectGateStatus:
-    """Map diagnostics into the Project Gate-owned fail-closed status vocabulary."""
+def status_from_diagnostics(items: list[Diagnostic]) -> ValidationStatus:
+    """Return the legacy validation-result status used by current validators."""
+
+    if any(item.severity == "error" for item in items):
+        return "invalid"
+    if any(item.severity == "insufficient_evidence" for item in items):
+        return "insufficient_evidence"
+    return "valid"
+
+
+def project_gate_status_from_diagnostics(items: list[Diagnostic]) -> ProjectGateStatus:
+    """Map diagnostics into the target Project Gate transition status vocabulary."""
 
     if any(item.severity == "error" for item in items):
         return "invalid"
