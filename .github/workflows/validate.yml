@@ -9,6 +9,7 @@ on:
       - python-deterministic-core-v1
       - architect-to-ce-transition-v1
       - project-gate-prompt-02-behavioral-coverage
+      - project-gate-prompt-03-runner-boundary
 
 jobs:
   skeleton:
@@ -93,6 +94,22 @@ jobs:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
         run: pytest
+
+      - name: Static runner-boundary scanner
+        working-directory: EV4-Project-Gate
+        run: python scripts/check-runner-boundary.py
+
+      - name: Runner tests
+        working-directory: EV4-Project-Gate
+        run: pytest tests/runners
+
+      - name: Progress tests
+        working-directory: EV4-Project-Gate
+        run: pytest tests/progress
+
+      - name: Runner boundary tests
+        working-directory: EV4-Project-Gate
+        run: pytest tests/boundary
 
       - name: Behavioral coverage validator
         working-directory: EV4-Project-Gate
