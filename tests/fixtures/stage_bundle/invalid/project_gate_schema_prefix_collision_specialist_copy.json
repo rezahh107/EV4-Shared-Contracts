@@ -1,0 +1,44 @@
+{
+  "schema_version": "stage-evidence-bundle.v1",
+  "bundle_id": "test-bundle-prefix-collision",
+  "stage": "architect",
+  "payload_schema": {
+    "id": "stage-bundle-specialist-copy.v1",
+    "version": "1.0.0",
+    "owner_repository": "rezahh107/EV4-Project-Gate"
+  },
+  "produced_by": {
+    "repository": "rezahh107/EV4-Project-Gate",
+    "ref": "project-gate-prompt-02-behavioral-coverage",
+    "commit_sha": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "evidence_status": "complete",
+  "payload": {
+    "schema_id": "stage-bundle-specialist-copy.v1",
+    "data": {
+      "copied_from": "rezahh107/EV4-Specialist-Repo"
+    }
+  },
+  "evidence": [
+    {
+      "id": "fixture",
+      "kind": "fixture",
+      "state": "validated",
+      "description": "Invalid prefix-collision Project Gate schema ownership fixture.",
+      "artifact_hash": {
+        "algorithm": "sha256",
+        "value": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "scope": "canonical_json"
+      },
+      "source": {
+        "type": "synthetic_fixture",
+        "reference": "tests/fixtures/stage_bundle/invalid/project_gate_schema_prefix_collision_specialist_copy.json"
+      }
+    }
+  ],
+  "provenance": {
+    "source": "synthetic_fixture",
+    "created_by": "prompt-02-inspector-fix"
+  },
+  "synthetic": true
+}
