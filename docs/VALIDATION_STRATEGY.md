@@ -37,6 +37,23 @@ npm run status
 npm run validate
 ```
 
+## Verification State Vocabulary
+
+Project Gate uses this canonical value for synthetic-only transition evidence:
+
+```yaml
+verification_state: synthetic_fixture_only
+```
+
+Historical equivalents that may appear in old reports are compatibility wording only and should be normalized to `synthetic_fixture_only` in active Project Gate documents:
+
+```yaml
+legacy_equivalents:
+  - verified_by_synthetic_fixture
+  - synthetic_cross_repository_fixtures_only
+canonical: synthetic_fixture_only
+```
+
 ## Architect-to-CE Transition Validation
 
 The first active transition is:
@@ -109,7 +126,7 @@ For Architect-to-CE v1:
 
 ```yaml
 real_cross_repository_validation: not_available
-verification_state: verified_by_synthetic_fixture
+verification_state: synthetic_fixture_only
 ```
 
 No real EV4 fixture validation is claimed by this transition.
