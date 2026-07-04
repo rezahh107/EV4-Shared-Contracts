@@ -76,7 +76,7 @@ def project_gate_status_from_diagnostics(items: list[Diagnostic]) -> ProjectGate
 def persian_summary(status: str) -> str:
     return {
         "accepted": "✅ پذیرفته شد — بسته معتبر است و شواهد لازم برای این بررسی وجود دارد.",
-        "valid": "✅ پذیرفته شد — وضعیت legacy `valid` به‌عنوان معادل `accepted` نمایش داده شد.",
+        "valid": "✅ پذیرفته شد — بسته معتبر است و وضعیت legacy `valid` به‌عنوان معادل `accepted` نمایش داده شد.",
         "repair_needed": "🛠️ نیازمند اصلاح — بسته قابل فهم است، اما هشدارهای قابل اصلاح دارد.",
         "invalid": "❌ نامعتبر — بسته بدون حدس یا اصلاح خودکار رد شد.",
         "insufficient_evidence": "⚠️ شواهد کافی نیست — وضعیت به‌صورت ساختاری ثبت شد و هیچ مقدار گمشده‌ای حدس زده نشد.",
