@@ -1,0 +1,21 @@
+{
+  "schema_version": "behavioral-coverage.v1",
+  "rules": [
+    {
+      "rule_id": "PG-EVIDENCE-001",
+      "rule": "No accepted result without explicit evidence.",
+      "risk": "Critical",
+      "status": "prose_only",
+      "target_status": "fixture_tested",
+      "carriers": ["docs/BEHAVIORAL_RULE_COVERAGE.md"],
+      "validators": [],
+      "valid_fixtures": [],
+      "invalid_fixtures": [],
+      "ci_steps": [],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "accepted without validator evidence creates false execution confidence.",
+      "next_enforcement_step": ""
+    }
+  ]
+}
