@@ -13,6 +13,8 @@ KNOWN_LOCK_SCHEMA_VERSIONS = {LOCK_MANIFEST_SCHEMA_VERSION, LEGACY_EXTERNAL_LOCK
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 _COMMIT_SHA_RE = re.compile(r"^[a-f0-9]{40}$")
 _SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+_TOP_KEYS = frozenset({"schema_version", "transition_id", "files"})
+_FILE_KEYS = frozenset({"role", "repository", "accepted_commit", "path", "contract_or_schema_id", "sha256_file_bytes", "size_bytes"})
 
 
 class LockManifestValidationError(ValueError):
@@ -24,33 +26,28 @@ class LockManifestOptions:
     allow_legacy_external_lock: bool = True
 
 
-def validate_lock_manifest(lock: Any, options: LockManifestOptions | None = None) -> list[Diagnostic]:
-    """Validate Project Gate-owned lock manifest carrier structure.
+def _unknown_fields(value: dict[str, Any], allowed: frozenset[str], path: str) -> list[Diagnostic]:
+    return [
+        diagnostic("PG_LOCK_UNKNOWN_FIELD", "error", "Lock manifest field is not allowed by schema.", f"{path}.{key}", field=key)
+        for key in sorted(set(value) - allowed)
+    ]
 
-    This is intentionally structural. File-byte verification against a concrete
-    repository source remains in transition-specific code such as
-    `external_lock.verify_external_contract_lock`.
-    """
+
+def validate_lock_manifest(lock: Any, options: LockManifestOptions | None = None) -> list[Diagnostic]:
+    """Validate Project Gate-owned lock manifest carrier structure."""
 
     opts = options or LockManifestOptions()
     diagnostics: list[Diagnostic] = []
     if not isinstance(lock, dict):
         return [diagnostic("PG_LOCK_NOT_OBJECT", "error", "Lock manifest must be a JSON object.", "$")]
 
+    diagnostics.extend(_unknown_fields(lock, _TOP_KEYS, "$"))
+
     version = lock.get("schema_version")
     if version is None:
         diagnostics.append(diagnostic("PG_LOCK_SCHEMA_VERSION_MISSING", "error", "Lock manifest schema_version is required.", "$.schema_version"))
     elif version not in KNOWN_LOCK_SCHEMA_VERSIONS or (version == LEGACY_EXTERNAL_LOCK_SCHEMA_VERSION and not opts.allow_legacy_external_lock):
-        diagnostics.append(
-            diagnostic(
-                "PG_LOCK_SCHEMA_VERSION_UNKNOWN",
-                "error",
-                "Lock manifest schema_version is not supported by this Project Gate core.",
-                "$.schema_version",
-                actual=version,
-                supported=sorted(KNOWN_LOCK_SCHEMA_VERSIONS),
-            )
-        )
+        diagnostics.append(diagnostic("PG_LOCK_SCHEMA_VERSION_UNKNOWN", "error", "Lock manifest schema_version is not supported by this Project Gate core.", "$.schema_version", actual=version, supported=sorted(KNOWN_LOCK_SCHEMA_VERSIONS)))
 
     transition_id = lock.get("transition_id")
     if not isinstance(transition_id, str) or not transition_id:
@@ -70,6 +67,8 @@ def validate_lock_manifest(lock: Any, options: LockManifestOptions | None = None
         if not isinstance(item, dict):
             diagnostics.append(diagnostic("PG_LOCK_ENTRY_NOT_OBJECT", "error", "Lock manifest file entry must be an object.", path))
             continue
+
+        diagnostics.extend(_unknown_fields(item, _FILE_KEYS, path))
 
         role = item.get("role")
         if not isinstance(role, str) or not role:
