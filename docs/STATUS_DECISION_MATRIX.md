@@ -13,6 +13,18 @@ Status: `PROMPT-01` Project Gate-owned status foundation.
 
 `insufficient_evidence` is a warning/blocking state, not ordinary info.
 
+## Schema-level carrier rules
+
+`schemas/transition-result/transition-result.v1.schema.json` enforces basic status/diagnostic/evidence correlation:
+
+```yaml
+accepted: explicit non-null hashes/provenance and no warning/error/insufficient_evidence diagnostics
+repair_needed: at least one warning and no error/insufficient_evidence diagnostics
+insufficient_evidence: at least one insufficient_evidence diagnostic and no error diagnostics
+invalid: at least one error diagnostic
+valid: legacy compatibility with empty/info-only diagnostics
+```
+
 ## Legacy compatibility
 
 Current Stage Bundle validation and the existing Architect→CE transition still emit `valid` in some established result paths. `valid` is treated as a legacy alias of `accepted` only for presentation and exit-code mapping.
