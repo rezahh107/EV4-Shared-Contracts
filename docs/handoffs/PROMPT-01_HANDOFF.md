@@ -32,7 +32,8 @@ commits:
   - 08de4a715a91d206c0d885b85a58eea140129b6f docs: update behavioral coverage for prompt 01
   - b2342be6b7b7ecb35d90e79731848cfeab8ff4a0 docs: add prompt 01 handoff
   - b11db5606038dbbb1f276b0397658c15b09e5155 fix: preserve legacy valid Persian wording
-  - self_reference: docs: refresh prompt 01 handoff after ci feedback; exact commit SHA is reported in final response.
+  - decece3f6e87663cba565c51e91eb8b0775528b5 docs: refresh prompt 01 handoff after ci feedback
+  - self_reference: docs: record prompt 01 ci success [skip ci]; final commit SHA is reported in the final response.
 files_changed:
   - .github/workflows/validate.yml
   - docs/ARCHITECTURE.md
@@ -65,11 +66,21 @@ files_changed:
   - tests/unit/test_prompt01_deterministic_core.py
 tests_run:
   - GitHub Actions run 28715773325: skeleton job passed; python-core failed at Run Project Gate Python tests on pre-fix head b2342be6b7b7ecb35d90e79731848cfeab8ff4a0.
-  - GitHub Actions run 28715821162: started after fix commit b11db5606038dbbb1f276b0397658c15b09e5155; final result not recorded in this handoff because a handoff refresh commit follows it.
+  - GitHub Actions run 28715844363: skeleton job passed; python-core passed on code-bearing head decece3f6e87663cba565c51e91eb8b0775528b5.
 tests_passed:
-  - GitHub Actions run 28715773325: skeleton job succeeded.
+  - GitHub Actions run 28715844363: skeleton job succeeded.
+  - GitHub Actions run 28715844363: python-core succeeded.
+  - GitHub Actions run 28715844363: Install package succeeded.
+  - GitHub Actions run 28715844363: Run Project Gate Python tests succeeded.
+  - GitHub Actions run 28715844363: Verify external contract lock hashes succeeded.
+  - GitHub Actions run 28715844363: CLI smoke valid bundle succeeded.
+  - GitHub Actions run 28715844363: CLI smoke invalid array succeeded.
+  - GitHub Actions run 28715844363: CLI smoke Persian insufficient evidence succeeded.
+  - GitHub Actions run 28715844363: Official Architect validator fixture suite succeeded.
+  - GitHub Actions run 28715844363: Official CE validator fixture suite succeeded.
+  - GitHub Actions run 28715844363: Generated Architect-to-CE transition smoke and CE binding succeeded.
 tests_failed:
-  - GitHub Actions run 28715773325: python-core failed at Run Project Gate Python tests.
+  - GitHub Actions run 28715773325: python-core failed at Run Project Gate Python tests before fix commit b11db5606038dbbb1f276b0397658c15b09e5155.
 tests_not_run:
   - local python -m pip install -e '.[dev]'
   - local pytest
@@ -121,10 +132,9 @@ web_sources_used: []
 next_allowed_prompt: PROMPT-02
 blocking_issues:
   - Local tests were not run by the assistant because the container could not resolve github.com and no local repository checkout was available.
-  - Latest post-fix GitHub Actions result must be checked before merge.
   - Existing Architect-to-CE result schema still uses legacy valid/invalid/insufficient_evidence vocabulary; full migration to target transition statuses is deferred to future scoped work.
+  - This final handoff metadata commit was made after the passing code-bearing CI run and used [skip ci].
 remaining_insufficient_evidence:
-  - latest post-fix Prompt 01 GitHub Actions result
   - real Elementor artifact validation
   - real cross-repository validation beyond synthetic fixtures
   - CE-to-Builder Project Gate lock manifest and transition result contract
