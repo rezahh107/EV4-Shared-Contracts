@@ -1,0 +1,189 @@
+prompt_id: PROMPT-00
+status: audit_freeze_baseline
+updated_at: 2026-07-04
+scope: audit_only_no_implementation_code
+
+capability_handshake:
+  github_read: AVAILABLE
+  github_write: AVAILABLE
+  branch_created: project-gate-prompt-00-audit-freeze-baseline
+  codex: UNKNOWN
+  local_test_runner: UNKNOWN
+  web_search_used: false
+
+repository:
+  name: rezahh107/EV4-Project-Gate
+  default_branch: main
+  role: deterministic_project_gate_orchestration
+  direct_commit_to_main: false
+
+implementation_summary:
+  python_package: implemented_initial_v1
+  package_path: src/ev4_transition
+  cli: ev4-transition
+  deterministic_core:
+    canonical_json_sha256: implemented_initial_v1
+    file_byte_sha256: implemented_for_lock_verification
+    non_finite_number_rejection: implemented_initial_v1
+    hidden_unicode_normalization: not_performed_by_current_core
+    implicit_timestamp_generation: not_used_by_current_core
+  stage_bundle_validation: implemented_initial_v1
+  structured_diagnostics: implemented_initial_v1
+  persian_summary: minimal_initial_v1
+  node_skeleton: preserved_temporarily
+  ui_upload_download: not_implemented
+  real_elementor_artifact_validation: not_available
+  package_generation:
+    architect_to_ce: implemented_synthetic_verified
+    ce_to_builder: not_implemented
+    builder_to_responsive: not_implemented
+    final_evidence_gate: not_implemented
+
+project_gate_owned_contracts:
+  schemas_present:
+    - schemas/stage-bundle/stage-bundle.v1.schema.json
+    - schemas/transition-result/transition-result.v1.schema.json
+    - schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json
+  copied_specialist_schemas_detected_in_project_gate: false
+  specialist_schema_policy: pin_hash_call_do_not_copy
+
+active_transition:
+  architect_to_ce:
+    transition_id: ev4-architect-to-ce-transition@1.0.0
+    source_schema: ev4-architect-stage-payload@1.0.0
+    target_schema: ev4-ce-architect-stage-intake@1.1.0
+    mapping_contract: ev4-architect-stage-to-ce-intake-mapping@1.1.0
+    status: implemented_synthetic_verified
+    verification_state: synthetic_fixture_only
+    real_cross_repository_validation: not_available
+    official_validators_called_by_cli_when_local_checkouts_are_supplied: true
+
+future_transitions:
+  ce_to_builder:
+    status: documented_baseline_only
+    project_gate_python_transition: not_implemented
+    allowed_route: CE Builder Executable Package -> Builder CE-to-Builder Contract Gate -> Builder adapter -> Builder Context Package
+    required_future_behavior: pin_hash_call_official_gate_and_adapter_fail_closed
+  builder_to_responsive:
+    status: documented_baseline_only
+    project_gate_python_transition: not_implemented
+    builder_formal_responsive_export: not_implemented
+    responsive_builder_specific_input_schema: schema_bound_non_executing_in_live_responsive_repo
+    required_future_behavior: fail_closed_until_real_builder_evidence_and_responsive_input_boundary_validate
+  final_evidence_gate:
+    status: not_implemented
+    required_future_behavior: no_final_or_production_readiness_without_explicit_responsive_and_frontend_evidence
+
+cli_commands:
+  implemented:
+    - ev4-transition validate <bundle>
+    - ev4-transition validate <bundle> --format persian
+    - ev4-transition transition architect-to-ce <bundle> --architect-repo <path> --ce-repo <path>
+    - ev4-transition inspect
+  not_implemented:
+    - ev4-transition transition ce-to-builder
+    - ev4-transition transition builder-to-responsive
+    - ev4-transition final-evidence
+
+ci_baseline:
+  workflow: .github/workflows/validate.yml
+  jobs:
+    skeleton:
+      status: configured
+      checks:
+        - required docs exist
+        - package metadata parses
+        - npm run status
+        - npm run validate
+        - no unexpected schema files under schemas/
+    python_core:
+      status: configured
+      checks:
+        - checkout Project Gate
+        - checkout pinned Architect repo
+        - checkout pinned CE repo
+        - install Python package
+        - pytest
+        - verify external contract lock hashes
+        - CLI smoke valid bundle
+        - CLI smoke invalid array
+        - CLI smoke Persian insufficient evidence
+        - official Architect validator fixture suite
+        - official CE validator fixture suite
+        - generated Architect-to-CE transition smoke and CE binding
+  ci_result_for_this_prompt: not_run_by_assistant
+
+live_specialist_boundary_baseline:
+  architect:
+    repository: rezahh107/EV4-Architect-Repo
+    authoritative_for: Architect Stage Payload, architecture decisions, semantic validation, fixtures
+    canonical_project_gate_source_payload: ev4-architect-stage-payload@1.0.0
+    official_validator: scripts/check-architect-stage-payload.py
+    boundary: no constructability proof, no Builder execution authorization, no Responsive or production claims
+  ce:
+    repository: rezahh107/EV4-Constructability-Engineer-Repo
+    authoritative_for: constructability review, implementation strategy proof, CE Architect intake, Builder executable package semantics
+    canonical_architect_facing_intake: ev4-ce-architect-stage-intake@1.1.0
+    official_intake_validator: scripts/validate-ce-architect-stage-intake.py
+    ce_to_builder_source_contract: ev4-builder-executable-package@1.0.0
+    boundary: not_proven_executable_means_not_builder_ready
+  builder:
+    repository: rezahh107/EV4-Builder-Assistant-Repo
+    authoritative_for: Builder runtime intake, CE-to-Builder contract gate, Builder adapter, runtime validation, Builder evidence
+    runtime_intake_schema: ev4-builder-context-package@1.0.0
+    ce_to_builder_gate: scripts/validate-ce-to-builder-contract-gate.mjs
+    ce_to_builder_adapter: scripts/normalize-ce-builder-executable-package.mjs
+    boundary: consumes only executable-ready input; does not choose architecture or implementation strategy; does not invent evidence
+  responsive:
+    repository: rezahh107/EV4-Responsive-Architect
+    authoritative_for: Responsive input eligibility, responsive output, viewport evidence, repair semantics
+    builder_specific_input_schema: ev4-builder-responsive-input@0.1.0
+    builder_specific_input_validator: validation/e2e/run_builder_responsive_input_boundary_check.py
+    responsive_output_schema: ev4-responsive-output@0.3.0
+    responsive_output_validator: validation/e2e/run_responsive_tree_architecture_refactor_check.py
+    boundary: input eligibility is not responsive correctness; screenshots are evidence only
+
+confirmed_drifts_or_stale_docs:
+  - id: DRIFT-A2C-STATUS-ARCHITECT-README
+    severity: medium
+    description: Architect README still says Project Gate Architect-to-CE transition is not implemented, while live Project Gate README and CI show it is implemented in Project Gate.
+    preferred_source: EV4-Project-Gate README and AGENTS for Project Gate implementation status
+  - id: DRIFT-B2R-RESPONSIVE-INPUT
+    severity: high
+    description: Project Gate compatibility/freeze docs still say Responsive Builder-specific input schema is not implemented, but live Responsive repo now has schema-bound non-executing ev4-builder-responsive-input@0.1.0 and validator.
+    preferred_source: EV4-Responsive-Architect live contract/schema for Responsive-owned input status
+  - id: STATUS-MODEL-NAMING-DRIFT
+    severity: high
+    description: Uploaded hard rules use transition statuses accepted/repair_needed/insufficient_evidence/invalid, while current Project Gate validation-result schemas use valid/invalid/insufficient_evidence.
+    preferred_source: current repository schemas for implemented code; hard rules for future transition decision model alignment
+
+critical_or_high_gaps:
+  - id: GAP-BRC-DOC
+    severity: high
+    description: Behavioral rule coverage file was absent before this prompt; baseline created but enforcement validator/fixture/CI for the coverage ledger is not implemented yet.
+  - id: GAP-CE-BUILDER-PG
+    severity: critical
+    description: CE-to-Builder Project Gate transition is not implemented; no Project Gate lock manifest or Python orchestration for Builder gate/adapter yet.
+  - id: GAP-BUILDER-RESPONSIVE-PG
+    severity: critical
+    description: Builder-to-Responsive Project Gate transition is not implemented; no accepted handoff can be emitted without real Builder evidence and Responsive boundary validation.
+  - id: GAP-FINAL-EVIDENCE
+    severity: critical
+    description: Final evidence gate is not implemented; no production/final readiness should be claimed.
+  - id: GAP-REAL-EVIDENCE
+    severity: critical
+    description: Real Elementor/frontend/responsive/export/accessibility evidence remains unavailable or unverified.
+  - id: GAP-STATUS-MODEL
+    severity: high
+    description: Existing schemas use valid/invalid/insufficient_evidence; future Project Gate transition model requires accepted/repair_needed/insufficient_evidence/invalid.
+
+remaining_insufficient_evidence:
+  - real_elementor_artifact_validation
+  - real_cross_repository_validation_beyond_synthetic_fixtures
+  - CE-to-Builder Project Gate pin/hash lock and transition result schema
+  - Builder-to-Responsive formal Builder export package or Project Gate transport contract
+  - Responsive Builder input validation against real verified Builder evidence
+  - downstream rejection evidence for real invalid handoffs
+  - final evidence gate policy and fixtures
+
+next_allowed_prompt: PROMPT-01
