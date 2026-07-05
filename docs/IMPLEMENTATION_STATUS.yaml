@@ -69,9 +69,10 @@ active_transitions:
 
 ci_baseline:
   workflow: .github/workflows/validate.yml
-  latest_checked_head_sha: 87a4a84640c999cee049a0d40865c25efabeafb0
-  latest_checked_run_id: 28741498875
-  latest_checked_workflow_result: success
+  latest_green_checked_head_sha: 87a4a84640c999cee049a0d40865c25efabeafb0
+  latest_green_checked_run_id: 28741498875
+  latest_green_checked_workflow_result: success
+  note: Later documentation-only commits may trigger newer runs; verify latest PR head before merge.
   prompt_04_changes:
     schema_allowlist_includes_ce_to_builder_result_schema: true
     prompt_04_branch_push_trigger: true
@@ -98,4 +99,4 @@ remaining_insufficient_evidence:
   - Builder_to_Responsive_Project_Gate_transition
   - final_evidence_gate
 
-next_allowed_prompt: PROMPT-05_after_review_or_continue_PROMPT-04_cleanup_if_PR_review_finds_remaining_issues
+next_allowed_prompt: PR_review_or_PROMPT-05_after_owner_accepts_PROMPT-04_baseline
