@@ -268,10 +268,19 @@ jobs:
           EV4_CE_REPO_PROMPT04: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo-Prompt04
           EV4_BUILDER_REPO_PROMPT04: ${{ github.workspace }}/EV4-Builder-Assistant-Repo-Prompt04
         run: |
+          set -o pipefail
           python scripts/ce-to-builder-smoke.py \
             --ce-repo "$EV4_CE_REPO_PROMPT04" \
             --builder-repo "$EV4_BUILDER_REPO_PROMPT04" \
-            --fixture "$EV4_CE_REPO_PROMPT04/tests/role-alignment/valid/executable_visual_reference_package.json"
+            --fixture "$EV4_CE_REPO_PROMPT04/tests/role-alignment/valid/executable_visual_reference_package.json" 2>&1 | tee c2b-smoke.log
+
+      - name: Upload CE-to-Builder smoke log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2b-smoke-log
+          path: EV4-Project-Gate/c2b-smoke.log
+          if-no-files-found: ignore
 
       - name: CLI smoke valid bundle
         working-directory: EV4-Project-Gate
