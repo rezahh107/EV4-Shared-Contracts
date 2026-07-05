@@ -11,7 +11,10 @@ commits:
   - 27b10d275cb03b6b457b3ad9e6808b5d48a6ecd8 docs: add prompt 07 closure audit
   - 82e692e947a3e22a36a9888e1238b6068444ec3d docs: add prompt 07 handoff
   - bef4f2e3cf410a458b04f0e09f52b3d9ae5d3130 docs: preserve implementation status compatibility key
-  - self_reference: docs: record prompt 07 PR check repair; exact commit SHA is reported in the final response after creation.
+  - 531960f76f1ca0f09b948b69578dbb968e464ff6 docs: record prompt 07 PR check repair
+  - f5eded165ea56021f751cb2b8bab044beed29034 docs: record prompt 07 exact-head ci success
+  - eac982699cd4b10e4a04331ba12e2962e883e9c1 docs: refresh closure audit ci evidence
+  - self_reference: docs: update prompt 07 handoff ci evidence; exact commit SHA is reported in the final response after creation.
 files_changed:
   - docs/ARCHITECTURE.md
   - docs/ROLE_BOUNDARY_MAP.md
@@ -31,11 +34,16 @@ tests_run:
   - inspected initial PR #26 workflow runs for head 82e692e947a3e22a36a9888e1238b6068444ec3d; Prompt 05 Builder Responsive Final Gate failed at Prompt-05 transition and capability tests
   - inspected tests/test_cli.py and found compatibility expectation for docs/IMPLEMENTATION_STATUS.yaml repository.current_main_head_ci.status
   - repaired docs/IMPLEMENTATION_STATUS.yaml to preserve repository.current_main_head_ci while retaining Prompt-07 current_main_ref_ci detail
+  - inspected PR #26 reviewed head 531960f76f1ca0f09b948b69578dbb968e464ff6 workflow runs; Prompt 06 Report UX, Prompt 05 Builder Responsive Final Gate, and Skeleton Health were successful
+  - refreshed docs/IMPLEMENTATION_STATUS.yaml, docs/CLOSURE_AUDIT.md, and this handoff to remove stale Prompt-07 pending-check wording
 tests_passed:
   - Prompt-06 final head c8522cf36e65243dfebc3f9b2f0b3feb97cbedf4: Prompt 06 Report UX run 28754737277 success
   - Prompt-06 final head c8522cf36e65243dfebc3f9b2f0b3feb97cbedf4: Prompt 05 Builder Responsive Final Gate run 28754737310 success
   - Prompt-06 final head c8522cf36e65243dfebc3f9b2f0b3feb97cbedf4: Skeleton Health run 28754737291 success
   - Prompt-06 final head c8522cf36e65243dfebc3f9b2f0b3feb97cbedf4: Historical Merge Ledger run 28754835391 success
+  - Prompt-07 reviewed head 531960f76f1ca0f09b948b69578dbb968e464ff6: Prompt 06 Report UX run 28755207049 success
+  - Prompt-07 reviewed head 531960f76f1ca0f09b948b69578dbb968e464ff6: Prompt 05 Builder Responsive Final Gate run 28755207015 success
+  - Prompt-07 reviewed head 531960f76f1ca0f09b948b69578dbb968e464ff6: Skeleton Health run 28755207013 success
 tests_failed:
   - local git clone attempt failed due DNS resolution failure for github.com in the ChatGPT container
   - initial PR #26 Prompt 05 Builder Responsive Final Gate run 28755124409 failed before compatibility-key repair; failure was traced to closure doc drift against tests/test_cli.py expectation for current_main_head_ci
@@ -47,7 +55,6 @@ tests_not_run:
   - local fixture matrix tests
   - local CLI smoke tests
   - local report/UX/Typography tests
-  - final Prompt-07 branch PR checks after this handoff update; pending or not yet observed at handoff write time
 coverage_rules_advanced:
   - PG-BRC-001: closure ledger refreshed without status inflation.
   - PG-BOUNDARY-001: stale boundary prose corrected to match implemented baselines while preserving Project Gate non-specialist boundary.
@@ -70,17 +77,17 @@ important_design_decisions:
   - Closure audit did not add new transition logic, specialist schema copies, or specialist domain behavior.
   - Fixed stale canonical docs rather than creating duplicate boundary/policy docs.
   - Added docs/CLOSURE_AUDIT.md because the audit is substantial and should be independently readable.
-  - Kept release classification at implementation_ready_with_known_gaps, not personal_use_ready, because Prompt-07 branch CI still needs final green evidence and real non-synthetic EV4 evidence remains unavailable.
+  - Kept release classification at implementation_ready_with_known_gaps, not personal_use_ready, because real non-synthetic EV4 evidence, frontend/export/accessibility correctness, and downstream owner rejection evidence remain unavailable.
   - Kept Behavioral Rule Coverage conservative: no ci_enforced or downstream_contract_enforced claims were added.
   - Retained insufficient_evidence for real CE→Builder, Builder execution, Responsive input/output, accessibility/export/frontend correctness, and downstream owner rejection evidence.
   - Preserved repository.current_main_head_ci as a compatibility key because existing tests depend on it; added current_main_ref_ci separately instead of renaming the old field.
+  - Recorded Prompt-07 reviewed-head CI success without promoting the project to personal_use_ready.
 web_sources_used: []
-next_allowed_prompt: merge Prompt-07 PR only after PR checks pass and owner explicitly approves; after merge, the safe next engineering prompt is real evidence bundle intake design, not further closure cleanup.
+next_allowed_prompt: after this documentation-refresh head has green CI and owner explicitly approves, merge Prompt-07 PR; after merge, the safe next engineering prompt is real evidence bundle intake design, not further closure cleanup.
 blocking_issues:
-  - Prompt-07 branch CI after the compatibility-key repair has not been proven green at handoff write time.
   - Local full clone/test execution is unavailable in this environment due DNS failure.
+  - This documentation refresh creates a new PR head; observe GitHub Actions on the new head before merge.
 remaining_insufficient_evidence:
-  - final Prompt-07 PR checks after latest handoff update
   - exact current main ref SHA/CI after Prompt-07 branch merge, if merged
   - real non-synthetic CE-to-Builder transition evidence
   - real Builder execution evidence bundle
