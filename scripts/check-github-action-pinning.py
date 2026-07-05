@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-USES_RE = re.compile(r"^\s*uses:\s*([^\s#]+)")
+USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)")
 
 
 def iter_workflows(root: Path) -> list[Path]:
