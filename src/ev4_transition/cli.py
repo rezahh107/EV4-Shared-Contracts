@@ -13,6 +13,8 @@ from .diagnostics import persian_summary
 from .presentation.status_mapping import exit_code_for_status
 from .validator_runner import run_architect_validator, run_ce_validator
 
+_CAPABILITY_STATUS_PATH = Path(__file__).resolve().parent / "data" / "capability-status.v1.json"
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ev4-transition")
@@ -42,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     coverage_validate.add_argument("source", nargs="?", default="docs/BEHAVIORAL_RULE_COVERAGE.md")
     coverage_validate.add_argument("--schema", default="schemas/behavioral-coverage/behavioral-coverage.v1.schema.json")
 
-    inspect_parser = sub.add_parser("inspect", help="Inspect deterministic core metadata.")
+    inspect_parser = sub.add_parser("inspect", help="Inspect deterministic core metadata and layered capability truth.")
     inspect_parser.add_argument("--format", choices=["json", "persian"], default="json")
 
     args = parser.parse_args(argv)
@@ -79,28 +81,26 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "coverage":
         return _coverage_command(args)
 
-    info = {
-        "package": "ev4-project-gate",
-        "implemented": [
-            "canonical_json",
-            "sha256",
-            "structured_diagnostics",
-            "stage_bundle_validation",
-            "transition_result_schema_foundation",
-            "status_presentation_mapping",
-            "behavioral_coverage_validation",
-            "architect-to-ce transition",
-            "minimal_cli",
-        ],
-        "not_implemented": [
-            "ce-to-builder transition",
-            "builder-to-responsive transition",
-            "real EV4 artifact validation",
-            "UI",
-        ],
-    }
+    info = _load_capability_status()
     _emit(info, args.format)
     return 0
+
+
+def _load_capability_status() -> dict[str, Any]:
+    payload = load_json_file(_CAPABILITY_STATUS_PATH)
+    capabilities = payload.get("capabilities")
+    ce_to_builder = capabilities.get("ce_to_builder") if isinstance(capabilities, dict) else None
+    expected = {
+        "orchestration_baseline": "implemented",
+        "cli_exposure": "not_implemented",
+        "owner_fixture_integration": "verified",
+        "real_non_synthetic_handoff": "insufficient_evidence",
+    }
+    if payload.get("schema_version") != "ev4-project-gate-capability-status.v1" or ce_to_builder != expected:
+        raise ValueError("packaged capability truth is invalid")
+    if "ce-to-builder" in payload.get("public_cli_transitions", []):
+        raise ValueError("CE-to-Builder public CLI exposure is not validated")
+    return payload
 
 
 def _coverage_command(args: argparse.Namespace) -> int:
@@ -141,7 +141,7 @@ def _emit(payload: dict[str, Any], fmt: str) -> None:
         if "status" in payload:
             print(persian_summary(payload["status"]))
         else:
-            print("هسته قطعی پایتون آماده است؛ انتقال Architect → CE پیاده‌سازی شده و سایر انتقال‌ها هنوز پیاده‌سازی نشده‌اند.")
+            print("هسته قطعی و Architect → CE در CLI فعال‌اند؛ خط مبنای orchestration برای CE → Builder پیاده‌سازی شده، اما CLI عمومی و شواهد handoff واقعی آن هنوز موجود نیست.")
         return
     print(canonical_dumps(payload))
 
