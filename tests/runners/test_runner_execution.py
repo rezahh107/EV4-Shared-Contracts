@@ -90,6 +90,21 @@ def test_fallback_adapter_used_fails(tmp_path: Path) -> None:
     assert outcome.diagnostics[0].code == "PG.ADAPTER.FALLBACK_FORBIDDEN"
 
 
+def test_adapter_command_must_invoke_declared_adapter_path(tmp_path: Path) -> None:
+    _script(tmp_path, "official_adapter.py", "import json\nprint(json.dumps({'status':'valid'}))\n")
+    _script(tmp_path, "other.py", "import json\nprint(json.dumps({'status':'valid'}))\n")
+    outcome = _run(tmp_path, tool_kind="adapter", tool_path="official_adapter.py", command=[sys.executable, str(tmp_path / "other.py")])
+    assert outcome.status == "invalid"
+    assert outcome.diagnostics[0].code == "PG.ADAPTER.COMMAND_PATH_MISMATCH"
+
+
+def test_adapter_command_accepts_declared_adapter_as_interpreter_script(tmp_path: Path) -> None:
+    _script(tmp_path, "official_adapter.py", "import json\nprint(json.dumps({'status':'valid'}))\n")
+    outcome = _run(tmp_path, tool_kind="adapter", tool_path="official_adapter.py", command=[sys.executable, str(tmp_path / "official_adapter.py")])
+    assert outcome.status == "accepted"
+    assert outcome.execution_record.to_dict()["adapter_path"] == "official_adapter.py"
+
+
 def test_execution_record_has_minimum_semantic_children(tmp_path: Path) -> None:
     _script(tmp_path, "tool.py", "import json\nprint(json.dumps({'status':'valid'}))\n")
     outcome = _run(tmp_path)
