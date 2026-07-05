@@ -92,12 +92,33 @@ jobs:
         working-directory: EV4-Project-Gate
         run: pytest tests/test_cli.py tests/test_canonical_json.py tests/test_bundle_validator.py
 
-      - name: Architect-to-CE pure transition tests
+      - name: A2C valid transition smoke
         working-directory: EV4-Project-Gate
         env:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
-        run: pytest tests/test_architect_to_ce_transition.py -k 'not cli'
+        run: pytest tests/test_architect_to_ce_transition.py::test_valid_transition_outputs_complete_ce_v1_1_bundle
+
+      - name: A2C mapping and order tests
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py -k 'complete_mapping_trace or canonical_source_hash or validation_order'
+
+      - name: A2C fail-closed hook tests
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py -k 'mapper_skipped or target_bundle_absent or invalid_identity'
+
+      - name: A2C evidence and determinism tests
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py -k 'source_commit or insufficient_evidence or lock_enforcement or repeat_run or no_live_timestamp'
 
       - name: Architect-to-CE CLI transition tests
         working-directory: EV4-Project-Gate
