@@ -106,11 +106,17 @@ const pythonChecks = [
 
 for (const script of pythonChecks) {
   const completed = spawnSync(pythonCmd, [script], { encoding: 'utf8' });
+  if (completed.error) {
+    process.stderr.write(completed.error.message + '\n');
+    process.exit(1);
+  }
   if (completed.status !== 0) {
-    process.stderr.write(completed.stderr || completed.stdout);
+    process.stderr.write(completed.stderr || completed.stdout || 'Unknown error\n');
     process.exit(completed.status || 1);
   }
-  process.stdout.write(completed.stdout);
+  if (completed.stdout) {
+    process.stdout.write(completed.stdout);
+  }
 }
 
 console.log('Project Gate capability truth, workflow permissions, historical ledger automation, and workflow action pins are valid.');
