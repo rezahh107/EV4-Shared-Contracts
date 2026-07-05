@@ -65,7 +65,7 @@ commits_added_after_initial_prompt_04_handoff:
   - 99512a2b8b7fddff1adaf44b3d8cee569fbf282a docs(c2b): promote green C2B coverage to ci_enforced
   - 96d27ebcbc24e42b4e4789f89086f3e51c995e86 docs(c2b): refresh PROMPT-04 handoff after green CI
   - 08f470b32d0b1db4a48c2268a8394ea5ccd4581f docs(c2b): clarify latest green CI reference
-  - THIS_COMMIT docs(c2b): refresh PROMPT-04 handoff latest green reference
+  - bfc2e92df6fd2129f9c5d8447d9902a3cd3e653a docs(c2b): refresh PROMPT-04 handoff latest green reference
 
 files_changed_relevant_to_continuation:
   - .github/workflows/validate.yml
@@ -138,6 +138,7 @@ important_design_decisions:
   - CE package validator runner now writes a minimal CE review wrapper plus builder_executable_package because CE package mode expects constructability_review state as well as the package.
   - PyYAML was added as a dependency because the official CE validator imports yaml.
   - The C2B smoke uses a Builder-owned adapter-valid fixture when available; it is integration evidence, not real EV4 handoff evidence.
+  - Attempted docs/DIAGNOSTIC_CODES.md refresh encountered a 409 stale-SHA conflict and was not applied.
 
 web_sources_used: []
 
