@@ -19,7 +19,7 @@ LOCK_SCHEMA_VERSION = "ce-to-builder-transition-lock.v1"
 CE_REPO = "rezahh107/EV4-Constructability-Engineer-Repo"
 BUILDER_REPO = "rezahh107/EV4-Builder-Assistant-Repo"
 CE_COMMIT = "cfceec5c20269c75a1cc19b2675d7087cede4599"
-BUILDER_COMMIT = "4d9445fe76e3f8a15a179735ad82c9aadec0991b"
+BUILDER_COMMIT = "69a2c61edf6d06b4418ad770fcefbfdffcf275d6"
 CE_PACKAGE_SCHEMA = "ev4-builder-executable-package@1.0.0"
 BUILDER_CONTEXT_SCHEMA = "ev4-builder-context-package@1.0.0"
 PG_REPO = "rezahh107/EV4-Project-Gate"
@@ -42,15 +42,15 @@ EXPECTED_CE_TO_BUILDER_DEPENDENCIES: dict[str, ExpectedDependency] = {
         ExpectedDependency("ce_builder_executable_schema", CE_REPO, CE_COMMIT, "schemas/builder_executable_package.schema.json", CE_PACKAGE_SCHEMA, "EV4 Builder Executable Package"),
         ExpectedDependency("ce_validator_engine", CE_REPO, CE_COMMIT, "validator/engine.py", "validator/engine.py", "builder_executable_package"),
         ExpectedDependency("ce_validator_rules", CE_REPO, CE_COMMIT, "validator/rules.py", "validator/rules.py", "ConstructabilityViolation"),
-        ExpectedDependency("ce_valid_fixture", CE_REPO, CE_COMMIT, "tests/valid/center_anchored_symmetric_pill_cards.json", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
+        ExpectedDependency("ce_valid_fixture", CE_REPO, CE_COMMIT, "tests/role-alignment/valid/executable_visual_reference_package.json", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
         ExpectedDependency("builder_input_contract", BUILDER_REPO, BUILDER_COMMIT, "input-contracts/BUILDER_CONTEXT_INPUT_CONTRACT.md", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
         ExpectedDependency("builder_context_schema", BUILDER_REPO, BUILDER_COMMIT, "schemas/builder-context-package.schema.json", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
         ExpectedDependency("builder_gate_doc", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_TO_BUILDER_CONTRACT_GATE.md", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
         ExpectedDependency("builder_gate_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-ce-to-builder-contract-gate.mjs", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
         ExpectedDependency("builder_adapter_contract", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_BUILDER_PACKAGE_ADAPTER_CONTRACT.md", "normalizeCeBuilderExecutablePackage", "normalizeCeBuilderExecutablePackage"),
         ExpectedDependency("builder_adapter_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/normalize-ce-builder-executable-package.mjs", "normalizeCeBuilderExecutablePackage", "normalizeCeBuilderExecutablePackage"),
-        ExpectedDependency("builder_transform_registry", BUILDER_REPO, BUILDER_COMMIT, "data/ce-builder-transformation-registry.v1.json", "ce-builder-transformation-registry.v1", "ce-builder-transformation-registry.v1"),
-        ExpectedDependency("builder_output_validator", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-package.mjs", "Cross-field validation", "Cross-field validation"),
+        ExpectedDependency("builder_transform_registry", BUILDER_REPO, BUILDER_COMMIT, "data/ce-builder-transformation-registry.v1.json", "ce-builder-transformation-registry.v1", "ce-builder-transformation-registry"),
+        ExpectedDependency("builder_output_validator", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-package.mjs", "Cross-field validation", "validateReferenceParadigmGate"),
     ]
 }
 REQUIRED_ROLES = set(EXPECTED_CE_TO_BUILDER_DEPENDENCIES)
@@ -236,6 +236,8 @@ def _extract_ce_package(ce_input: Any, schema_root: Path, diagnostics: list[Diag
         diagnostics.append(diagnostic("PG.C2B.CE_PACKAGE_MISSING", "error", "CE Stage Evidence Bundle payload must contain a builder_executable_package object.", "$.payload.data"))
         return ce_input, None
     accepted_requires["envelope_valid_when_applicable"] = True
+    if isinstance(ce_input.get("builder_executable_package"), dict):
+        return None, ce_input["builder_executable_package"]
     return None, ce_input
 
 
@@ -326,7 +328,16 @@ def _has_blocking(items: list[Diagnostic]) -> bool:
 
 
 def _has_forbidden_claim(ce_package: dict[str, Any] | None, builder_context_package: dict[str, Any] | None) -> bool:
-    return any(isinstance(obj, dict) and any(obj.get(key) is True for key in ("production_ready", "builder_runtime_authorized")) for obj in (ce_package, builder_context_package))
+    forbidden_keys = {"production_ready", "builder_runtime_authorized", "production_ready_allowed"}
+
+    def scan(value: Any) -> bool:
+        if isinstance(value, dict):
+            return any((key in forbidden_keys and item is True) or scan(item) for key, item in value.items())
+        if isinstance(value, list):
+            return any(scan(item) for item in value)
+        return False
+
+    return scan(ce_package) or scan(builder_context_package)
 
 
 def _json_path(parts: list[Any]) -> str:
