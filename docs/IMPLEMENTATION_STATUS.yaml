@@ -7,9 +7,9 @@ closure_audit: docs/CLOSURE_AUDIT.md
 release_readiness_classification: implementation_ready_with_known_gaps
 release_readiness_reason: >-
   Project Gate orchestration baselines, deterministic core, runner boundary, behavioral coverage validation,
-  Builder→Responsive/Final Gate baselines, and Persian report UX are implemented and have exact-head PR CI
-  evidence. Real non-synthetic CE→Builder, Builder execution, Responsive input/output, frontend/export/
-  accessibility correctness, and downstream owner rejection evidence remain insufficient_evidence.
+  Builder→Responsive/Final Gate baselines, Persian report UX, and Prompt-07 closure audit docs are implemented
+  and have exact-head PR CI evidence. Real non-synthetic CE→Builder, Builder execution, Responsive input/output,
+  frontend/export/accessibility correctness, and downstream owner rejection evidence remain insufficient_evidence.
 
 repository:
   name: rezahh107/EV4-Project-Gate
@@ -63,7 +63,14 @@ repository:
     branch: project-gate-prompt-07-closure-audit
     pull_request: 26
     scope: closure_audit_and_stale_prose_cleanup
-    ci_status: pending_or_not_yet_observed
+    state: verified_by_exact_head_ci
+    verified_head_sha: 531960f76f1ca0f09b948b69578dbb968e464ff6
+    workflow_result: success
+    workflow_runs:
+      prompt_06_report_ux: 28755207049
+      prompt_05_builder_responsive_final_gate: 28755207015
+      skeleton_health: 28755207013
+    scope_limit: docs_only_closure_audit_not_real_non_synthetic_readiness
 
 capabilities:
   architect_to_ce:
@@ -138,9 +145,13 @@ verification:
     historical_merge_ledger_run_id: 28754835391
     scope_limit: not_real_ui_not_frontend_correctness_not_release_readiness
   prompt_07:
-    state: pending_ci_until_pr_checks_run
-    evidence_type: closure_audit_docs_only
-    scope_limit: no_transition_logic_changed
+    state: verified_by_exact_head_ci
+    evidence_type: closure_audit_docs_only_pr_checks
+    verified_head_sha: 531960f76f1ca0f09b948b69578dbb968e464ff6
+    prompt_06_report_ux_workflow_run_id: 28755207049
+    prompt_05_builder_responsive_final_gate_workflow_run_id: 28755207015
+    skeleton_health_workflow_run_id: 28755207013
+    scope_limit: not_real_non_synthetic_handoff_or_release_readiness
 
 remaining_insufficient_evidence:
   - current_main_ref_exact_sha_and_ci_after_prompt_07
