@@ -35,6 +35,10 @@ def fallback_adapter_forbidden(adapter_path: str, command: list[str]) -> tuple[R
     return "invalid", diagnostic("PG.ADAPTER.FALLBACK_FORBIDDEN", "error", "Fallback adapter execution is forbidden in Project Gate runner infrastructure.", "$", adapter_path=adapter_path, command=command)
 
 
+def adapter_command_mismatch(adapter_path: str, command: list[str]) -> tuple[RunStatus, Diagnostic]:
+    return "invalid", diagnostic("PG.ADAPTER.COMMAND_PATH_MISMATCH", "error", "Adapter command must execute the declared official adapter path.", "$", adapter_path=adapter_path, command=command)
+
+
 def map_structured_nonzero(tool_kind: ToolKind, parsed: dict[str, Any], exit_code: int) -> tuple[RunStatus, Diagnostic]:
     status = parsed.get("status")
     diagnostics = parsed.get("diagnostics") if isinstance(parsed.get("diagnostics"), list) else []
