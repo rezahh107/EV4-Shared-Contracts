@@ -50,7 +50,7 @@ def check_repository(root: Path) -> list[str]:
 
     failures: list[str] = []
     workflows = sorted(
-        path for path in workflow_root.iterdir() if path.suffix in {".yml", ".yaml"}
+        path for path in workflow_root.iterdir() if path.is_file() and path.suffix in {".yml", ".yaml"}
     )
     if not workflows:
         return [f"{workflow_root}: no workflow files found"]
