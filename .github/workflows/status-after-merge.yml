@@ -6,7 +6,7 @@ on:
       - closed
 
 permissions:
-  actions: read
+  actions: write
   contents: write
   pull-requests: read
 
@@ -66,3 +66,27 @@ jobs:
           git add docs/EV4_SHARED_CONTRACTS_STATUS.md
           git commit -m "docs: record merged PR #${{ github.event.pull_request.number }} in historical ledger"
           git push
+
+      - name: Capture exact main head
+        run: echo "FINAL_MAIN_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Dispatch exact-head validation workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          payload=$(node -e 'process.stdout.write(JSON.stringify({ref:"main",inputs:{expected_head_sha:process.env.FINAL_MAIN_SHA}}))')
+          for workflow in validate.yml prompt-05.yml; do
+            curl -fsS -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/dispatches" \
+              -d "$payload"
+            echo "Dispatched ${workflow} for ${FINAL_MAIN_SHA}."
+          done
+          {
+            echo "## Exact main-head validation dispatched"
+            echo ""
+            echo "- SHA: \`${FINAL_MAIN_SHA}\`"
+            echo "- Workflows: \`validate.yml\`, \`prompt-05.yml\`"
+          } >> "$GITHUB_STEP_SUMMARY"
