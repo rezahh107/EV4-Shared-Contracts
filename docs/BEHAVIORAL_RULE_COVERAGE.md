@@ -1,8 +1,6 @@
 # Behavioral Rule Coverage
 
-Status: `PROMPT-04` CE→Builder behavioral ledger is conservative and intentionally separates CI evidence from behavioral coverage status.
-
-This ledger does not claim `ci_enforced` for CE→Builder behavioral rules yet. CE→Builder lock/tool orchestration has CI evidence in PR `#20`, but the behavioral coverage validator requires dedicated fixture bindings before a rule is marked `ci_enforced`. Therefore the C2B rules remain `validator_backed` here until dedicated C2B behavioral fixtures are bound to the declared validators. Current PR-head CI evidence is recorded in `docs/handoffs/PROMPT-04_HANDOFF.md` and `docs/IMPLEMENTATION_STATUS.yaml`.
+Status: `PROMPT-05` extends the conservative ledger for Builder→Responsive and Final Gate. No rule is promoted to `ci_enforced` or `downstream_contract_enforced` unless a concrete carrier, validator/fixture, and CI/downstream proof exists.
 
 Allowed statuses:
 
@@ -20,7 +18,7 @@ downstream_contract_enforced
 ```json behavioral-coverage.v1
 {
   "schema_version": "behavioral-coverage.v1",
-  "generated_by": "PROMPT-04 CE-to-Builder conservative ledger refresh for PR #20",
+  "generated_by": "PROMPT-05 Builder→Responsive and Final Evidence Gate baseline",
   "rules": [
     {
       "rule_id": "PG-BRC-001",
@@ -37,75 +35,7 @@ downstream_contract_enforced
       "downstream_rejection_fixtures": [],
       "documented_risk": "False behavioral coverage can make weak rules look enforced.",
       "next_enforcement_step": "Keep future status promotions evidence-backed and fixture-bound.",
-      "notes": "This rule is fixture-tested by the behavioral coverage validator fixtures."
-    },
-    {
-      "rule_id": "PG-C2B-001",
-      "rule": "CE→Builder lock pins must match exact owner repository, commit, path, identity marker, and SHA-256 file bytes.",
-      "risk": "Critical",
-      "status": "validator_backed",
-      "target_status": "validator_backed",
-      "carriers": ["contracts/locks/ce-to-builder-transition.v1.lock.json", "src/ev4_transition/transitions/ce_to_builder.py", "scripts/verify-ce-to-builder-lock.py"],
-      "validators": ["scripts/verify-ce-to-builder-lock.py"],
-      "valid_fixtures": [],
-      "invalid_fixtures": [],
-      "ci_steps": [".github/workflows/validate.yml / CE-to-Builder lock verification", ".github/workflows/validate.yml / Compute CE-to-Builder lock hashes"],
-      "downstream_contracts": [],
-      "downstream_rejection_fixtures": [],
-      "documented_risk": "Wrong pins or hashes allow stale or unintended owner contracts to govern Builder handoff.",
-      "next_enforcement_step": "Add dedicated C2B behavioral fixtures bound to the lock verifier before promoting this ledger entry to ci_enforced.",
-      "notes": "C2B lock verification has PR CI evidence, but this ledger keeps the behavioral status below ci_enforced until fixture binding is added."
-    },
-    {
-      "rule_id": "PG-C2B-002",
-      "rule": "CE→Builder transition must call official CE validator, official Builder gate, official Builder adapter, and official Builder output validator in order.",
-      "risk": "Critical",
-      "status": "validator_backed",
-      "target_status": "validator_backed",
-      "carriers": ["src/ev4_transition/transitions/ce_to_builder.py", "src/ev4_transition/runners/official_tools.py", "scripts/ce-to-builder-smoke.py"],
-      "validators": ["scripts/ce-to-builder-smoke.py"],
-      "valid_fixtures": [],
-      "invalid_fixtures": [],
-      "ci_steps": [".github/workflows/validate.yml / CE-to-Builder transition pytest", ".github/workflows/validate.yml / CE-to-Builder live owner tool smoke"],
-      "downstream_contracts": [],
-      "downstream_rejection_fixtures": [],
-      "documented_risk": "Bypassing the Builder gate lets invalid CE output reach Builder normalization.",
-      "next_enforcement_step": "Add dedicated C2B behavioral fixtures bound to the smoke validator before promoting this ledger entry to ci_enforced.",
-      "notes": "The C2B smoke uses an owner fixture; it is integration evidence, not real handoff evidence."
-    },
-    {
-      "rule_id": "PG-VALIDATOR-001",
-      "rule": "Official validators must execute only through Project Gate runner infrastructure and fail closed when missing, timed out, unparseable, or failed.",
-      "risk": "Critical",
-      "status": "validator_backed",
-      "target_status": "validator_backed",
-      "carriers": ["src/ev4_transition/runners/official_tools.py", "src/ev4_transition/runners/subprocess_runner.py", "src/ev4_transition/runners/failure_mapping.py"],
-      "validators": ["src/ev4_transition/runners/official_tools.py", "src/ev4_transition/runners/subprocess_runner.py"],
-      "valid_fixtures": [],
-      "invalid_fixtures": [],
-      "ci_steps": [".github/workflows/validate.yml / Runner tests", ".github/workflows/validate.yml / CE-to-Builder live owner tool smoke"],
-      "downstream_contracts": [],
-      "downstream_rejection_fixtures": [],
-      "documented_risk": "Missing or failed validator execution must never be treated as acceptance.",
-      "next_enforcement_step": "Add runner behavioral fixtures for official validator failure modes before promotion.",
-      "notes": "C2B owner validator path has PR CI evidence, but fixture-bound behavioral promotion remains pending."
-    },
-    {
-      "rule_id": "PG-ADAPTER-001",
-      "rule": "Official adapters must execute only through runner infrastructure; fallback adapters are forbidden and missing/timeouts fail closed.",
-      "risk": "Critical",
-      "status": "validator_backed",
-      "target_status": "validator_backed",
-      "carriers": ["src/ev4_transition/runners/official_tools.py", "src/ev4_transition/runners/subprocess_runner.py", "src/ev4_transition/runners/failure_mapping.py"],
-      "validators": ["src/ev4_transition/runners/official_tools.py", "src/ev4_transition/runners/subprocess_runner.py"],
-      "valid_fixtures": [],
-      "invalid_fixtures": [],
-      "ci_steps": [".github/workflows/validate.yml / Runner tests", ".github/workflows/validate.yml / CE-to-Builder live owner tool smoke"],
-      "downstream_contracts": [],
-      "downstream_rejection_fixtures": [],
-      "documented_risk": "Fallback or missing adapter behavior can invent a next-stage package without owner evidence.",
-      "next_enforcement_step": "Add runner behavioral fixtures for adapter failure modes before promotion.",
-      "notes": "Builder adapter path has PR CI evidence, but fixture-bound behavioral promotion remains pending."
+      "notes": "This rule is fixture-tested by existing behavioral coverage validator fixtures."
     },
     {
       "rule_id": "PG-DOWNSTREAM-001",
@@ -113,23 +43,109 @@ downstream_contract_enforced
       "risk": "Critical",
       "status": "fixture_tested",
       "target_status": "fixture_tested",
-      "carriers": ["docs/BEHAVIORAL_RULE_COVERAGE.md", "src/ev4_transition/behavioral_coverage/validator.py"],
-      "validators": ["src/ev4_transition/behavioral_coverage/validator.py::validate_coverage_document"],
+      "carriers": ["docs/BEHAVIORAL_RULE_COVERAGE.md", "src/ev4_transition/transitions/builder_to_responsive.py", "src/ev4_transition/transitions/final_gate.py"],
+      "validators": ["tests/transitions/test_builder_to_responsive.py", "tests/transitions/test_final_gate.py"],
       "valid_fixtures": ["tests/fixtures/behavioral_coverage/valid/critical_rule_fixture_tested.json"],
       "invalid_fixtures": ["tests/fixtures/behavioral_coverage/invalid/downstream_contract_missing_for_claimed_enforcement.json"],
-      "ci_steps": [".github/workflows/validate.yml / Behavioral coverage validator"],
+      "ci_steps": [".github/workflows/validate.yml / Behavioral coverage validator", ".github/workflows/validate.yml / Prompt-05 transition tests"],
       "downstream_contracts": [],
       "downstream_rejection_fixtures": [],
-      "documented_risk": "Future transitions must not claim downstream_contract_enforced without owner rejection evidence.",
-      "next_enforcement_step": "Do not mark CE-to-Builder downstream_contract_enforced until Builder-owned rejection fixtures are pinned and proven.",
-      "notes": "PROMPT-04 proves orchestration, not downstream_contract_enforced status."
+      "documented_risk": "Project Gate must not claim downstream_contract_enforced without owner rejection evidence.",
+      "next_enforcement_step": "Add Responsive-owned rejection fixtures before any downstream_contract_enforced promotion.",
+      "notes": "PROMPT-05 keeps downstream enforcement explicitly unclaimed."
+    },
+    {
+      "rule_id": "PG-EVIDENCE-001",
+      "rule": "Accepted transition/final status requires explicit evidence refs and must fail closed when evidence is absent.",
+      "risk": "Critical",
+      "status": "fixture_tested",
+      "target_status": "fixture_tested",
+      "carriers": ["src/ev4_transition/transitions/builder_to_responsive.py", "src/ev4_transition/transitions/final_gate.py", "docs/STATUS_DECISION_MATRIX.md"],
+      "validators": ["tests/transitions/test_builder_to_responsive.py", "tests/transitions/test_final_gate.py"],
+      "valid_fixtures": ["tests/fixture_matrix/builder_to_responsive/valid/builder_responsive_input.valid.json"],
+      "invalid_fixtures": ["tests/fixture_matrix/builder_to_responsive/invalid/missing_mobile_evidence.invalid.json"],
+      "ci_steps": [".github/workflows/validate.yml / Prompt-05 transition tests"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "Missing evidence can otherwise be silently upgraded to acceptance.",
+      "next_enforcement_step": "Bind real owner evidence bundles once available.",
+      "notes": "Fixture tests cover missing Builder evidence, missing viewport evidence, and missing final real evidence."
+    },
+    {
+      "rule_id": "PG-SYNTH-001",
+      "rule": "Synthetic fixtures and raw screenshots must not be treated as real EV4 evidence.",
+      "risk": "Critical",
+      "status": "fixture_tested",
+      "target_status": "fixture_tested",
+      "carriers": ["src/ev4_transition/transitions/builder_to_responsive.py", "src/ev4_transition/transitions/final_gate.py"],
+      "validators": ["tests/transitions/test_builder_to_responsive.py::test_builder_to_responsive_raw_screenshot_does_not_prove_correctness", "tests/transitions/test_final_gate.py::test_final_gate_does_not_count_synthetic_as_real_evidence"],
+      "valid_fixtures": [],
+      "invalid_fixtures": ["tests/fixture_matrix/builder_to_responsive/invalid/missing_mobile_evidence.invalid.json"],
+      "ci_steps": [".github/workflows/validate.yml / Prompt-05 transition tests"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "Synthetic evidence or screenshots can create false frontend confidence.",
+      "next_enforcement_step": "Add owner-supplied real evidence fixtures.",
+      "notes": "Raw screenshot and synthetic-only branches emit insufficient_evidence."
+    },
+    {
+      "rule_id": "PG-HASH-001",
+      "rule": "Pinned lock manifests must verify repository, commit, path, identity marker, and SHA-256 file bytes.",
+      "risk": "Critical",
+      "status": "validator_backed",
+      "target_status": "validator_backed",
+      "carriers": ["contracts/locks/builder-to-responsive-transition.v1.lock.json", "contracts/locks/final-gate.v1.lock.json", "src/ev4_transition/transitions/builder_to_responsive.py", "src/ev4_transition/transitions/final_gate.py"],
+      "validators": ["verify_builder_to_responsive_lock", "verify_final_gate_lock"],
+      "valid_fixtures": [],
+      "invalid_fixtures": [],
+      "ci_steps": [".github/workflows/validate.yml / Prompt-05 transition tests"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "Wrong pins or stale owner files can authorize the wrong boundary.",
+      "next_enforcement_step": "Refresh placeholder lock hashes from live owner checkouts before promoting.",
+      "notes": "Prompt-05 lock files intentionally contain placeholders and therefore remain fail-closed."
+    },
+    {
+      "rule_id": "PG-VALIDATOR-001",
+      "rule": "Official validators must fail closed when missing, unavailable, failed, or unverifiable.",
+      "risk": "Critical",
+      "status": "fixture_tested",
+      "target_status": "fixture_tested",
+      "carriers": ["src/ev4_transition/transitions/builder_to_responsive.py", "src/ev4_transition/transitions/final_gate.py", "src/ev4_transition/runners/subprocess_runner.py"],
+      "validators": ["tests/transitions/test_builder_to_responsive.py", "tests/transitions/test_final_gate.py"],
+      "valid_fixtures": [],
+      "invalid_fixtures": [],
+      "ci_steps": [".github/workflows/validate.yml / Runner tests", ".github/workflows/validate.yml / Prompt-05 transition tests"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "Absent Responsive validator execution must not unlock accepted.",
+      "next_enforcement_step": "Run live owner validator smoke in CI with owner checkouts.",
+      "notes": "Prompt-05 adds tests for missing Responsive schema/validator."
+    },
+    {
+      "rule_id": "PG-OUTPUT-001",
+      "rule": "Project Gate-owned output/result envelopes must validate against Project Gate-owned result schemas.",
+      "risk": "High",
+      "status": "fixture_tested",
+      "target_status": "fixture_tested",
+      "carriers": ["schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json", "schemas/final-gate-result/final-gate-result.v1.schema.json"],
+      "validators": ["tests/transitions/test_builder_to_responsive.py::test_builder_to_responsive_result_schema_validated", "tests/transitions/test_final_gate.py::test_final_gate_result_schema_validated"],
+      "valid_fixtures": [],
+      "invalid_fixtures": [],
+      "ci_steps": [".github/workflows/validate.yml / Prompt-05 transition tests"],
+      "downstream_contracts": [],
+      "downstream_rejection_fixtures": [],
+      "documented_risk": "Invalid result envelopes can hide fail-closed diagnostics.",
+      "next_enforcement_step": "Add broader result fixture matrix if output writing expands.",
+      "notes": "Prompt-05 validates B2R and Final Gate result envelopes."
     }
   ]
 }
 ```
 
-## PROMPT-04 notes
+## PROMPT-05 notes
 
-- `PG-C2B-001` and `PG-C2B-002` have PR CI evidence, but the behavioral ledger keeps them at `validator_backed` until dedicated fixture bindings are added.
 - `PG-DOWNSTREAM-001` remains below `downstream_contract_enforced`.
-- Synthetic/owner-fixture smoke is integration evidence, not real EV4 handoff evidence.
+- `PG-HASH-001` remains `validator_backed` because Prompt-05 lock files intentionally use honest placeholders until exact owner hashes are refreshed.
+- CI success and raw screenshots are not frontend correctness evidence.
+- Synthetic fixtures are not real EV4 handoff evidence.
