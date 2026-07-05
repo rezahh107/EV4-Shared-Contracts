@@ -10,16 +10,20 @@ on:
       - architect-to-ce-transition-v1
       - project-gate-prompt-02-behavioral-coverage
       - project-gate-prompt-03-runner-boundary
+      - project-gate-prompt-04-ce-to-builder
 
 jobs:
   skeleton:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Verify GitHub Action pins
+        run: python scripts/check-github-action-pinning.py
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
 
@@ -48,7 +52,7 @@ jobs:
 
       - name: Verify no specialist canonical schema files exist
         run: |
-          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json)$'
+          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json)$'
           unexpected=$(find schemas -type f | grep -Ev "$allowed" || true)
           if [ -n "$unexpected" ]; then
             echo "Unexpected schema files found under schemas/."
@@ -61,28 +65,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Project Gate
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           path: EV4-Project-Gate
 
       - name: Checkout Architect pinned contract repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           repository: rezahh107/EV4-Architect-Repo
           ref: b0651668b97f682bb17f66840c8e8c503fd3935d
           path: EV4-Architect-Repo
 
       - name: Checkout CE pinned contract repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           repository: rezahh107/EV4-Constructability-Engineer-Repo
           ref: 546680a2e2a309c0d7e0ddbfc017e9e194ece7cb
           path: EV4-Constructability-Engineer-Repo
 
+      - name: Checkout CE pinned CE-to-Builder repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: rezahh107/EV4-Constructability-Engineer-Repo
+          ref: cfceec5c20269c75a1cc19b2675d7087cede4599
+          path: EV4-Constructability-Engineer-Repo-Prompt04
+
+      - name: Checkout Builder pinned CE-to-Builder repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: rezahh107/EV4-Builder-Assistant-Repo
+          ref: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
+          path: EV4-Builder-Assistant-Repo-Prompt04
+
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
 
       - name: Install package
         working-directory: EV4-Project-Gate
@@ -167,6 +190,20 @@ jobs:
         working-directory: EV4-Project-Gate
         run: pytest tests/runners
 
+      - name: CE-to-Builder transition pytest
+        working-directory: EV4-Project-Gate
+        run: |
+          set -o pipefail
+          pytest -vv --tb=short --maxfail=1 tests/transitions/test_ce_to_builder.py 2>&1 | tee c2b-pytest.log
+
+      - name: Upload CE-to-Builder pytest log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: c2b-pytest-log
+          path: EV4-Project-Gate/c2b-pytest.log
+          if-no-files-found: ignore
+
       - name: Progress tests
         working-directory: EV4-Project-Gate
         run: pytest tests/progress
@@ -191,6 +228,62 @@ jobs:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
         run: python scripts/verify-architect-to-ce-lock.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
+
+      - name: Compute CE-to-Builder lock hashes
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_CE_REPO_PROMPT04: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo-Prompt04
+          EV4_BUILDER_REPO_PROMPT04: ${{ github.workspace }}/EV4-Builder-Assistant-Repo-Prompt04
+        run: |
+          python scripts/compute-ce-to-builder-lock.py \
+            --ce-repo "$EV4_CE_REPO_PROMPT04" \
+            --builder-repo "$EV4_BUILDER_REPO_PROMPT04" \
+            --output c2b-lock-computed.json
+
+      - name: Upload CE-to-Builder computed lock
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: c2b-lock-computed
+          path: EV4-Project-Gate/c2b-lock-computed.json
+          if-no-files-found: ignore
+
+      - name: CE-to-Builder lock verification
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_CE_REPO_PROMPT04: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo-Prompt04
+          EV4_BUILDER_REPO_PROMPT04: ${{ github.workspace }}/EV4-Builder-Assistant-Repo-Prompt04
+        run: |
+          set -o pipefail
+          python scripts/verify-ce-to-builder-lock.py --ce-repo "$EV4_CE_REPO_PROMPT04" --builder-repo "$EV4_BUILDER_REPO_PROMPT04" 2>&1 | tee c2b-lock-verify.log
+
+      - name: Upload CE-to-Builder lock verify log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: c2b-lock-verify-log
+          path: EV4-Project-Gate/c2b-lock-verify.log
+          if-no-files-found: ignore
+
+      - name: CE-to-Builder live owner tool smoke
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_CE_REPO_PROMPT04: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo-Prompt04
+          EV4_BUILDER_REPO_PROMPT04: ${{ github.workspace }}/EV4-Builder-Assistant-Repo-Prompt04
+        run: |
+          set -o pipefail
+          python scripts/ce-to-builder-smoke.py \
+            --ce-repo "$EV4_CE_REPO_PROMPT04" \
+            --builder-repo "$EV4_BUILDER_REPO_PROMPT04" \
+            --fixture "$EV4_CE_REPO_PROMPT04/tests/role-alignment/valid/executable_visual_reference_package.json" 2>&1 | tee c2b-smoke.log
+
+      - name: Upload CE-to-Builder smoke log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: c2b-smoke-log
+          path: EV4-Project-Gate/c2b-smoke.log
+          if-no-files-found: ignore
 
       - name: CLI smoke valid bundle
         working-directory: EV4-Project-Gate
