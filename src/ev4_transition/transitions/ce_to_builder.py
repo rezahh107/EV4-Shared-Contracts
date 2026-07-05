@@ -35,24 +35,22 @@ class ExpectedDependency:
     identity_marker: str
 
 
-EXPECTED_CE_TO_BUILDER_DEPENDENCIES: dict[str, ExpectedDependency] = {
-    item.role: item
-    for item in [
-        ExpectedDependency("ce_producer_contract", CE_REPO, CE_COMMIT, "docs/CE_TO_BUILDER_PRODUCER_CONTRACT.md", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
-        ExpectedDependency("ce_builder_executable_schema", CE_REPO, CE_COMMIT, "schemas/builder_executable_package.schema.json", CE_PACKAGE_SCHEMA, "EV4 Builder Executable Package"),
-        ExpectedDependency("ce_validator_engine", CE_REPO, CE_COMMIT, "validator/engine.py", "validator/engine.py", "builder_executable_package"),
-        ExpectedDependency("ce_validator_rules", CE_REPO, CE_COMMIT, "validator/rules.py", "validator/rules.py", "ConstructabilityViolation"),
-        ExpectedDependency("ce_valid_fixture", CE_REPO, CE_COMMIT, "tests/role-alignment/valid/executable_visual_reference_package.json", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
-        ExpectedDependency("builder_input_contract", BUILDER_REPO, BUILDER_COMMIT, "input-contracts/BUILDER_CONTEXT_INPUT_CONTRACT.md", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
-        ExpectedDependency("builder_context_schema", BUILDER_REPO, BUILDER_COMMIT, "schemas/builder-context-package.schema.json", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
-        ExpectedDependency("builder_gate_doc", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_TO_BUILDER_CONTRACT_GATE.md", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
-        ExpectedDependency("builder_gate_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-ce-to-builder-contract-gate.mjs", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
-        ExpectedDependency("builder_adapter_contract", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_BUILDER_PACKAGE_ADAPTER_CONTRACT.md", "normalizeCeBuilderExecutablePackage", "normalizeCeBuilderExecutablePackage"),
-        ExpectedDependency("builder_adapter_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/normalize-ce-builder-executable-package.mjs", "normalizeCeBuilderExecutablePackage", "CE_BUILDER_PACKAGE_TRANSFORM_IDS"),
-        ExpectedDependency("builder_transform_registry", BUILDER_REPO, BUILDER_COMMIT, "data/ce-builder-transformation-registry.v1.json", "ce-builder-transformation-registry.v1", "ce-builder-transformation-registry"),
-        ExpectedDependency("builder_output_validator", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-package.mjs", "Cross-field validation", "validateReferenceParadigmGate"),
-    ]
-}
+_EXPECTED_ITEMS = [
+    ExpectedDependency("ce_producer_contract", CE_REPO, CE_COMMIT, "docs/CE_TO_BUILDER_PRODUCER_CONTRACT.md", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
+    ExpectedDependency("ce_builder_executable_schema", CE_REPO, CE_COMMIT, "schemas/builder_executable_package.schema.json", CE_PACKAGE_SCHEMA, "EV4 Builder Executable Package"),
+    ExpectedDependency("ce_validator_engine", CE_REPO, CE_COMMIT, "validator/engine.py", "validator/engine.py", "builder_executable_package"),
+    ExpectedDependency("ce_validator_rules", CE_REPO, CE_COMMIT, "validator/rules.py", "validator/rules.py", "ConstructabilityViolation"),
+    ExpectedDependency("ce_valid_fixture", CE_REPO, CE_COMMIT, "tests/role-alignment/valid/executable_visual_reference_package.json", CE_PACKAGE_SCHEMA, CE_PACKAGE_SCHEMA),
+    ExpectedDependency("builder_input_contract", BUILDER_REPO, BUILDER_COMMIT, "input-contracts/BUILDER_CONTEXT_INPUT_CONTRACT.md", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
+    ExpectedDependency("builder_context_schema", BUILDER_REPO, BUILDER_COMMIT, "schemas/builder-context-package.schema.json", BUILDER_CONTEXT_SCHEMA, BUILDER_CONTEXT_SCHEMA),
+    ExpectedDependency("builder_gate_doc", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_TO_BUILDER_CONTRACT_GATE.md", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
+    ExpectedDependency("builder_gate_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-ce-to-builder-contract-gate.mjs", "ce_to_builder_contract_gate", "ce_to_builder_contract_gate"),
+    ExpectedDependency("builder_adapter_contract", BUILDER_REPO, BUILDER_COMMIT, "docs/CE_BUILDER_PACKAGE_ADAPTER_CONTRACT.md", "normalizeCeBuilderExecutablePackage", "CE Builder Package Adapter Contract"),
+    ExpectedDependency("builder_adapter_script", BUILDER_REPO, BUILDER_COMMIT, "scripts/normalize-ce-builder-executable-package.mjs", "normalizeCeBuilderExecutablePackage", "CE_BUILDER_PACKAGE_TRANSFORM_IDS"),
+    ExpectedDependency("builder_transform_registry", BUILDER_REPO, BUILDER_COMMIT, "data/ce-builder-transformation-registry.v1.json", "ce-builder-transformation-registry.v1", "ce-builder-transformation-registry"),
+    ExpectedDependency("builder_output_validator", BUILDER_REPO, BUILDER_COMMIT, "scripts/validate-package.mjs", "Cross-field validation", "validateReferenceParadigmGate"),
+]
+EXPECTED_CE_TO_BUILDER_DEPENDENCIES: dict[str, ExpectedDependency] = {item.role: item for item in _EXPECTED_ITEMS}
 REQUIRED_ROLES = set(EXPECTED_CE_TO_BUILDER_DEPENDENCIES)
 
 
@@ -108,8 +106,7 @@ def verify_ce_to_builder_lock(lock: dict[str, Any], source: ContractSource) -> l
         actual_hash = bytes_sha256(content)
         if item.get("sha256_file_bytes") != actual_hash:
             diagnostics.append(diagnostic("PG.C2B.EXTERNAL_HASH_MISMATCH", "error", "Pinned owner file hash does not match CE→Builder lock manifest.", path, role=role, repository=expected.repository, commit=expected.accepted_commit, file_path=expected.path, expected_sha256=item.get("sha256_file_bytes"), actual_sha256=actual_hash))
-        text = content.decode("utf-8", errors="replace")
-        if expected.identity_marker not in text:
+        if expected.identity_marker not in content.decode("utf-8", errors="replace"):
             diagnostics.append(diagnostic("PG.C2B.EXTERNAL_IDENTITY_MISMATCH", "error", "Pinned CE/Builder owner file identity marker was not found.", path, role=role, expected_marker=expected.identity_marker))
     missing = sorted(REQUIRED_ROLES - seen)
     if missing:
@@ -124,7 +121,6 @@ def transition_ce_to_builder(ce_input: Any, contract_source: ContractSource, tra
     source_bundle, ce_package = _extract_ce_package(ce_input, transition_config.schema_root, diagnostics, accepted_requires)
     if _has_blocking(diagnostics):
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     diagnostics.extend(_ce_package_identity_diagnostics(ce_package))
     accepted_requires["ce_package_identity_verified"] = not _has_error(diagnostics)
     diagnostics.extend(_synthetic_evidence_diagnostics(source_bundle, transition_config.require_real_evidence))
@@ -132,28 +128,24 @@ def transition_ce_to_builder(ce_input: Any, contract_source: ContractSource, tra
     accepted_requires["required_evidence_present"] = not _has_insufficient(diagnostics)
     if _has_blocking(diagnostics):
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     lock_diags = verify_ce_to_builder_lock(transition_config.lock, contract_source)
     diagnostics.extend(lock_diags)
     accepted_requires["ce_producer_pin_hash_matches"] = not any(d.severity in {"error", "insufficient_evidence"} and d.details.get("repository") == CE_REPO for d in lock_diags)
     accepted_requires["builder_consumer_pin_hash_matches"] = not any(d.severity in {"error", "insufficient_evidence"} and d.details.get("repository") == BUILDER_REPO for d in lock_diags)
     if _has_blocking(diagnostics):
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     ce_outcome = _run_ce_validator(transition_config, ce_package, progress_sink)
     execution_records["ce_validator"] = ce_outcome.execution_record.to_dict()
     diagnostics.extend(ce_outcome.diagnostics)
     accepted_requires["official_ce_validator_passed"] = ce_outcome.status == "accepted"
     if _has_blocking(diagnostics) or ce_outcome.status != "accepted":
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     gate_outcome = _run_builder_gate(transition_config, ce_package, progress_sink)
     execution_records["builder_contract_gate"] = gate_outcome.execution_record.to_dict()
     diagnostics.extend(gate_outcome.diagnostics)
     accepted_requires["builder_contract_gate_passed"] = gate_outcome.status == "accepted"
     if _has_blocking(diagnostics) or gate_outcome.status != "accepted":
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     adapter_outcome = _run_builder_adapter(transition_config, ce_package, progress_sink)
     execution_records["builder_adapter"] = adapter_outcome.execution_record.to_dict()
     diagnostics.extend(adapter_outcome.diagnostics)
@@ -163,7 +155,6 @@ def transition_ce_to_builder(ce_input: Any, contract_source: ContractSource, tra
     accepted_requires["official_builder_adapter_passed"] = adapter_outcome.status == "accepted" and isinstance(builder_context_package, dict)
     if _has_blocking(diagnostics) or adapter_outcome.status != "accepted" or builder_context_package is None:
         return _result(ce_input, source_bundle, ce_package, None, diagnostics, accepted_requires, execution_records, transition_config)
-
     diagnostics.extend(_builder_schema_validation_diagnostics(builder_context_package, contract_source))
     if not _has_blocking(diagnostics):
         output_outcome = _run_builder_output_validator(transition_config, builder_context_package, progress_sink)
@@ -208,7 +199,6 @@ def _run_builder_output_validator(config: CeToBuilderTransitionConfig, builder_c
 
 def _missing_local_root(kind: str, root_name: str, path: str, owner_repo: str, owner_commit: str):
     from ev4_transition.runners.records import TimeoutPolicy, ToolExecutionOutcome, build_adapter_execution_record, build_validator_execution_record
-
     code = "PG.VALIDATOR.MISSING" if kind == "validator" else "PG.ADAPTER.MISSING"
     diag = diagnostic(code, "insufficient_evidence", f"Local {root_name} checkout is required for official CE→Builder tool execution.", "$", root=root_name, tool_path=path)
     if kind == "validator":
@@ -259,8 +249,7 @@ def _builder_schema_validation_diagnostics(builder_context_package: dict[str, An
         schema = json.loads(source.read_bytes(BUILDER_REPO, BUILDER_COMMIT, "schemas/builder-context-package.schema.json").decode("utf-8"))
     except Exception as exc:
         return [diagnostic("PG.C2B.BUILDER_SCHEMA_UNAVAILABLE", "insufficient_evidence", "Builder-owned output schema could not be read.", "$.builder_output", error_type=type(exc).__name__)]
-    validator = Draft202012Validator(schema)
-    return [diagnostic("PG.C2B.BUILDER_SCHEMA_VALIDATION_FAILED", "error", err.message, _json_path(list(err.path))) for err in sorted(validator.iter_errors(builder_context_package), key=lambda e: (_json_path(list(e.path)), e.message))]
+    return [diagnostic("PG.C2B.BUILDER_SCHEMA_VALIDATION_FAILED", "error", err.message, _json_path(list(err.path))) for err in sorted(Draft202012Validator(schema).iter_errors(builder_context_package), key=lambda e: (_json_path(list(e.path)), e.message))]
 
 
 def _accepted_requires_template() -> dict[str, bool]:
@@ -276,20 +265,7 @@ def _result(original_input: Any, source_bundle: dict[str, Any] | None, ce_packag
         local.append(diagnostic("PG.C2B.ACCEPTED_REQUIRES_MISSING", "insufficient_evidence", "CE→Builder transition cannot be accepted until every accepted_requires item is true.", "$.accepted_requires", missing_requires=missing))
     ordered = sort_diagnostics(local)
     status = project_gate_status_from_diagnostics(ordered)
-    result = {
-        "schema_version": "ce-to-builder-transition-result.v1",
-        "result_type": "ce_to_builder_transition",
-        "transition": {"id": TRANSITION_ID, "version": TRANSITION_VERSION, "source_payload_schema": CE_PACKAGE_SCHEMA, "target_payload_schema": BUILDER_CONTEXT_SCHEMA},
-        "status": status,
-        "source_stage": "ce",
-        "target_stage": "builder",
-        "accepted_requires": accepted_requires,
-        "diagnostics": [item.to_dict() for item in ordered],
-        "hashes": {"input": _hash_or_none(original_input, "input"), "source_bundle": _hash_or_none(source_bundle, "source_bundle"), "ce_package": _hash_or_none(ce_package, "ce_package"), "builder_context_package": _hash_or_none(builder_context_package, "builder_context_package"), "external_contract_lock": {"algorithm": "sha256", "canonicalization": CANONICAL_JSON_VERSION, "scope": "external_contract_lock", "value": canonical_sha256(config.lock)}},
-        "execution_records": execution_records,
-        "provenance": {"producer_repository": PG_REPO, "source_bundle_id": source_bundle.get("bundle_id") if isinstance(source_bundle, dict) else None, "transition_id": TRANSITION_ID, "verification_state": "live_owner_tools_required"},
-        "output": builder_context_package if status == "accepted" else None,
-    }
+    result = {"schema_version": "ce-to-builder-transition-result.v1", "result_type": "ce_to_builder_transition", "transition": {"id": TRANSITION_ID, "version": TRANSITION_VERSION, "source_payload_schema": CE_PACKAGE_SCHEMA, "target_payload_schema": BUILDER_CONTEXT_SCHEMA}, "status": status, "source_stage": "ce", "target_stage": "builder", "accepted_requires": accepted_requires, "diagnostics": [item.to_dict() for item in ordered], "hashes": {"input": _hash_or_none(original_input, "input"), "source_bundle": _hash_or_none(source_bundle, "source_bundle"), "ce_package": _hash_or_none(ce_package, "ce_package"), "builder_context_package": _hash_or_none(builder_context_package, "builder_context_package"), "external_contract_lock": {"algorithm": "sha256", "canonicalization": CANONICAL_JSON_VERSION, "scope": "external_contract_lock", "value": canonical_sha256(config.lock)}}, "execution_records": execution_records, "provenance": {"producer_repository": PG_REPO, "source_bundle_id": source_bundle.get("bundle_id") if isinstance(source_bundle, dict) else None, "transition_id": TRANSITION_ID, "verification_state": "live_owner_tools_required"}, "output": builder_context_package if status == "accepted" else None}
     _validate_transition_result(result, config.schema_root)
     return result
 
@@ -328,14 +304,12 @@ def _has_blocking(items: list[Diagnostic]) -> bool:
 
 def _has_forbidden_claim(ce_package: dict[str, Any] | None, builder_context_package: dict[str, Any] | None) -> bool:
     forbidden_keys = {"production_ready", "builder_runtime_authorized", "production_ready_allowed"}
-
     def scan(value: Any) -> bool:
         if isinstance(value, dict):
             return any((key in forbidden_keys and item is True) or scan(item) for key, item in value.items())
         if isinstance(value, list):
             return any(scan(item) for item in value)
         return False
-
     return scan(ce_package) or scan(builder_context_package)
 
 
