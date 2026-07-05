@@ -113,12 +113,40 @@ jobs:
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
         run: pytest tests/test_architect_to_ce_transition.py -k 'mapper_skipped or target_bundle_absent or invalid_identity'
 
-      - name: A2C evidence and determinism tests
+      - name: A2C source commit preservation test
         working-directory: EV4-Project-Gate
         env:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
-        run: pytest tests/test_architect_to_ce_transition.py -k 'source_commit or insufficient_evidence or lock_enforcement or repeat_run or no_live_timestamp'
+        run: pytest tests/test_architect_to_ce_transition.py::test_explicit_source_commit_preserved_and_missing_commit_omitted
+
+      - name: A2C insufficient evidence test
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py::test_insufficient_evidence_transition_keeps_output_and_status
+
+      - name: A2C lock enforcement test
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py -k 'lock_enforcement'
+
+      - name: A2C repeat run determinism test
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py::test_repeat_run_byte_identical
+
+      - name: A2C nonfinite edge test
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: pytest tests/test_architect_to_ce_transition.py::test_no_live_timestamp_and_nonfinite_invalid
 
       - name: Architect-to-CE CLI transition tests
         working-directory: EV4-Project-Gate
