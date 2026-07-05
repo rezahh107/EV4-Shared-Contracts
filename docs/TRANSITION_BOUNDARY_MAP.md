@@ -1,6 +1,6 @@
 # EV4 Transition Boundary Map
 
-Status: PR #20 is merged. CE→Builder orchestration is implemented and owner-fixture integration passed on PR head `42bfa484481c585f589d86c40424660c70b038a0` in workflow run `28744810186`. Real non-synthetic CE→Builder handoff evidence remains unavailable, and CE→Builder is not a public CLI transition.
+Status: PR #21 is merged. Prompt-05 Builder→Responsive and Final Evidence Gate orchestration baselines are implemented on `fix/prompt-05-foundation-reconciliation` with immutable owner pins and fail-closed lock verification. Exact-head CI is pending. Real non-synthetic Builder and Responsive evidence remains unavailable.
 
 ## Status vocabulary
 
@@ -52,43 +52,44 @@ consumer_repository: rezahh107/EV4-Builder-Assistant-Repo
 consumer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
 project_gate_lock: contracts/locks/ce-to-builder-transition.v1.lock.json
 project_gate_result_schema: schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json
-project_gate_transition_module: src/ev4_transition/transitions/ce_to_builder.py
-ci_lock_verifier: scripts/verify-ce-to-builder-lock.py
-ci_smoke: scripts/ce-to-builder-smoke.py
-verified_pr_head: 42bfa484481c585f589d86c40424660c70b038a0
-verified_workflow_run: 28744810186
 ```
-
-Current boundary:
-
-```text
-CE Builder Executable Package
-→ Project Gate envelope/package identity check
-→ Project Gate lock verification for pinned CE and Builder owner files
-→ official CE package validator
-→ official Builder CE→Builder Contract Gate
-→ official Builder adapter
-→ Builder-owned context schema validation
-→ official Builder output validator
-→ Project Gate CE→Builder transition result
-```
-
-Project Gate may verify repository, commit, path, identity marker, and file-byte SHA-256 pins; run official tools through the runner infrastructure; validate Builder output through Builder-owned contracts; record execution hashes; and emit Project Gate diagnostics/results.
-
-Project Gate must not copy specialist schemas, implement CE constructability rules, implement Builder normalization, bypass the Builder Contract Gate, silently repair CE output, treat fixtures as real handoff evidence, or emit accepted when an `accepted_requires` item is false.
 
 ## Builder → Responsive
 
 ```yaml
 transition_id: ev4-builder-to-responsive-transition@1.0.0
-orchestration_baseline: not_implemented
+orchestration_baseline: implemented
 cli_exposure: not_implemented
 producer_repository: rezahh107/EV4-Builder-Assistant-Repo
+producer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
 consumer_repository: rezahh107/EV4-Responsive-Architect
+consumer_commit: df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a
+owner_contract_lock: contracts/locks/builder-to-responsive-transition.v1.lock.json
+official_input_validator: validation/e2e/run_builder_responsive_input_boundary_check.py
+verification_state: pending_exact_head_ci
+real_non_synthetic_handoff: insufficient_evidence
 ```
 
-The boundary remains future-only and fail-closed. Project Gate must not claim Responsive correctness, frontend correctness, accessibility completion, export validation completion, or production readiness without explicit owning-repository evidence.
+Project Gate packages pinned Builder evidence references as transport metadata and validates Responsive-owned intake contracts. It does not create a Builder-owned formal export schema and must not claim Responsive correctness, frontend correctness, accessibility completion, export validation completion, or production readiness.
 
-## Current main CI note
+## Final Evidence Gate
 
-The exact automatic post-merge `main` head audited was `dca39ed177d5660d96df04a05fff0a0314c6c339`. No workflow run was visible for that exact head, so its CI status remains `insufficient_evidence`.
+```yaml
+gate_id: ev4-final-evidence-gate@1.0.0
+orchestration_baseline: implemented
+cli_exposure: not_implemented
+prior_lock_chain: pinned_to_immutable_project_gate_commit
+official_output_validator: validation/e2e/run_responsive_tree_architecture_refactor_check.py
+verification_state: pending_exact_head_ci
+real_non_synthetic_evidence: insufficient_evidence
+```
+
+The final gate verifies the immutable prior lock chain, Responsive-owned output schema and validator execution, and explicit real-evidence presence. Synthetic fixtures and CI success cannot be promoted into frontend or production correctness.
+
+## Evidence interpretation
+
+A green Project Gate CI run proves only that the checked implementation, fixtures, immutable locks, and owner-tool integrations passed for the exact tested head. It does not prove real Elementor execution, Responsive correctness, accessibility, export validity, release readiness, or production readiness.
+
+## Foundation CI note
+
+The current foundation `main` head observed before this repair was `4233d2ff22310f86305b2e67055c8e4eeb03d6df`. No exact-head workflow run was visible for that automatic historical-ledger commit, so that specific head remains `insufficient_evidence`. PR #21 head `ce356b6f6a8dee5f807679aed0f78aa057152d1b` passed Skeleton Health run `28748324684`.
