@@ -42,34 +42,7 @@ latest_green_ci_evidence_before_final_docs_refresh:
     Official CE validator fixture suite: success
   note: Documentation-only refresh commits after this green run may trigger newer runs; verify latest PR head before merge.
 
-commits_added_after_initial_prompt_04_handoff:
-  - 43e1f042e2ae8e0783571ab23524da56a16a37fc ci(c2b): preserve failing pytest log artifact
-  - f56edbcea31b3f56d4dccd07b141c1b8f6481403 test(c2b): include CE validator identity marker
-  - 304d4dc2cd9a7374f073aeffe5b9a137db7456c2 test(c2b): include Builder adapter identity marker
-  - dc92297f6bc1c1d3ea4c230fb02f1384ef435a75 feat(c2b): add lock hash computation helper
-  - 081553ab4aa8eb8498bfa0e547b7d8d8194a5856 ci(c2b): upload computed lock hash manifest
-  - 64ce2ca47e19e814dba95c926ad451046689a99d fix(c2b): replace lock placeholders with computed owner hashes
-  - 3c8c279a87c6b745006672e906782a776fc9d85b fix(c2b): align Builder adapter script identity marker
-  - b93dbd371c1fc11816229b5104803a8d1a626f88 test(c2b): align adapter fixture marker with owner script
-  - 1ececa659bfe40c4e5234d409085c0a5852ee9c7 fix(c2b): restore transition helper functions
-  - 19119fba20f70365a4c3ac90f7f2f5108bf9f54f ci(c2b): preserve lock verification diagnostics
-  - 1022c5affaf042316e5301e3e5894dedb5b8a5fb fix(c2b): align adapter contract identity marker
-  - 43ccc6fc01086fd46daa985ca7d0179f6b6f39c4 test(c2b): align adapter contract fixture marker
-  - 7c3e6a54b8f89d1d366d65c75d0db42ec990acc2 fix(c2b): unwrap Builder owner smoke fixture
-  - 5c2f1c8b9f632fdc363834941fe5c4ad16054e24 fix(c2b): use Builder-owned smoke fixture when available
-  - f258fdd22dd774adc6ef7149ac755fb8b3cfa6a3 ci(c2b): preserve live smoke diagnostics
-  - 5a3bf436dfa12e7dc2bd49094634089a7668bc78 fix(c2b): wrap CE package validator input in CE review document
-  - 87a4a84640c999cee049a0d40865c25efabeafb0 fix(c2b): add PyYAML for official CE validator execution
-  - f58c8c0e4e61c1dc6fa59d3d4ad724f38fcfa4db docs(c2b): mark PROMPT-04 baseline CI evidenced
-  - 1c2aa49a9dd6739d56a18a7a313c6b5ac6ed561e docs(c2b): update boundary map after green CI
-  - 99512a2b8b7fddff1adaf44b3d8cee569fbf282a docs(c2b): promote green C2B coverage to ci_enforced
-  - 96d27ebcbc24e42b4e4789f89086f3e51c995e86 docs(c2b): refresh PROMPT-04 handoff after green CI
-  - 08f470b32d0b1db4a48c2268a8394ea5ccd4581f docs(c2b): clarify latest green CI reference
-  - bfc2e92df6fd2129f9c5d8447d9902a3cd3e653a docs(c2b): refresh PROMPT-04 handoff latest green reference
-  - 9d38f6cc2994060521feb4fc03eb5ea79940bb33 docs(c2b): record diagnostic docs conflict in handoff
-  - 3b913881df9990338eb1c83a9953d6259134d029 docs(c2b): remove unresolved placeholder from handoff
-  - 139c5b3f767e17b6587d1b272530e438c0ed7962 docs(c2b): finalize PROMPT-04 handoff commit ledger
-  - 604fbfcae42e823ad4128907f58ef74aeff3b2bb docs(c2b): record final handoff commit ledger
+commit_ledger_note: Full continuation commit history is available in PR #20. Key green-evidence code head is 87a4a84640c999cee049a0d40865c25efabeafb0; latest handoff-only refresh commit before final response is 870cf9b3d10965685f12f07f47688752bf949ea4.
 
 files_changed_relevant_to_continuation:
   - .github/workflows/validate.yml
