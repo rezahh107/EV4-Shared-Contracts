@@ -61,17 +61,18 @@ jobs:
           status_path = Path('docs/IMPLEMENTATION_STATUS.yaml')
           text = status_path.read_text(encoding='utf-8')
           anchor = '  foundation_main_head_ci:\n    status: insufficient_evidence\n    reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit\n'
-          compatibility = '''  audited_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
-          current_main_head_ci:
-            status: insufficient_evidence
-            reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit
-          pull_request_20:
-            state: merged
-            head_sha: 42bfa484481c585f589d86c40424660c70b038a0
-            merge_commit_sha: 34b08240ad4deaf017a8f79236d0b8e214530dec
-            workflow_run_id: 28744810186
-            workflow_result: success
-          '''
+          compatibility = (
+              '  audited_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df\n'
+              '  current_main_head_ci:\n'
+              '    status: insufficient_evidence\n'
+              '    reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit\n'
+              '  pull_request_20:\n'
+              '    state: merged\n'
+              '    head_sha: 42bfa484481c585f589d86c40424660c70b038a0\n'
+              '    merge_commit_sha: 34b08240ad4deaf017a8f79236d0b8e214530dec\n'
+              '    workflow_run_id: 28744810186\n'
+              '    workflow_result: success\n'
+          )
           if '  pull_request_20:\n' not in text:
               if anchor not in text:
                   raise SystemExit('implementation status compatibility anchor missing')
@@ -89,8 +90,14 @@ jobs:
             --responsive-repo .owner/EV4-Responsive-Architect \
             --output contracts/locks/builder-to-responsive-transition.v1.lock.json
 
-      - name: Run focused stage-one tests
-        run: pytest -vv --tb=short tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
+      - name: Run Builder to Responsive tests
+        run: pytest -vv --tb=short tests/transitions/test_builder_to_responsive.py
+
+      - name: Run Final Gate tests
+        run: pytest -vv --tb=short tests/transitions/test_final_gate.py
+
+      - name: Run capability and CLI tests
+        run: pytest -vv --tb=short tests/test_cli.py
 
       - name: Commit non-circular Builder to Responsive foundation
         id: stage1
