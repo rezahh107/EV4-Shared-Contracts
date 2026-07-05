@@ -6,6 +6,12 @@ on:
     branches:
       - project-gate-prompt-05-builder-responsive-final-gate
       - fix/prompt-05-foundation-reconciliation
+  workflow_dispatch:
+    inputs:
+      expected_head_sha:
+        description: Exact commit SHA that this dispatched run must validate.
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -20,6 +26,13 @@ jobs:
         with:
           path: EV4-Project-Gate
           persist-credentials: false
+
+      - name: Verify dispatched exact head
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          TESTED_SHA: ${{ github.sha }}
+        run: test "$TESTED_SHA" = "$EXPECTED_HEAD_SHA"
 
       - name: Checkout pinned Builder owner repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -50,10 +63,24 @@ jobs:
         working-directory: EV4-Project-Gate
         run: python scripts/check-github-action-pinning.py
 
+      - name: Verify workflow permissions
+        working-directory: EV4-Project-Gate
+        run: python scripts/check-workflow-permissions.py
+
+      - name: Verify capability truth
+        working-directory: EV4-Project-Gate
+        run: python scripts/check-capability-truth.py
+
       - name: Prompt-05 syntax and JSON checks
         working-directory: EV4-Project-Gate
         run: |
-          python -m py_compile             src/ev4_transition/progress.py             src/ev4_transition/runners/responsive_tools.py             src/ev4_transition/transitions/builder_to_responsive.py             src/ev4_transition/transitions/final_gate.py             scripts/compute-builder-to-responsive-lock.py             scripts/compute-final-gate-lock.py
+          python -m py_compile \
+            src/ev4_transition/progress.py \
+            src/ev4_transition/runners/responsive_tools.py \
+            src/ev4_transition/transitions/builder_to_responsive.py \
+            src/ev4_transition/transitions/final_gate.py \
+            scripts/compute-builder-to-responsive-lock.py \
+            scripts/compute-final-gate-lock.py
           python -m json.tool schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json >/dev/null
           python -m json.tool schemas/final-gate-result/final-gate-result.v1.schema.json >/dev/null
           python -m json.tool contracts/locks/builder-to-responsive-transition.v1.lock.json >/dev/null
@@ -66,9 +93,15 @@ jobs:
       - name: Recompute and compare immutable locks
         working-directory: EV4-Project-Gate
         run: |
-          python scripts/compute-builder-to-responsive-lock.py             --builder-repo ../EV4-Builder-Assistant-Repo             --responsive-repo ../EV4-Responsive-Architect             --output /tmp/b2r-lock.json
+          python scripts/compute-builder-to-responsive-lock.py \
+            --builder-repo ../EV4-Builder-Assistant-Repo \
+            --responsive-repo ../EV4-Responsive-Architect \
+            --output /tmp/b2r-lock.json
           cmp /tmp/b2r-lock.json contracts/locks/builder-to-responsive-transition.v1.lock.json
-          python scripts/compute-final-gate-lock.py             --project-gate-repo .             --responsive-repo ../EV4-Responsive-Architect             --output /tmp/final-lock.json
+          python scripts/compute-final-gate-lock.py \
+            --project-gate-repo . \
+            --responsive-repo ../EV4-Responsive-Architect \
+            --output /tmp/final-lock.json
           cmp /tmp/final-lock.json contracts/locks/final-gate.v1.lock.json
 
       - name: Run pinned official Responsive validators
@@ -88,4 +121,4 @@ jobs:
           retention-days: 14
 
       - name: Record exact head
-        run: echo "Prompt-05 validated source head ${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Prompt-05 validated source head ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
