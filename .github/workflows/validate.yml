@@ -11,6 +11,7 @@ on:
       - project-gate-prompt-02-behavioral-coverage
       - project-gate-prompt-03-runner-boundary
       - project-gate-prompt-04-ce-to-builder
+      - project-gate-prompt-05-builder-responsive-final-gate
 
 jobs:
   skeleton:
@@ -52,7 +53,7 @@ jobs:
 
       - name: Verify no specialist canonical schema files exist
         run: |
-          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json)$'
+          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json|schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json|schemas/final-gate-result/final-gate-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json)$'
           unexpected=$(find schemas -type f | grep -Ev "$allowed" || true)
           if [ -n "$unexpected" ]; then
             echo "Unexpected schema files found under schemas/."
