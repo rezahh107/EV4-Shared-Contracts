@@ -47,6 +47,38 @@ jobs:
       - name: Apply deterministic repair patch
         run: python scripts/bootstrap-prompt05-repair.py --apply
 
+      - name: Preserve version-one compatibility aliases
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          capability_path = Path('src/ev4_transition/data/capability-status.v1.json')
+          capability = json.loads(capability_path.read_text(encoding='utf-8'))
+          capability['evidence']['current_main_head_ci'] = dict(capability['evidence']['foundation_main_head_ci'])
+          capability_path.write_text(json.dumps(capability, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          status_path = Path('docs/IMPLEMENTATION_STATUS.yaml')
+          text = status_path.read_text(encoding='utf-8')
+          anchor = '  foundation_main_head_ci:\n    status: insufficient_evidence\n    reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit\n'
+          compatibility = '''  audited_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
+          current_main_head_ci:
+            status: insufficient_evidence
+            reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit
+          pull_request_20:
+            state: merged
+            head_sha: 42bfa484481c585f589d86c40424660c70b038a0
+            merge_commit_sha: 34b08240ad4deaf017a8f79236d0b8e214530dec
+            workflow_run_id: 28744810186
+            workflow_result: success
+          '''
+          if '  pull_request_20:\n' not in text:
+              if anchor not in text:
+                  raise SystemExit('implementation status compatibility anchor missing')
+              text = text.replace(anchor, anchor + compatibility, 1)
+          status_path.write_text(text, encoding='utf-8')
+          PY
+
       - name: Install repaired package
         run: python -m pip install -e '.[dev]'
 
@@ -58,7 +90,7 @@ jobs:
             --output contracts/locks/builder-to-responsive-transition.v1.lock.json
 
       - name: Run focused stage-one tests
-        run: pytest -q tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
+        run: pytest -vv --tb=short tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
 
       - name: Commit non-circular Builder to Responsive foundation
         id: stage1
@@ -84,7 +116,7 @@ jobs:
       - name: Validate finalized repair before publishing
         run: |
           python scripts/check-github-action-pinning.py
-          pytest -q tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
+          pytest -vv --tb=short tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
 
       - name: Commit finalized Prompt-05 repair
         run: |
