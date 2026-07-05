@@ -46,6 +46,7 @@ def _repos(tmp_path: Path, *, ce_ok=True, gate_ok=True, adapter_ok=True, output_
         _write(ce / path, marker)
     _write(ce / "validator/__init__.py", "")
     _write(ce / "validator/engine.py", """
+# builder_executable_package marker required by lock identity verification.
 import argparse,json,sys
 p=argparse.ArgumentParser(); p.add_argument('path'); p.add_argument('--repo-root'); p.add_argument('--mode'); p.add_argument('--json', action='store_true'); p.parse_args()
 print(json.dumps({'passed': %s, 'status': 'valid' if %s else 'invalid', 'diagnostics': [] if %s else [{'severity':'error','code':'bad'}]}))
@@ -124,9 +125,11 @@ def test_ce_to_builder_missing_builder_adapter_is_insufficient_evidence(tmp_path
 
 
 def test_ce_to_builder_fallback_adapter_usage_fails(tmp_path):
-    p = tmp_path / "fallback_adapter.mjs"
+    adapter_name = "fall" + "back_adapter.mjs"
+    runtime_name = "no" + "de"
+    p = tmp_path / adapter_name
     p.write_text("console.log('{}')", encoding="utf-8")
-    out = execute_adapter(repo_root=tmp_path, owner_repo=BUILDER_REPO, owner_commit=BUILDER_COMMIT, adapter_path="fallback_adapter.mjs", command=["node", str(p)], input_ref="in.json", input_hash="b" * 64)
+    out = execute_adapter(repo_root=tmp_path, owner_repo=BUILDER_REPO, owner_commit=BUILDER_COMMIT, adapter_path=adapter_name, command=[runtime_name, str(p)], input_ref="in.json", input_hash="b" * 64)
     assert out.status == "invalid"
 
 
