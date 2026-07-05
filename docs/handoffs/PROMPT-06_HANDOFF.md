@@ -3,25 +3,27 @@
 ```yaml
 prompt_id: PROMPT-06
 branch: project-gate-prompt-06-ux
+pull_request: 24
+base_branch: main
+latest_recorded_head_sha_before_handoff_update: 625eb8428e40d55595790344f7a1f2a247c5b9a4
+review_repair_source:
+  review_package: review-package.json
+  original_review_status: RED_DO_NOT_MERGE
+  blocking_findings_repaired:
+    - PRF-001: missing explicit minimum workflow permissions
+    - PRF-002: directory fsync could falsely fail completed atomic replace
+  non_blocking_findings_deferred:
+    - PRF-003: optional HTML renderer wraps Markdown; clarify before promoting HTML as a real UI surface
 commits:
-  - 5e879ddfa101f7b44ca8d7c99b57551b9cd1f0c6
-  - de18113a6af4b5b1ec66d9a8cdd4911ff822d7e7
-  - 30fba8a1cb524e68c28899e734c06ba381dba1d3
-  - c2857a4bfe5c4675ce4bd631d0650f58cb2fef03
-  - 0cf8a038249e36943f0188b3dcd9e553594fb72d
-  - 33fc6cbca065af18ffc9210f84cf86453082b7c5
-  - 0a2d05d075f412b799fe7f7f6b7ce146d2477ae2
-  - 6eb35ac4b1d408405e0f9f4d41099d346e6a7788
-  - 50292ee373d03a37f633d374c3820d7af4afea7b
-  - 098b7a48bf2bc60671db644496cb079a8279426f
-  - 81da15de4890e5592a0131b7f8bfaabde88b3866
-  - 646a3f84dd36500252e5a7de96d77ce41680d30b
-  - 5b620a2367686f951f09e948f47f8741460162d9
-  - 4b950c468713e632317b355c3150773c96dcfa68
-  - 3d63ba8e632c5287fee0e47ad040f49d2025e99e
-  - c892f73eedd2f4b92b3bbd044132b38775a4d50f
-  - 4054e2127648a672a9d745dd5a43f4cae27be49d
-  - handoff_creation_commit: see branch history after this file was added
+  original_prompt_06_commits: see PR #24 branch history before review repair
+  review_repair_commits:
+    - a0110893b013c346860246df545507a28e6faa12
+    - d43202fe1acab213ab8080bbf4b21364c95921b9
+    - e38b35b937ee21ce612090dcc822c783bc8d98f4
+    - bce78d673343c3560489aa04d18b8b1be2284ce9
+    - e57cb29612e400b0aa0041d754e9d74970fb1160
+    - 2c2b9f0913ea74f7609d9394e7705f90c6d55cd4
+    - 625eb8428e40d55595790344f7a1f2a247c5b9a4
 files_changed:
   - .github/workflows/prompt-06.yml
   - docs/BEHAVIORAL_RULE_COVERAGE.md
@@ -38,18 +40,24 @@ files_changed:
   - src/ev4_transition/reports/renderers.py
   - tests/reporting/test_output_writer.py
   - tests/reporting/test_report_rendering.py
+  - tests/reporting/test_workflow_permissions.py
   - tests/theme_acceptance/test_theme_tokens.py
   - tests/typography_acceptance/test_persian_bidi_typography.py
   - tests/ux_acceptance/test_report_status_ux.py
 tests_run:
-  - local limited prototype: PYTHONPATH=src pytest -q tests/ux_acceptance tests/typography_acceptance tests/theme_acceptance tests/reporting
-  - branch CI configured but not claimed as passed here
+  - local limited prototype before repository writes: PYTHONPATH=src pytest -q tests/ux_acceptance tests/typography_acceptance tests/theme_acceptance tests/reporting
+  - GitHub Actions on head 625eb8428e40d55595790344f7a1f2a247c5b9a4: Prompt 06 Report UX
+  - GitHub Actions on head 625eb8428e40d55595790344f7a1f2a247c5b9a4: Prompt 05 Builder Responsive Final Gate
+  - GitHub Actions on head 625eb8428e40d55595790344f7a1f2a247c5b9a4: Skeleton Health
 tests_passed:
-  - local limited prototype: 19 passed in 0.19s
+  - local limited prototype before repository writes: 19 passed in 0.19s
+  - Prompt 06 Report UX run 28752150828: success
+  - Prompt 05 Builder Responsive Final Gate run 28752150813: success
+  - Skeleton Health run 28752150805: success
 tests_failed: []
 tests_not_run:
-  - full repository pytest from live checkout: unavailable in container because github.com DNS resolution failed
-  - GitHub Actions exact-head result: not yet verified in this handoff
+  - full local live-checkout pytest from this environment: unavailable because github.com DNS resolution failed earlier
+  - dependency metadata scan: not performed
 coverage_rules_advanced:
   - PG-STATUS-001: validator_backed
   - PG-OUTPUT-001: validator_backed
@@ -68,12 +76,17 @@ new_or_changed_cli:
   - JSON output remains canonical and undecorated
 new_or_changed_ci:
   - .github/workflows/prompt-06.yml added
-  - runs UX acceptance, typography acceptance, theme acceptance, reporting, atomic writer, and behavioral coverage checks
+  - Prompt-06 workflow now explicitly sets permissions.contents=read
+  - Prompt-06 checkout now sets persist-credentials=false
+  - tests/reporting/test_workflow_permissions.py validates Prompt-06 least-privilege workflow contract
+  - Prompt-06 workflow runs UX acceptance, typography acceptance, theme acceptance, reporting, atomic writer, and behavioral coverage checks
 important_design_decisions:
   - Phase 1 remains CLI plus generated Persian reports; no local web UI or desktop UI was added.
   - status_mapping.py remains the status-presentation SSOT.
   - Report rendering deep-copies result payloads and does not mutate deterministic result objects.
   - Progress events are excluded only from report-level hash calculation; transition logic was not changed.
+  - File fsync before os.replace remains strict.
+  - Directory fsync after os.replace is best-effort to avoid false failure after a successful atomic replacement.
   - Atomic writer reports success/download only after final path existence is confirmed.
   - Persian reports use RTL containers; technical identifiers use LTR isolation and monospace code wrappers.
   - Theme tokens are explicit for light/dark mode; dark tokens are not simple inversion.
@@ -81,19 +94,22 @@ web_sources_used:
   - Python official docs: os.replace atomic destination replacement semantics
   - Python official docs: os.fsync after file flush for disk write
   - Python official docs: tempfile.NamedTemporaryFile temporary output behavior
+  - GitHub official docs: permissions key configures minimum required workflow access
+  - actions/checkout README: persist-credentials false disables persisted checkout credentials
 next_allowed_prompt: PROMPT-07 closure audit / stale prose cleanup / release readiness review
 blocking_issues:
-  - full live-checkout test execution was blocked by container DNS resolution for github.com
-  - GitHub Actions exact-head result must be checked before claiming CI success
+  - none known after PRF-001 and PRF-002 repair, subject to later PR Inspector re-review
 remaining_insufficient_evidence:
   - real non-synthetic CE-to-Builder transition evidence
   - real Builder execution evidence bundle
   - real Responsive input/output evidence bundle
   - accessibility, export, and frontend correctness evidence
   - downstream owner rejection evidence for downstream_contract_enforced claims
-  - exact Prompt-06 CI result until GitHub Actions is inspected
 ```
 
-## Notes
+## Review repair notes
 
-This prompt intentionally did not change transition acceptance, invalid, repair-needed, or insufficient-evidence decision logic. The work is report-layer, presentation-layer, output-writing, documentation, and tests/CI wiring only.
+- `PRF-001` was fixed by adding explicit `permissions: contents: read` and `persist-credentials: false` to `.github/workflows/prompt-06.yml`, plus a static regression test.
+- `PRF-002` was fixed by making only directory-level fsync after `os.replace()` best-effort while preserving strict file fsync before replacement, plus regression tests for both cases.
+- `PRF-003` remains non-blocking. Optional HTML output should not be advertised as a real HTML report until renamed or converted/tested as true HTML.
+- This prompt intentionally did not change transition acceptance, invalid, repair-needed, or insufficient-evidence decision logic.
