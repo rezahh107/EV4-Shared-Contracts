@@ -1,8 +1,8 @@
 # Behavioral Rule Coverage
 
-Status: `PROMPT-04` CE→Builder baseline has passing GitHub Actions evidence on PR `#20` head `87a4a84640c999cee049a0d40865c25efabeafb0` / run `28741498875`.
+Status: `PROMPT-04` CE→Builder behavioral ledger is conservative and intentionally separates CI evidence from behavioral coverage status.
 
-This ledger is intentionally conservative. CE→Builder lock/tool orchestration passed CI, but the behavioral coverage validator requires fixture bindings before a rule is marked `ci_enforced`. Therefore the C2B rules remain `validator_backed` here until dedicated C2B behavioral fixtures are bound to the declared validators.
+This ledger does not claim `ci_enforced` for CE→Builder behavioral rules yet. CE→Builder lock/tool orchestration has CI evidence in PR `#20`, but the behavioral coverage validator requires dedicated fixture bindings before a rule is marked `ci_enforced`. Therefore the C2B rules remain `validator_backed` here until dedicated C2B behavioral fixtures are bound to the declared validators. Current PR-head CI evidence is recorded in `docs/handoffs/PROMPT-04_HANDOFF.md` and `docs/IMPLEMENTATION_STATUS.yaml`.
 
 Allowed statuses:
 
@@ -54,7 +54,7 @@ downstream_contract_enforced
       "downstream_rejection_fixtures": [],
       "documented_risk": "Wrong pins or hashes allow stale or unintended owner contracts to govern Builder handoff.",
       "next_enforcement_step": "Add dedicated C2B behavioral fixtures bound to the lock verifier before promoting this ledger entry to ci_enforced.",
-      "notes": "The CI step passed on run 28741498875, but this ledger keeps the behavioral status below ci_enforced until fixture binding is added."
+      "notes": "C2B lock verification has PR CI evidence, but this ledger keeps the behavioral status below ci_enforced until fixture binding is added."
     },
     {
       "rule_id": "PG-C2B-002",
@@ -71,7 +71,7 @@ downstream_contract_enforced
       "downstream_rejection_fixtures": [],
       "documented_risk": "Bypassing the Builder gate lets invalid CE output reach Builder normalization.",
       "next_enforcement_step": "Add dedicated C2B behavioral fixtures bound to the smoke validator before promoting this ledger entry to ci_enforced.",
-      "notes": "The CI smoke passed on run 28741498875 using an owner fixture; it is integration evidence, not real handoff evidence."
+      "notes": "The C2B smoke uses an owner fixture; it is integration evidence, not real handoff evidence."
     },
     {
       "rule_id": "PG-VALIDATOR-001",
@@ -88,7 +88,7 @@ downstream_contract_enforced
       "downstream_rejection_fixtures": [],
       "documented_risk": "Missing or failed validator execution must never be treated as acceptance.",
       "next_enforcement_step": "Add runner behavioral fixtures for official validator failure modes before promotion.",
-      "notes": "C2B owner validator path passed in CI, but fixture-bound behavioral promotion remains pending."
+      "notes": "C2B owner validator path has PR CI evidence, but fixture-bound behavioral promotion remains pending."
     },
     {
       "rule_id": "PG-ADAPTER-001",
@@ -105,7 +105,7 @@ downstream_contract_enforced
       "downstream_rejection_fixtures": [],
       "documented_risk": "Fallback or missing adapter behavior can invent a next-stage package without owner evidence.",
       "next_enforcement_step": "Add runner behavioral fixtures for adapter failure modes before promotion.",
-      "notes": "Builder adapter path passed in CI, but fixture-bound behavioral promotion remains pending."
+      "notes": "Builder adapter path has PR CI evidence, but fixture-bound behavioral promotion remains pending."
     },
     {
       "rule_id": "PG-DOWNSTREAM-001",
@@ -130,6 +130,6 @@ downstream_contract_enforced
 
 ## PROMPT-04 notes
 
-- `PG-C2B-001` and `PG-C2B-002` have passing CI evidence on run `28741498875`, but the behavioral ledger keeps them at `validator_backed` until dedicated fixture bindings are added.
+- `PG-C2B-001` and `PG-C2B-002` have PR CI evidence, but the behavioral ledger keeps them at `validator_backed` until dedicated fixture bindings are added.
 - `PG-DOWNSTREAM-001` remains below `downstream_contract_enforced`.
 - Synthetic/owner-fixture smoke is integration evidence, not real EV4 handoff evidence.
