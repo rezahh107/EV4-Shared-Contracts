@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#25` | `Add capability-truth, exact-head, and workflow-permission CI gates` | `fix/ci-governance-evidence-gates` | `cda3121313bdb476bffe006f2c259755d742eb93` | `572bb6d78bdb8d56d10f48d27e37cd278731e876` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#24` | `PROMPT-06 Report UX, Persian RTL/LTR, and atomic writing hardening` | `project-gate-prompt-06-ux` | `c8522cf36e65243dfebc3f9b2f0b3feb97cbedf4` | `d522e7d4b434cc337bfe9314116f5b4af61466cf` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#23` | `Repair Prompt-05 foundation, immutable locks, and CI gates` | `fix/prompt-05-foundation-reconciliation` | `b8ac70e6acd2c2c6201b7a1e924751dcdc6f07c9` | `fed7a77f1e0c7be617e87ba757f35dae673c6e2e` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#21` | `Fix post-merge capability truth and workflow pinning coverage` | `fix/capability-truth-post-merge-hardening` | `ce356b6f6a8dee5f807679aed0f78aa057152d1b` | `5aaf2b93f0d18c8ac557f0d0e3d958693a1ec2f4` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
