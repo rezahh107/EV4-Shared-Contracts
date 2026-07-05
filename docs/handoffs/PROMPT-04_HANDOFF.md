@@ -67,6 +67,7 @@ commits_added_after_initial_prompt_04_handoff:
   - 08f470b32d0b1db4a48c2268a8394ea5ccd4581f docs(c2b): clarify latest green CI reference
   - bfc2e92df6fd2129f9c5d8447d9902a3cd3e653a docs(c2b): refresh PROMPT-04 handoff latest green reference
   - 9d38f6cc2994060521feb4fc03eb5ea79940bb33 docs(c2b): record diagnostic docs conflict in handoff
+  - 3b913881df9990338eb1c83a9953d6259134d029 docs(c2b): remove unresolved placeholder from handoff
 
 files_changed_relevant_to_continuation:
   - .github/workflows/validate.yml
