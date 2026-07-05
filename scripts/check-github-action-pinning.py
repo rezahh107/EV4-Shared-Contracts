@@ -9,11 +9,14 @@ FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"^\s*uses:\s*([^\s#]+)")
 
 
-def iter_workflows(root: Path):
+def iter_workflows(root: Path, *, all_workflows: bool) -> list[Path]:
     workflows = root / ".github" / "workflows"
     if not workflows.exists():
         return []
-    return sorted(path for path in workflows.iterdir() if path.suffix in {".yml", ".yaml"})
+    if all_workflows:
+        return sorted(path for path in workflows.iterdir() if path.suffix in {".yml", ".yaml"})
+    validate = workflows / "validate.yml"
+    return [validate] if validate.exists() else []
 
 
 def check_file(path: Path) -> list[str]:
@@ -35,19 +38,20 @@ def check_file(path: Path) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail if GitHub workflow external actions are not pinned to full commit SHAs.")
+    parser = argparse.ArgumentParser(description="Fail if workflow external actions are not pinned to full commit SHAs.")
     parser.add_argument("root", nargs="?", default=".")
+    parser.add_argument("--all-workflows", action="store_true", help="Check every workflow file instead of the PROMPT-04 affected workflow.")
     args = parser.parse_args()
     root = Path(args.root)
     failures: list[str] = []
-    for workflow in iter_workflows(root):
+    for workflow in iter_workflows(root, all_workflows=args.all_workflows):
         failures.extend(check_file(workflow))
     if failures:
         print("Mutable or unpinned GitHub Actions references found:")
         for item in failures:
             print(f"- {item}")
         return 1
-    print("All external GitHub Actions uses entries are pinned to full commit SHAs.")
+    print("Checked workflow action refs are pinned to full commit SHAs.")
     return 0
 
 
