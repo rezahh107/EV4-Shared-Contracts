@@ -29,23 +29,61 @@ for (const path of requiredFiles) {
   }
 }
 
+function assertExactCapability(actual, expected, label) {
+  if (!actual || typeof actual !== 'object' || Array.isArray(actual)) {
+    console.error(`${label} capability truth is missing or is not an object.`);
+    process.exit(1);
+  }
+
+  const actualKeys = Object.keys(actual).sort();
+  const expectedKeys = Object.keys(expected).sort();
+  if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index])) {
+    console.error(`${label} capability truth has an unexpected field set.`);
+    process.exit(1);
+  }
+
+  for (const key of expectedKeys) {
+    if (actual[key] !== expected[key]) {
+      console.error(`${label} capability truth is incorrect for ${key}.`);
+      process.exit(1);
+    }
+  }
+}
+
 const capability = JSON.parse(fs.readFileSync('src/ev4_transition/data/capability-status.v1.json', 'utf8'));
-const c2b = capability.capabilities && capability.capabilities.ce_to_builder;
-const expectedC2b = {
+const capabilities = capability.capabilities || {};
+
+assertExactCapability(capabilities.ce_to_builder, {
   orchestration_baseline: 'implemented',
   cli_exposure: 'not_implemented',
   owner_fixture_integration: 'verified',
   real_non_synthetic_handoff: 'insufficient_evidence'
-};
+}, 'CE-to-Builder');
 
-if (JSON.stringify(c2b) !== JSON.stringify(expectedC2b)) {
-  console.error('CE-to-Builder capability truth is missing or incorrect.');
-  process.exit(1);
-}
+assertExactCapability(capabilities.builder_to_responsive, {
+  orchestration_baseline: 'implemented',
+  cli_exposure: 'not_implemented',
+  owner_contract_lock: 'computed_from_pinned_owner_file_bytes',
+  official_responsive_validator_integration: 'implemented',
+  verification_state: 'pending_exact_head_ci',
+  real_non_synthetic_handoff: 'insufficient_evidence'
+}, 'Builder-to-Responsive');
 
-if ((capability.public_cli_transitions || []).includes('ce-to-builder')) {
-  console.error('CE-to-Builder must not be exposed as a public CLI transition.');
-  process.exit(1);
+assertExactCapability(capabilities.final_evidence_gate, {
+  orchestration_baseline: 'implemented',
+  cli_exposure: 'not_implemented',
+  prior_lock_chain: 'pinned_to_immutable_project_gate_commit',
+  official_responsive_validator_integration: 'implemented',
+  verification_state: 'pending_exact_head_ci',
+  real_non_synthetic_evidence: 'insufficient_evidence'
+}, 'Final Evidence Gate');
+
+const publicTransitions = capability.public_cli_transitions || [];
+for (const transition of ['ce-to-builder', 'builder-to-responsive', 'final-evidence-gate']) {
+  if (publicTransitions.includes(transition)) {
+    console.error(`${transition} must not be exposed as a public CLI transition.`);
+    process.exit(1);
+  }
 }
 
 const syntaxCheck = spawnSync(process.execPath, ['--check', 'scripts/update-status-after-merge.js'], {
@@ -68,4 +106,4 @@ if (pinCheck.status !== 0) {
 }
 
 process.stdout.write(pinCheck.stdout);
-console.log('Project Gate skeleton, capability truth, historical ledger automation, and workflow action pins are valid.');
+console.log('Project Gate capability truth, historical ledger automation, and workflow action pins are valid.');
