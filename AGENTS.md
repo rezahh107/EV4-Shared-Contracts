@@ -17,33 +17,48 @@ EV4-Responsive-Architect
 
 The specialist repositories remain authoritative for their own schemas, validators, adapters, fixtures, and domain behavior.
 
-This repository owns cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, Project Gate CI, the deterministic Python foundation for Stage Evidence Bundle validation, `ev4-architect-to-ce-transition@1.0.0`, and the narrow `ev4-ce-to-builder-transition@1.0.0` orchestration baseline.
+This repository owns cross-repository verification orchestration, gate configuration, report and evidence formats, package container formats, the user-facing stage state, Project Gate CI, the deterministic Python foundation for Stage Evidence Bundle validation, `ev4-architect-to-ce-transition@1.0.0`, and the narrow CE→Builder, Builder→Responsive, and Final Evidence Gate orchestration baselines documented by the active capability source.
 
 ## Current Status
 
 ```yaml
+capabilities:
+  architect_to_ce:
+    cli_exposure: implemented
+    orchestration_baseline: implemented
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: synthetic_fixture_only
+  builder_to_responsive:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    owner_contract_lock: computed_from_pinned_owner_file_bytes
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  ce_to_builder:
+    cli_exposure: not_implemented
+    orchestration_baseline: implemented
+    owner_fixture_integration: verified
+    real_non_synthetic_handoff: insufficient_evidence
+  final_evidence_gate:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    prior_lock_chain: pinned_to_immutable_project_gate_commit
+    real_non_synthetic_evidence: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  user_interface:
+    status: not_implemented
+public_cli_transitions:
+  - architect-to-ce
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
-architect_to_ce:
-  orchestration_baseline: implemented
-  cli_exposure: implemented
-  verification_state: synthetic_fixture_only
-ce_to_builder:
-  orchestration_baseline: implemented
-  cli_exposure: not_implemented
-  owner_fixture_integration: verified
-  real_non_synthetic_handoff: insufficient_evidence
-builder_to_responsive:
-  orchestration_baseline: not_implemented
-final_evidence_gate:
-  orchestration_baseline: not_implemented
-user_interface: not_implemented
 canonical_schema_owner: false
 runtime_dependency_of_specialist_repos: false
 node_skeleton: preserved_temporarily
 ```
 
-Describe CE→Builder only with the layered status above. Do not describe it as a general public CLI workflow or as a verified real non-synthetic handoff. Do not describe Builder→Responsive, real Elementor artifact validation, final evidence, or UI behavior as implemented.
+Describe every capability only with the layered status above. Do not describe CE→Builder, Builder→Responsive, or Final Evidence Gate as general public CLI workflows or as verified real non-synthetic handoffs. Do not describe real Elementor artifact validation or UI behavior as implemented.
 
 ## Read First
 
@@ -155,6 +170,8 @@ Current checks include:
 ```bash
 python -m pip install -e '.[dev]'
 pytest
+python scripts/check-capability-truth.py
+python scripts/check-workflow-permissions.py
 ev4-transition validate fixtures/valid/architect-stage-bundle.v1.json
 ev4-transition validate fixtures/invalid/array-input.v1.json
 ev4-transition validate fixtures/insufficient-evidence/architect-stage-bundle.v1.json --format persian
