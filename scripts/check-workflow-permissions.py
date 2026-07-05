@@ -85,12 +85,12 @@ def check_repository(root: Path) -> list[str]:
                     )
 
         checkout_steps = _checkout_steps(workflow)
-        for index, step in enumerate(checkout_steps):
+        for job_id, step_index, step in checkout_steps:
             with_config = step.get("with")
             persisted = with_config.get("persist-credentials") if isinstance(with_config, dict) else None
             if persisted is not False:
                 failures.append(
-                    f"{relative}: checkout step {index + 1} must set persist-credentials: false"
+                    f"{relative}: job {job_id!r} step {step_index + 1} must set persist-credentials: false"
                 )
 
     return sorted(failures)
