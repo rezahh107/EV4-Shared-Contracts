@@ -152,6 +152,14 @@ def test_ce_to_builder_synthetic_fixture_cannot_count_as_real_evidence(tmp_path)
     assert r["status"] == "insufficient_evidence"
 
 
+def test_ce_to_builder_raw_package_requires_real_evidence(tmp_path):
+    ce, builder, lock = _repos(tmp_path)
+    r = transition_ce_to_builder(_ce_package(), _source(ce, builder), _config(ce, builder, lock, real=True))
+    assert r["status"] == "insufficient_evidence"
+    assert r["accepted_requires"]["required_evidence_present"] is False
+    assert any(d["code"] == "PG.C2B.REAL_EVIDENCE_REQUIRED" for d in r["diagnostics"])
+
+
 def test_ce_to_builder_accepted_requires_all_evidence(tmp_path):
     ce, builder, lock = _repos(tmp_path)
     r = transition_ce_to_builder(_ce_package(), _source(ce, builder), _config(ce, builder, lock))
