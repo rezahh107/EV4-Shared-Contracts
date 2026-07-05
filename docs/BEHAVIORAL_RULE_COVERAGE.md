@@ -20,7 +20,7 @@ The JSON block below is the validator source of truth for this document.
 ```json behavioral-coverage.v1
 {
   "schema_version": "behavioral-coverage.v1",
-  "generated_by": "PROMPT-03 runner boundary infrastructure",
+  "generated_by": "PROMPT-03 runner boundary infrastructure with split CI references",
   "rules": [
     {
       "rule_id": "PG-BRC-001",
@@ -45,16 +45,16 @@ The JSON block below is the validator source of truth for this document.
       "risk": "Critical",
       "status": "fixture_tested",
       "target_status": "ci_enforced",
-      "carriers": ["schemas/transition-result/transition-result.v1.schema.json", "schemas/validator-evidence/validator-evidence.v1.schema.json", "src/ev4_transition/behavioral_coverage/validator.py", "src/ev4_transition/runners/records.py", "docs/RESULT_MODEL.md"],
+      "carriers": ["schemas/transition-result/transition-result.v1.schema.json", "schemas/validator-evidence/validator-evidence.v1.schema.json", "schemas/diagnostic/diagnostic.v1.schema.json", "src/ev4_transition/behavioral_coverage/validator.py", "src/ev4_transition/runners/records.py", "docs/RESULT_MODEL.md"],
       "validators": ["src/ev4_transition/behavioral_coverage/validator.py::validate_transition_result_semantics"],
       "valid_fixtures": ["tests/fixtures/result_envelope/valid/accepted_with_all_required_evidence_shape.json"],
       "invalid_fixtures": ["tests/fixtures/result_envelope/invalid/accepted_missing_validator_evidence.json", "tests/fixtures/result_envelope/invalid/accepted_with_failed_validator_evidence.json", "tests/fixtures/result_envelope/invalid/accepted_with_unknown_validator_evidence.json", "tests/fixtures/result_envelope/invalid/accepted_with_malformed_validator_evidence.json", "tests/fixtures/result_envelope/invalid/accepted_with_unpinned_validator_evidence.json", "tests/fixtures/result_envelope/invalid/accepted_with_validator_hash_mismatch.json", "tests/fixtures/result_envelope/invalid/accepted_with_validator_stage_mismatch.json"],
-      "ci_steps": [".github/workflows/validate.yml / Run Project Gate Python tests"],
+      "ci_steps": [".github/workflows/validate.yml / Behavioral fixture validation", ".github/workflows/validate.yml / Prompt 01 unit tests", ".github/workflows/validate.yml / Runner tests"],
       "downstream_contracts": [],
       "downstream_rejection_fixtures": [],
       "documented_risk": "Accepted with failed, unknown, unpinned, or mismatched validator evidence is a false readiness claim.",
       "next_enforcement_step": "Promote after current PR CI passes; add real transition evidence acquisition in later prompts.",
-      "notes": "PROMPT-03 adds execution-record carriers for official tool evidence. It does not emit accepted for missing validators/adapters or timeouts."
+      "notes": "PROMPT-03 adds execution-record carriers and dotted Project Gate diagnostic-code compatibility for official tool evidence."
     },
     {
       "rule_id": "PG-SYNTH-001",
@@ -66,7 +66,7 @@ The JSON block below is the validator source of truth for this document.
       "validators": ["src/ev4_transition/behavioral_coverage/validator.py::validate_transition_result_semantics"],
       "valid_fixtures": ["tests/fixtures/result_envelope/valid/synthetic_fixture_labeled.json"],
       "invalid_fixtures": ["tests/fixtures/result_envelope/invalid/synthetic_only_marked_as_real_evidence.json"],
-      "ci_steps": [".github/workflows/validate.yml / Run Project Gate Python tests"],
+      "ci_steps": [".github/workflows/validate.yml / Behavioral fixture validation"],
       "downstream_contracts": [],
       "downstream_rejection_fixtures": [],
       "documented_risk": "Synthetic-only fixtures can otherwise be mistaken for real EV4 transition evidence.",
@@ -83,7 +83,7 @@ The JSON block below is the validator source of truth for this document.
       "validators": ["src/ev4_transition/behavioral_coverage/validator.py::validate_stage_bundle_semantics"],
       "valid_fixtures": ["tests/fixtures/stage_bundle/valid/project_gate_owned_schema_only.json"],
       "invalid_fixtures": ["tests/fixtures/stage_bundle/invalid/copied_specialist_schema_claimed_as_project_gate_owned.json", "tests/fixtures/stage_bundle/invalid/project_gate_schema_prefix_collision_specialist_copy.json"],
-      "ci_steps": [".github/workflows/validate.yml / Verify no specialist canonical schema files exist", ".github/workflows/validate.yml / Run Project Gate Python tests"],
+      "ci_steps": [".github/workflows/validate.yml / Verify no specialist canonical schema files exist", ".github/workflows/validate.yml / Behavioral fixture validation"],
       "downstream_contracts": [],
       "downstream_rejection_fixtures": [],
       "documented_risk": "Copied schemas produce contract drift and false canonical ownership.",
@@ -100,7 +100,7 @@ The JSON block below is the validator source of truth for this document.
       "validators": ["src/ev4_transition/behavioral_coverage/validator.py::validate_transition_result_semantics"],
       "valid_fixtures": ["tests/fixtures/result_envelope/valid/output_write_success.json"],
       "invalid_fixtures": ["tests/fixtures/result_envelope/invalid/output_write_failed_but_success.json"],
-      "ci_steps": [".github/workflows/validate.yml / Run Project Gate Python tests"],
+      "ci_steps": [".github/workflows/validate.yml / Behavioral fixture validation", ".github/workflows/validate.yml / CLI and bundle tests"],
       "downstream_contracts": [],
       "downstream_rejection_fixtures": [],
       "documented_risk": "A success status after output write failure gives the user an unusable artifact.",
