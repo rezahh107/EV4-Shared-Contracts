@@ -34,6 +34,7 @@ details: optional object
 | `PG.VALIDATOR.MISSING` | `insufficient_evidence` | Project Gate | Required official validator checkout/path is unavailable. |
 | `PG.ADAPTER.MISSING` | `insufficient_evidence` | Project Gate | Required official adapter checkout/path is unavailable. |
 | `PG.ADAPTER.EXECUTION_FAILED` | `insufficient_evidence` | Project Gate | Official adapter execution failed without acceptable structured output. |
+| `PG.RUNNER.EXECUTION_FAILED` | `insufficient_evidence` | Project Gate | Official runner execution failed without acceptable structured output. |
 
 ## Generic lock diagnostics
 
@@ -70,6 +71,7 @@ details: optional object
 | `PG.C2B.CE_PACKAGE_MISSING` | `error` | Project Gate | Stage Evidence Bundle payload does not contain a CE Builder Executable Package. |
 | `PG.C2B.CE_PACKAGE_NOT_OBJECT` | `error` | Project Gate | The CE Builder Executable Package is not an object. |
 | `PG.C2B.CE_PACKAGE_SCHEMA_MISMATCH` | `error` | Project Gate | CE package schema identity is not `ev4-builder-executable-package@1.0.0`. |
+| `PG.C2B.REAL_EVIDENCE_REQUIRED` | `insufficient_evidence` | Project Gate | Raw CE package input was supplied where real non-synthetic Stage Evidence Bundle evidence is required. |
 | `PG.C2B.SYNTHETIC_ONLY_EVIDENCE` | `insufficient_evidence` | Project Gate | Synthetic CE fixture was presented where real evidence is required. |
 | `PG.C2B.ADAPTER_OUTPUT_UNPARSEABLE` | `insufficient_evidence` | Project Gate | Official Builder adapter did not produce parseable JSON object output. |
 | `PG.C2B.BUILDER_SCHEMA_UNAVAILABLE` | `insufficient_evidence` | Project Gate | Builder-owned output schema could not be read from the supplied owner checkout. |
