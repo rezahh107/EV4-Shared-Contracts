@@ -108,8 +108,10 @@ def _fsync_directory_best_effort(directory: Path) -> None:
         return
     try:
         os.fsync(fd)
+    try:
+        os.fsync(fd)
     except OSError:
-        return
+        pass
     finally:
         os.close(fd)
 
