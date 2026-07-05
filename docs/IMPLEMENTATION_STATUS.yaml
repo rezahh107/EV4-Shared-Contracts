@@ -1,5 +1,5 @@
 prompt_id: PROMPT-04
-status: ce_to_builder_followup_fixes_applied_ci_pending
+status: ce_to_builder_followup_fixes_ci_evidenced_pr_draft
 updated_at: 2026-07-05
 scope: continue_PR_20_after_PR_Inspector_RED_DO_NOT_MERGE
 
@@ -10,8 +10,8 @@ capability_handshake:
   pull_request: 20
   codex: UNKNOWN
   local_test_runner: UNAVAILABLE_FOR_REPO_CHECKOUT
-  github_actions_status: PENDING_AFTER_FOLLOWUP_PATCH
-  external_owner_checkout_in_ci: PENDING_AFTER_FOLLOWUP_PATCH
+  github_actions_status: AVAILABLE_SUCCESS_ON_CONFIRMED_FOLLOWUP_HEAD
+  external_owner_checkout_in_ci: AVAILABLE_SUCCESS_ON_CONFIRMED_FOLLOWUP_HEAD
 
 repository:
   name: rezahh107/EV4-Project-Gate
@@ -23,27 +23,22 @@ repository:
 implementation_summary:
   python_package: implemented_initial_v1
   package_path: src/ev4_transition
-  deterministic_core:
-    canonical_json_sha256: implemented_initial_v1
-    file_byte_sha256: implemented_for_lock_verification
-    non_finite_number_rejection: implemented_initial_v1
   package_generation:
     architect_to_ce: implemented_synthetic_verified
-    ce_to_builder: followup_fixes_applied_ci_pending
+    ce_to_builder: followup_fixes_ci_evidenced
     builder_to_responsive: not_implemented
     final_evidence_gate: not_implemented
 
 active_transitions:
   ce_to_builder:
     transition_id: ev4-ce-to-builder-transition@1.0.0
-    status: followup_fixes_applied_ci_pending
+    status: followup_fixes_ci_evidenced
     source_repository: rezahh107/EV4-Constructability-Engineer-Repo
     source_commit: cfceec5c20269c75a1cc19b2675d7087cede4599
     consumer_repository: rezahh107/EV4-Builder-Assistant-Repo
     consumer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
     result_schema: schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json
     lock_manifest: contracts/locks/ce-to-builder-transition.v1.lock.json
-    lock_hashes: exact_file_byte_sha256_values_committed_from_pinned_owner_ci_checkouts
     followup_fixes:
       immutable_action_sha_pinning: applied
       action_pinning_static_guard: applied
@@ -58,18 +53,26 @@ active_transitions:
 
 ci_baseline:
   workflow: .github/workflows/validate.yml
-  latest_known_green_before_followup_patch:
-    head_sha: f5bf9414813faf6709d139686600017b865f63bd
-    run_id: 28742198943
+  confirmed_followup_green:
+    head_sha: 9ca2bbdbd6448e13ce49ee6dac532449808444ce
+    run_id: 28743548242
+    run_number: 359
     result: success
-  latest_followup_head_sha: pending_after_this_status_commit
-  latest_followup_workflow_result: pending
-  note: Re-run CI and PR Inspector review are required after followup fixes.
+    jobs:
+      skeleton: success
+      python-core: success
+    important_steps:
+      Verify GitHub Action pins: success
+      CE-to-Builder transition pytest: success
+      Behavioral coverage validator: success
+      CE-to-Builder lock verification: success
+      CE-to-Builder live owner tool smoke: success
+  note: This document records confirmed evidence. Recheck the current PR head before merge if new commits are added.
 
 critical_or_high_gaps:
   - id: GAP-C2B-REAL-EVIDENCE
     severity: high
-    description: Passing live owner smoke uses an owner fixture and is integration evidence only; it is not a real non-synthetic CE handoff evidence package.
+    description: Live owner smoke uses an owner fixture and is integration evidence only; it is not a real non-synthetic CE handoff package.
   - id: GAP-BUILDER-RESPONSIVE-PG
     severity: critical
     description: Builder-to-Responsive Project Gate transition remains not implemented.
@@ -78,9 +81,8 @@ critical_or_high_gaps:
     description: Final evidence gate remains not implemented.
 
 remaining_insufficient_evidence:
-  - post_followup_green_ci_on_latest_head
   - real_non_synthetic_CE_to_Builder_transition_evidence
   - Builder_to_Responsive_Project_Gate_transition
   - final_evidence_gate
 
-next_allowed_prompt: rerun_CI_and_PR_Inspector_review_after_followup_patch
+next_allowed_prompt: PR_Inspector_review_on_latest_head
