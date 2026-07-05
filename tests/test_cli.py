@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -76,3 +78,67 @@ def test_cli_inspect_does_not_overclaim_real_ce_to_builder_handoff():
     payload = json.loads(completed.stdout)
     assert payload["capabilities"]["ce_to_builder"]["real_non_synthetic_handoff"] == "insufficient_evidence"
     assert payload["evidence"]["current_main_head_ci"]["status"] == "insufficient_evidence"
+
+
+def test_implementation_status_matches_capability_truth_and_merged_pr_20():
+    capability = json.loads((ROOT / "src/ev4_transition/data/capability-status.v1.json").read_text(encoding="utf-8"))
+    implementation = yaml.safe_load((ROOT / "docs/IMPLEMENTATION_STATUS.yaml").read_text(encoding="utf-8"))
+    expected = capability["capabilities"]["ce_to_builder"]
+    actual = implementation["capabilities"]["ce_to_builder"]
+    for key, value in expected.items():
+        assert actual[key] == value
+    assert implementation["repository"]["pull_request_20"]["state"] == "merged"
+    assert implementation["repository"]["current_main_head_ci"]["status"] == "insufficient_evidence"
+
+
+def test_active_docs_do_not_restore_flat_ce_to_builder_not_implemented_claim():
+    active_paths = [
+        "README.md",
+        "AGENTS.md",
+        "docs/VALIDATION_STRATEGY.md",
+        "docs/COMPATIBILITY_MAP.md",
+    ]
+    forbidden = [
+        "The CE → Builder transition is documented as a freeze baseline only. It is not implemented in Project Gate yet.",
+        "Do not describe CE → Builder, Builder → Responsive",
+        "implemented: false\nfreeze_matrix: docs/CE_TO_BUILDER_FREEZE_MATRIX.md",
+    ]
+    for relative in active_paths:
+        text = (ROOT / relative).read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text
+        assert "orchestration_baseline" in text or relative == "README.md"
+
+
+def test_action_pinning_guard_scans_all_workflows_by_default(tmp_path):
+    workflows = tmp_path / ".github/workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "pinned.yml").write_text(
+        "steps:\n  - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5\n",
+        encoding="utf-8",
+    )
+    (workflows / "mutable.yaml").write_text(
+        "permissions:\n  contents: write\nsteps:\n  - uses: actions/setup-node@v4\n",
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check-github-action-pinning.py"), str(tmp_path)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 1
+    assert "mutable.yaml" in completed.stdout
+    assert "actions/setup-node@v4" in completed.stdout
+
+
+def test_repository_workflows_use_full_sha_action_pins():
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check-github-action-pinning.py"), str(ROOT)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
