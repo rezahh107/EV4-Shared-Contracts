@@ -88,7 +88,7 @@ def verify_ce_to_builder_lock(lock: dict[str, Any], source: ContractSource) -> l
             diagnostics.append(diagnostic("PG.C2B.LOCK_ROLE_UNEXPECTED", "error", "CE→Builder lock contains an unexpected role.", f"{path}.role", role=role))
             continue
         if role in seen:
-            diagnostics.append(diagnostic("PG.C2B.LOCK_ROLE_DUPLICATE", "error", "CE→Builder lock contains a duplicate role.", f"{path}.role", role=role))
+            diagnostics.append(diagnostic("PG.C2B.LOCK_ROLE_DUPLICATE", "error", "CE→Builder lock contains a duplicate role.", f"{path}.role", role=role, repository=expected.repository, commit=expected.accepted_commit, file_path=expected.path))
         seen.add(role)
         for field, expected_value, code in [
             ("repository", expected.repository, "PG.C2B.LOCK_REPOSITORY_MISMATCH"),
@@ -97,7 +97,7 @@ def verify_ce_to_builder_lock(lock: dict[str, Any], source: ContractSource) -> l
             ("contract_or_schema_id", expected.contract_or_schema_id, "PG.C2B.LOCK_IDENTITY_MISMATCH"),
         ]:
             if item.get(field) != expected_value:
-                diagnostics.append(diagnostic(code, "error", "CE→Builder lock entry does not match expected owner dependency.", f"{path}.{field}", expected=expected_value, actual=item.get(field), role=role))
+                diagnostics.append(diagnostic(code, "error", "CE→Builder lock entry does not match expected owner dependency.", f"{path}.{field}", expected=expected_value, actual=item.get(field), role=role, repository=expected.repository, commit=expected.accepted_commit, file_path=expected.path))
         try:
             content = source.read_bytes(expected.repository, expected.accepted_commit, expected.path)
         except Exception as exc:
@@ -107,7 +107,7 @@ def verify_ce_to_builder_lock(lock: dict[str, Any], source: ContractSource) -> l
         if item.get("sha256_file_bytes") != actual_hash:
             diagnostics.append(diagnostic("PG.C2B.EXTERNAL_HASH_MISMATCH", "error", "Pinned owner file hash does not match CE→Builder lock manifest.", path, role=role, repository=expected.repository, commit=expected.accepted_commit, file_path=expected.path, expected_sha256=item.get("sha256_file_bytes"), actual_sha256=actual_hash))
         if expected.identity_marker not in content.decode("utf-8", errors="replace"):
-            diagnostics.append(diagnostic("PG.C2B.EXTERNAL_IDENTITY_MISMATCH", "error", "Pinned CE/Builder owner file identity marker was not found.", path, role=role, expected_marker=expected.identity_marker))
+            diagnostics.append(diagnostic("PG.C2B.EXTERNAL_IDENTITY_MISMATCH", "error", "Pinned CE/Builder owner file identity marker was not found.", path, role=role, repository=expected.repository, commit=expected.accepted_commit, file_path=expected.path, expected_marker=expected.identity_marker))
     missing = sorted(REQUIRED_ROLES - seen)
     if missing:
         diagnostics.append(diagnostic("PG.C2B.LOCK_ROLE_MISSING", "error", "CE→Builder lock is missing required owner dependency roles.", "$.files", missing_roles=missing))
