@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "project_gate_a2c_lock",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    },
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "project_gate_c2b_lock",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    },
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "project_gate_b2r_lock",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    },
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "responsive_input_boundary",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    },
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "responsive_output_schema",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    },
+    {
+      "accepted_commit": "UNKNOWN_UNTIL_REFRESH",
+      "contract_or_schema_id": "UNKNOWN_UNTIL_REFRESH",
+      "path": "UNKNOWN_UNTIL_REFRESH",
+      "repository": "UNKNOWN_UNTIL_REFRESH",
+      "role": "responsive_output_validator",
+      "sha256_file_bytes": "PLACEHOLDER_NOT_REFRESHED"
+    }
+  ],
+  "gate_id": "ev4-final-evidence-gate@1.0.0",
+  "hash_state": "placeholder_not_refreshed_from_owner_checkouts",
+  "schema_version": "final-gate-lock.v1"
+}
