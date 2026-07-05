@@ -123,6 +123,7 @@ jobs:
       - name: Commit non-circular Builder to Responsive foundation
         id: stage1
         run: |
+          cp -a .owner/EV4-Responsive-Architect "$RUNNER_TEMP/EV4-Responsive-Architect"
           rm -rf .owner
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -138,10 +139,6 @@ jobs:
             --project-gate-repo . \
             --responsive-repo "$RUNNER_TEMP/EV4-Responsive-Architect" \
             --output contracts/locks/final-gate.v1.lock.json
-
-      - name: Restore pinned Responsive checkout for final lock
-        if: false
-        run: echo not-used
 
       - name: Remove bootstrap surfaces
         run: rm scripts/bootstrap-prompt05-repair.py .github/workflows/bootstrap-prompt05-repair.yml .github/workflows/diagnose-prompt05-cli.yml
