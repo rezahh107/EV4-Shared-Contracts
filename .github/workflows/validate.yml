@@ -250,7 +250,17 @@ jobs:
         env:
           EV4_CE_REPO_PROMPT04: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo-Prompt04
           EV4_BUILDER_REPO_PROMPT04: ${{ github.workspace }}/EV4-Builder-Assistant-Repo-Prompt04
-        run: python scripts/verify-ce-to-builder-lock.py --ce-repo "$EV4_CE_REPO_PROMPT04" --builder-repo "$EV4_BUILDER_REPO_PROMPT04"
+        run: |
+          set -o pipefail
+          python scripts/verify-ce-to-builder-lock.py --ce-repo "$EV4_CE_REPO_PROMPT04" --builder-repo "$EV4_BUILDER_REPO_PROMPT04" 2>&1 | tee c2b-lock-verify.log
+
+      - name: Upload CE-to-Builder lock verify log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2b-lock-verify-log
+          path: EV4-Project-Gate/c2b-lock-verify.log
+          if-no-files-found: ignore
 
       - name: CE-to-Builder live owner tool smoke
         working-directory: EV4-Project-Gate
