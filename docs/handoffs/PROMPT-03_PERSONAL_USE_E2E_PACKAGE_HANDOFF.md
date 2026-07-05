@@ -3,8 +3,17 @@
 ```yaml
 prompt_id: personal-use-parallel-prompt-03
 branch: personal-use/e2e-package
-handoff_status: implementation_patch_created_connector_write
+pull_request: 27
+handoff_status: pr_open_ci_green_on_repair_head
 scope: personal-use packaging, local launchers, synthetic examples, output convention, controlled demo runner, packaging tests
+head_sha: 03b7bcaa4990764f69fe7f69f9e58abc4d7c4bb2
+```
+
+## Commits
+
+```text
+71cc4136307be2751183a20c4a14ad91ab54be6d  Add local setup and demo package
+03b7bcaa4990764f69fe7f69f9e58abc4d7c4bb2  Repair capability truth in README personal package
 ```
 
 ## Files changed
@@ -46,7 +55,7 @@ tests/e2e/test_controlled_demo.py
 - UI implementation remains owned by Prompt 1.
 - Service/API integration remains owned by Prompt 2.
 - Real non-synthetic EV4 evidence remains `insufficient_evidence`.
-- These personal-use tests are added but not claimed CI-enforced unless workflow evidence confirms them.
+- These personal-use tests are added, but the explicit targeted local command `pytest tests/personal_use tests/e2e` was not run in this environment.
 
 ## New diagnostics / user-facing messages
 
@@ -66,6 +75,7 @@ tests/e2e/test_controlled_demo.py
 - Demo runner uses Project Gate bundle validation only and does not implement transition logic.
 - Missing UI/service modules are reported as partial setup, not treated as real validation failure.
 - Output files are organized under `outputs/runs/<timestamp-or-run-id>/`.
+- README retained/restored the `Current Status` capability-truth YAML block required by `scripts/check-capability-truth.py`.
 
 ## Web sources used
 
@@ -73,9 +83,17 @@ None. Live repository files and uploaded Project rules were sufficient for this 
 
 ## Tests run
 
-Not run in this ChatGPT environment. GitHub connector write was available, but no shell runner with network access to clone and execute the repository was available.
+GitHub Actions on head `03b7bcaa4990764f69fe7f69f9e58abc4d7c4bb2`:
+
+```text
+Skeleton Health / run 28757886701 / success
+Prompt 05 Builder Responsive Final Gate / run 28757886704 / success
+Prompt 06 Report UX / run 28757886703 / success
+```
 
 ## Tests not run
+
+Not run locally in this ChatGPT environment because the container could not resolve `github.com` for a live clone and the GitHub connector does not provide a shell runner:
 
 ```bash
 python -m pip install -e '.[dev]'
