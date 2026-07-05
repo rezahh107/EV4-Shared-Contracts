@@ -23,6 +23,30 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Restore merged PR21 foundation content
+        run: |
+          git checkout origin/main -- \
+            .github/workflows/status-after-merge.yml \
+            AGENTS.md \
+            README.md \
+            docs/ARCHITECTURE.md \
+            docs/COMPATIBILITY_MAP.md \
+            docs/CONTRACT_INVENTORY.md \
+            docs/EV4_SHARED_CONTRACTS_STATUS.md \
+            docs/IMPLEMENTATION_STATUS.yaml \
+            docs/ROLE_BOUNDARY_MAP.md \
+            docs/TRANSITION_BOUNDARY_MAP.md \
+            docs/VALIDATION_STRATEGY.md \
+            docs/handoffs/PROMPT-04_HANDOFF.md \
+            scripts/check-github-action-pinning.py \
+            scripts/status.js \
+            scripts/update-status-after-merge.js \
+            scripts/validate.js \
+            src/ev4_transition/__init__.py \
+            src/ev4_transition/cli.py \
+            src/ev4_transition/data/capability-status.v1.json \
+            tests/test_cli.py
+
       - name: Checkout pinned Builder repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
@@ -118,7 +142,7 @@ jobs:
             --output contracts/locks/final-gate.v1.lock.json
 
       - name: Remove bootstrap surfaces
-        run: rm scripts/bootstrap-prompt05-repair.py .github/workflows/bootstrap-prompt05-repair.yml
+        run: rm scripts/bootstrap-prompt05-repair.py .github/workflows/bootstrap-prompt05-repair.yml .github/workflows/diagnose-prompt05-cli.yml
 
       - name: Validate finalized repair before publishing
         run: |
