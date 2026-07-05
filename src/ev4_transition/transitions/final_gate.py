@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from ev4_transition.canonical_json import bytes_sha256, canonical_sha256, load_json_file, write_canonical_json
+from ev4_transition.canonical_json import bytes_sha256, canonical_sha256, load_json_file
 from ev4_transition.contract_source import ContractSource, LocalCheckoutContractSource
 from ev4_transition.diagnostics import Diagnostic, diagnostic, project_gate_status_from_diagnostics, sort_diagnostics
+from ev4_transition.runners.responsive_tools import execute_responsive_output_validator
 
 GATE_ID = "ev4-final-evidence-gate@1.0.0"
 GATE_VERSION = "1.0.0"
@@ -160,9 +158,10 @@ def run_final_gate(final_input: Any, contract_source: ContractSource, config: Fi
     if _contains_key_or_value(final_input, "ci_success_as_frontend_evidence"):
         diagnostics.append(diagnostic("PG.FINAL.CI_FRONTEND_CORRECTNESS_CLAIM", "error", "CI success is not frontend correctness evidence.", "$"))
 
-    if _synthetic_only(final_input):
+    synthetic_only = _synthetic_only(final_input)
+    if synthetic_only:
         diagnostics.append(diagnostic("PG.FINAL.SYNTHETIC_ONLY_EVIDENCE", "insufficient_evidence", "Synthetic fixtures cannot satisfy final real-evidence requirements.", "$"))
-    accepted_requires["real_evidence_present"] = _real_evidence_present(final_input) and not _synthetic_only(final_input)
+    accepted_requires["real_evidence_present"] = _real_evidence_present(final_input) and not synthetic_only
     if config.require_real_evidence and not accepted_requires["real_evidence_present"]:
         diagnostics.append(diagnostic("PG.FINAL.REAL_EVIDENCE_MISSING", "insufficient_evidence", "Final gate requires real non-synthetic Responsive evidence.", "$.evidence"))
 
@@ -172,7 +171,7 @@ def run_final_gate(final_input: Any, contract_source: ContractSource, config: Fi
         for err in sorted(Draft202012Validator(schema).iter_errors(output), key=lambda item: (list(item.path), item.message)):
             diagnostics.append(diagnostic("PG.FINAL.RESPONSIVE_SCHEMA_VALIDATION_FAILED", "error", err.message, _json_path(list(err.path))))
 
-    accepted_requires["responsive_output_validator_passed"] = _run_responsive_output_validator(config, output, diagnostics)
+    accepted_requires["responsive_output_validator_passed"] = _run_responsive_output_validator(config, output, diagnostics, progress_sink)
     return _result(final_input, output, diagnostics, accepted_requires, config)
 
 
@@ -186,7 +185,7 @@ def _load_responsive_output_schema(source: ContractSource, diagnostics: list[Dia
     return schema if isinstance(schema, dict) else None
 
 
-def _run_responsive_output_validator(config: FinalGateConfig, output: dict[str, Any], diagnostics: list[Diagnostic]) -> bool:
+def _run_responsive_output_validator(config: FinalGateConfig, output: dict[str, Any], diagnostics: list[Diagnostic], progress_sink: list[dict[str, Any]] | None) -> bool:
     if config.responsive_repo_root is None:
         diagnostics.append(diagnostic("PG.FINAL.RESPONSIVE_VALIDATOR_MISSING", "insufficient_evidence", "Responsive checkout is required to run the official output validator.", "$.responsive_validator"))
         return False
@@ -194,12 +193,18 @@ def _run_responsive_output_validator(config: FinalGateConfig, output: dict[str, 
     if not validator.exists():
         diagnostics.append(diagnostic("PG.FINAL.RESPONSIVE_VALIDATOR_MISSING", "insufficient_evidence", "Official Responsive output validator is absent.", "$.responsive_validator", validator_path=RESPONSIVE_OUTPUT_VALIDATOR))
         return False
-    with tempfile.TemporaryDirectory(prefix="ev4-final-") as td:
-        payload = Path(td) / "responsive-output.json"
-        write_canonical_json(payload, output)
-        completed = subprocess.run([sys.executable, str(validator), str(payload)], cwd=config.responsive_repo_root, text=True, capture_output=True, timeout=config.timeout_seconds, check=False)
-    if completed.returncode != 0:
-        diagnostics.append(diagnostic("PG.FINAL.RESPONSIVE_VALIDATOR_FAILED", "insufficient_evidence", "Official Responsive output validator did not pass.", "$.responsive_validator", exit_code=completed.returncode))
+    outcome = execute_responsive_output_validator(
+        repo_root=config.responsive_repo_root,
+        owner_repo=RESPONSIVE_REPO,
+        owner_commit=RESPONSIVE_COMMIT,
+        validator_path=RESPONSIVE_OUTPUT_VALIDATOR,
+        responsive_output=output,
+        timeout_seconds=config.timeout_seconds,
+        progress_sink=progress_sink,
+    )
+    diagnostics.extend(outcome.diagnostics)
+    if outcome.status != "accepted":
+        diagnostics.append(diagnostic("PG.FINAL.RESPONSIVE_VALIDATOR_FAILED", "insufficient_evidence", "Official Responsive output validator did not pass.", "$.responsive_validator", runner_status=outcome.status, failure_code=outcome.execution_record.failure_code))
         return False
     return True
 
