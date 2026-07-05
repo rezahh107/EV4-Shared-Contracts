@@ -20,7 +20,7 @@ review_input:
     - CE_to_Builder_lock_verification_passes
     - CE_to_Builder_live_owner_tool_smoke_passes
 
-latest_completed_ci_evidence_before_handoff_refresh:
+latest_green_ci_evidence_before_final_docs_refresh:
   repository: rezahh107/EV4-Project-Gate
   workflow: Skeleton Health
   run_id: 28741498875
@@ -40,6 +40,7 @@ latest_completed_ci_evidence_before_handoff_refresh:
     CE-to-Builder lock verification: success
     CE-to-Builder live owner tool smoke: success
     Official CE validator fixture suite: success
+  note: Documentation-only refresh commits after this green run may trigger newer runs; verify latest PR head before merge.
 
 commits_added_after_initial_prompt_04_handoff:
   - 43e1f042e2ae8e0783571ab23524da56a16a37fc ci(c2b): preserve failing pytest log artifact
@@ -62,7 +63,9 @@ commits_added_after_initial_prompt_04_handoff:
   - f58c8c0e4e61c1dc6fa59d3d4ad724f38fcfa4db docs(c2b): mark PROMPT-04 baseline CI evidenced
   - 1c2aa49a9dd6739d56a18a7a313c6b5ac6ed561e docs(c2b): update boundary map after green CI
   - 99512a2b8b7fddff1adaf44b3d8cee569fbf282a docs(c2b): promote green C2B coverage to ci_enforced
-  - THIS_COMMIT docs(c2b): refresh PROMPT-04 handoff after green CI
+  - 96d27ebcbc24e42b4e4789f89086f3e51c995e86 docs(c2b): refresh PROMPT-04 handoff after green CI
+  - 08f470b32d0b1db4a48c2268a8394ea5ccd4581f docs(c2b): clarify latest green CI reference
+  - THIS_COMMIT docs(c2b): refresh PROMPT-04 handoff latest green reference
 
 files_changed_relevant_to_continuation:
   - .github/workflows/validate.yml
@@ -80,7 +83,7 @@ files_changed_relevant_to_continuation:
 
 tests_run_by_assistant_local:
   - none_after_network_clone_failure
-tests_run_by_github_actions:
+tests_run_by_github_actions_green_run_28741498875:
   - pytest tests/test_cli.py tests/test_canonical_json.py tests/test_bundle_validator.py
   - pytest tests/test_architect_to_ce_transition.py selected suites
   - pytest tests/unit
@@ -119,10 +122,6 @@ coverage_rules_advanced:
 coverage_rules_still_gap:
   - PG-DOWNSTREAM-001 remains fixture_tested and not downstream_contract_enforced.
   - Real non-synthetic CE→Builder handoff evidence remains insufficient.
-
-new_or_changed_diagnostics:
-  - PG.C2B.* diagnostics from initial PROMPT-04 remain active.
-  - PG.ADAPTER.EXECUTION_FAILED remains active.
 
 new_or_changed_ci:
   - Added C2B pytest log artifact on failure.
