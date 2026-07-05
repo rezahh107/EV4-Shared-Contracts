@@ -1,7 +1,13 @@
 prompt_id: PROMPT-05
 branch: project-gate-prompt-05-builder-responsive-final-gate
-status: draft_pr_baseline_pending_ci
+status: draft_pr_review_fixes_pushed_pending_ci
 main_head_at_start: dca39ed177d5660d96df04a05fff0a0314c6c339
+latest_review_fix_commits:
+  - d2f1725c8776531936e305f728c37376feecb733
+  - 6eb336fcacb3112275017a8ba6e2499e68c52b2d
+  - 0c97913591873d3fdaaa6fd2c073436b5934fed0
+  - 5c98fa8ce4313ed285b2d00b6346b90558909cc7
+  - f8ab4df2f4679ec7fbeab5c0cbd1c0c2dae8271e
 
 implemented:
   builder_to_responsive_transition:
@@ -14,9 +20,15 @@ implemented:
     result_schema: schemas/final-gate-result/final-gate-result.v1.schema.json
     lock: contracts/locks/final-gate.v1.lock.json
     status: fail_closed_baseline
+  responsive_runner_boundary_fix:
+    file: src/ev4_transition/runners/responsive_tools.py
+    reason: Prompt-05 Responsive validator execution moved behind runner boundary
   runner_progress_import_fix:
     file: src/ev4_transition/progress.py
     reason: current runner imports ev4_transition.progress
+  schema_allowlist_fix:
+    file: .github/workflows/validate.yml
+    reason: Skeleton Health allowlist now includes Project Gate-owned Prompt-05 result schemas
 
 verified_live_owner_boundary_samples:
   builder:
@@ -41,10 +53,10 @@ tests_declared:
   - tests/fixture_matrix/builder_to_responsive
 
 ci:
-  local_sandbox_py_compile: passed_for_new_python_files
-  local_sandbox_json_parse: passed_for_new_json_files
+  local_sandbox_py_compile: passed_for_new_python_files_before_review_fixes
+  local_sandbox_json_parse: passed_for_new_json_files_before_review_fixes
   local_sandbox_pytest: not_claimed_full_repo_unavailable
-  branch_ci: pending_after_draft_pr
+  branch_ci: pending_after_review_fix_commits
 
 remaining_insufficient_evidence:
   - prompt_05_exact_owner_file_byte_hash_refresh
