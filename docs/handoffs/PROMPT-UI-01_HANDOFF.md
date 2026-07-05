@@ -3,20 +3,30 @@
 ```yaml
 prompt: UI operator panel prompt 1 of 3
 branch: ui/operator-panel
+pull_request: 28
+head_sha: 68055db677a2f2a10af0a4d4c1f5c4a3782d7a59
 scope: local Persian-first operator UI shell
-status: implemented_on_branch_pending_validation_and_ci
+status: verified_by_pr_ci
 ```
 
 ## Branch
 
 - `ui/operator-panel`
 
+## Pull request
+
+- PR: `#28` — `Add local Project Gate operator UI`
+- Base: `main`
+- Head: `ui/operator-panel`
+
 ## Commits
 
-Created on branch through the GitHub connector. Final commit list should be verified from the PR before merge.
+- Branch is `16` commits ahead of `main` at handoff update time.
+- Final head verified by CI: `68055db677a2f2a10af0a4d4c1f5c4a3782d7a59`.
 
 ## Files changed
 
+- `.github/workflows/validate.yml`
 - `src/ev4_transition/ui/__init__.py`
 - `src/ev4_transition/ui/app.py`
 - `src/ev4_transition/ui/state.py`
@@ -42,6 +52,7 @@ Created on branch through the GitHub connector. Final commit list should be veri
 - Added read-only capability inspector.
 - Added downloadable `result.json`, `report.md`, and `report.html` generation through existing report renderers.
 - Added tests for UI helper/adapter behavior.
+- Added CI execution for `pytest tests/ui` in `Skeleton Health`.
 
 ## Not changed
 
@@ -64,13 +75,13 @@ Created on branch through the GitHub connector. Final commit list should be veri
 
 | Rule | Status |
 |---|---|
-| malformed JSON safe error | fixture_tested |
-| status mapping for accepted/invalid/insufficient_evidence/repair_needed | fixture_tested |
-| diagnostics preserve code/severity/path | fixture_tested |
-| LTR isolation for technical tokens | fixture_tested |
-| capability inspector read-only | fixture_tested |
-| unavailable transitions do not fake execution | fixture_tested |
-| report/result rendering does not mutate result object | fixture_tested |
+| malformed JSON safe error | ci_enforced |
+| status mapping for accepted/invalid/insufficient_evidence/repair_needed | ci_enforced |
+| diagnostics preserve code/severity/path | ci_enforced |
+| LTR isolation for technical tokens | ci_enforced |
+| capability inspector read-only | ci_enforced |
+| unavailable transitions do not fake execution | ci_enforced |
+| report/result rendering does not mutate result object | ci_enforced |
 
 ## Coverage rules still gap
 
@@ -97,21 +108,42 @@ Created on branch through the GitHub connector. Final commit list should be veri
 
 - Added optional local UI entry point: `ev4-project-gate-ui`.
 - Did not expose new public Project Gate transition commands.
-- Did not modify GitHub Actions workflows.
+- Added `Operator UI adapter tests` step to `.github/workflows/validate.yml` because otherwise the new UI tests would not be CI-enforced.
 
 ## Tests run
 
-Validation commands are recorded in the final PR/report after execution. At handoff creation time, local validation had not yet been completed.
+Local/container attempt:
 
-## Tests not run yet
+```bash
+git clone --branch ui/operator-panel --single-branch https://github.com/rezahh107/EV4-Project-Gate.git /tmp/EV4-Project-Gate-ui
+```
 
-- `python -m pip install -e '.[dev]'`
-- `pytest tests/ui`
-- `pytest`
-- `python scripts/check-capability-truth.py`
-- `python scripts/check-workflow-permissions.py`
-- `npm run status`
-- `npm run validate`
+Result: failed because the execution container could not resolve `github.com`.
+
+GitHub Actions on PR `#28`, head `68055db677a2f2a10af0a4d4c1f5c4a3782d7a59`:
+
+- `Skeleton Health` run `28757902985`: success.
+- `Prompt 05 Builder Responsive Final Gate` run `28757902962`: success.
+- `Prompt 06 Report UX` run `28757902964`: success.
+
+Confirmed successful CI steps include:
+
+- `Operator UI adapter tests`
+- `Verify capability truth`
+- `Verify workflow permissions`
+- `Run skeleton status`
+- `Run skeleton validation`
+- `CLI and bundle tests`
+- `Behavioral coverage validator`
+- `Behavioral fixture validation`
+- `CLI smoke valid bundle`
+- `CLI smoke invalid array`
+- `CLI smoke Persian insufficient evidence`
+
+## Tests not run
+
+- Browser-driven Gradio UI testing was not run.
+- Manual visual inspection of the live UI was not performed in this prompt.
 
 ## Important design decisions
 
@@ -133,7 +165,7 @@ Validation commands are recorded in the final PR/report after execution. At hand
 ## Blockers
 
 - No browser-level UI run evidence yet.
-- No GitHub Actions CI result yet for this branch at handoff creation time.
+- No merge to `main`; PR remains open.
 
 ## Remaining insufficient_evidence
 
