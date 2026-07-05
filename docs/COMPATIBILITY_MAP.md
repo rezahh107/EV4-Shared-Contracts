@@ -1,6 +1,6 @@
 # EV4 Compatibility Map
 
-This document records current compatibility boundaries only. It does not promote any schema or contract into shared canonical status.
+This document records current compatibility boundaries only. It does not promote any specialist schema or contract into shared canonical status.
 
 ## Architect → CE
 
@@ -41,35 +41,45 @@ Builder-ready claims before CE processing
 Validation state:
 
 ```yaml
+orchestration_baseline: implemented
+cli_exposure: implemented
 verification_state: synthetic_fixture_only
-real_cross_repository_validation: not_available
+real_non_synthetic_handoff: insufficient_evidence
 ```
 
 ## CE → Builder
 
-Planned Project Gate transition:
+Implemented Project Gate orchestration baseline:
 
 ```text
 ev4-ce-to-builder-transition@1.0.0
 ```
 
-Implementation status:
+Layered status:
 
 ```yaml
-implemented: false
-freeze_matrix: docs/CE_TO_BUILDER_FREEZE_MATRIX.md
+orchestration_baseline: implemented
+cli_exposure: not_implemented
+owner_fixture_integration: verified
+real_non_synthetic_handoff: insufficient_evidence
 ```
 
-Allowed future route:
+Allowed orchestration route:
 
 ```text
 ev4-builder-executable-package@1.0.0
+→ Project Gate owner-pin and file-byte verification
+→ official CE validator
 → Builder CE→Builder Contract Gate
-→ Builder CE→Builder adapter
+→ official Builder adapter
 → ev4-builder-context-package@1.0.0
+→ official Builder output validator
+→ Project Gate transition result
 ```
 
-Project Gate later coordinates file-byte pins, hashes, official validators, official adapters, provenance, diagnostics, and handoff packaging for this route. CE and Builder remain the owners of their specialist behavior.
+Project Gate coordinates exact owner pins, hashes, official validators, official adapters, provenance, diagnostics, and result packaging. CE and Builder remain authoritative for their specialist behavior.
+
+PR #20 workflow run `28744810186` verified the owner-fixture integration path on head `42bfa484481c585f589d86c40424660c70b038a0`. This does not prove a real non-synthetic handoff and does not expose CE→Builder as a public CLI command.
 
 ## Builder → Responsive
 
@@ -82,13 +92,14 @@ ev4-builder-to-responsive-transition@1.0.0
 Implementation status:
 
 ```yaml
-implemented: false
+orchestration_baseline: not_implemented
+cli_exposure: not_implemented
 freeze_matrix: docs/BUILDER_TO_RESPONSIVE_FREEZE_MATRIX.md
 builder_formal_responsive_export: not_implemented
 responsive_builder_specific_input_schema: not_implemented
 ```
 
-Allowed future route:
+Future route:
 
 ```text
 Builder output and build evidence
@@ -97,40 +108,22 @@ Builder output and build evidence
 → Responsive output and viewport evidence
 ```
 
-The future Project Gate transition may be implemented as a fail-closed verifier. It must not claim an accepted Builder→Responsive handoff until Builder-owned output/evidence artifacts and Responsive-owned input requirements exist and pass the official validators.
+Project Gate must not claim an accepted Builder→Responsive handoff until Builder-owned output/evidence artifacts and Responsive-owned input requirements exist and pass official validators.
 
-## Architect
+## Repository authority notes
 
-`ev4-builder-context-package@1.0.0` is deprecated compatibility wrapper only.
+### Architect
 
-`ev4-architect-builder-feed-export@1.0.0` is CE intake / non-executable handoff.
+`ev4-builder-context-package@1.0.0` is a deprecated compatibility wrapper only. Architect-owned outputs are not Builder-executable output by default.
 
-Architect-owned outputs are not Builder-executable output by default.
+### Constructability Engineer
 
-## Constructability Engineer
+`EV4 Builder Executable Package` is the CE-owned executable handoff. It is not a shared canonical contract. CE owns constructability review, execution-strategy proof, package issuance, and execution prerequisites.
 
-`EV4 Builder Executable Package` is the current CE → Builder adapter-side executable handoff.
+### Builder
 
-It is not yet a shared canonical contract.
+Builder runtime intake remains local-authoritative. CE executable packages are normalized by the official Builder adapter after the Builder contract gate passes. Builder does not yet define a single formal Builder→Responsive export schema.
 
-CE owns constructability review, execution-strategy gate, Builder Executable Package issuance, and execution prerequisites.
+### Responsive Architect
 
-## Builder
-
-Builder runtime intake remains local-authoritative inside Builder repo.
-
-CE executable packages are normalized by Builder adapter before runtime use.
-
-Builder rejects Architect-only packages as Builder-ready and rejects CE review-only packages as runtime-ready.
-
-Builder does not yet define a single formal Builder→Responsive export schema. Current Builder action batch, layout check, completion gate, and real Elementor execution evidence artifacts are Builder-owned evidence surfaces only.
-
-## Responsive Architect
-
-Responsive reference-family linkage is local-authoritative inside Responsive repo for now.
-
-It is not yet a canonical shared contract.
-
-Responsive behavior is not inferred from desktop screenshots or raw screenshot authority.
-
-Responsive does not yet define a formal Builder-specific input package schema. Current Builder→Responsive boundary is documented as fail-closed until a formal input package exists or Project Gate transports pinned Builder evidence without treating that transport as Responsive-owned schema.
+Responsive reference-family linkage and responsive output remain local-authoritative. Responsive behavior must not be inferred from desktop screenshots or raw screenshot authority.

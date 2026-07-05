@@ -1,6 +1,6 @@
 # EV4 Project Gate
 
-Status: Python deterministic foundation is implemented for Stage Evidence Bundle validation. The first real transition, `ev4-architect-to-ce-transition@1.0.0`, emits CE intake `ev4-ce-architect-stage-intake@1.1.0` using the CE-owned mapping `ev4-architect-stage-to-ce-intake-mapping@1.1.0`. The user interface is not implemented.
+Status: Python deterministic foundation and `ev4-architect-to-ce-transition@1.0.0` are implemented. The `ev4-ce-to-builder-transition@1.0.0` orchestration baseline is implemented and owner-fixture integration is verified; general CLI exposure is not implemented and real non-synthetic handoff evidence remains insufficient. The user interface is not implemented.
 
 ## Purpose
 
@@ -81,7 +81,8 @@ real_elementor_validation: not_available
 
 The following remain intentionally out of scope:
 
-- `ce-to-builder`
+- CE-to-Builder general public CLI exposure
+- real non-synthetic CE-to-Builder handoff verification
 - `builder-to-responsive`
 - CE constructability execution
 - implementation strategy selection
@@ -90,7 +91,9 @@ The following remain intentionally out of scope:
 - UI/upload-download application
 - legacy Node retirement
 
-Do not claim real EV4 end-to-end compatibility from synthetic transition fixtures.
+The CE-to-Builder orchestration baseline, result schema, lock verification, runner integration, and owner-fixture tests exist in the repository. `ev4-transition inspect` reports the layered status from `src/ev4_transition/data/capability-status.v1.json`.
+
+Do not claim real EV4 end-to-end compatibility from synthetic transition fixtures or owner-fixture integration.
 
 ## CLI
 
@@ -217,11 +220,16 @@ repository_role: project_workflow_control_center
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
 architect_to_ce_transition: implemented_v1_ce_intake_v1_1_synthetic_verified
+ce_to_builder:
+  orchestration_baseline: implemented
+  cli_exposure: not_implemented
+  owner_fixture_integration: verified
+  real_non_synthetic_handoff: insufficient_evidence
 structured_diagnostics: implemented_initial_v1
 canonical_json_sha256: implemented_initial_v1
 real_cross_repository_validation: not_available
+current_main_head_ci: insufficient_evidence
 user_interface: not_implemented
-package_generation: architect_to_ce_only
 canonical_schema_owner: false
 node_skeleton: preserved_temporarily
 ```

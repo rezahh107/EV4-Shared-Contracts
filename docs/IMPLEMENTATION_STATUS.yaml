@@ -7,16 +7,26 @@ historical_merge_ledger: docs/EV4_SHARED_CONTRACTS_STATUS.md
 repository:
   name: rezahh107/EV4-Project-Gate
   default_branch: main
-  audited_main_head: dca39ed177d5660d96df04a05fff0a0314c6c339
+  foundation_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
+  foundation_main_head_ci:
+    status: insufficient_evidence
+    reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit
+  audited_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
   current_main_head_ci:
     status: insufficient_evidence
-    reason: no_visible_workflow_run_for_exact_automatic_post_merge_head
+    reason: no_visible_exact_head_run_for_automatic_historical_ledger_commit
   pull_request_20:
     state: merged
     head_sha: 42bfa484481c585f589d86c40424660c70b038a0
     merge_commit_sha: 34b08240ad4deaf017a8f79236d0b8e214530dec
     workflow_run_id: 28744810186
     workflow_result: success
+  last_verified_project_gate_pr:
+    number: 21
+    head_sha: ce356b6f6a8dee5f807679aed0f78aa057152d1b
+    workflow_run_id: 28748324684
+    workflow_result: success
+  prompt_05_repair_branch: fix/prompt-05-foundation-reconciliation
 
 capabilities:
   architect_to_ce:
@@ -37,11 +47,27 @@ capabilities:
     result_schema: schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json
     lock_manifest: contracts/locks/ce-to-builder-transition.v1.lock.json
   builder_to_responsive:
-    orchestration_baseline: not_implemented
+    transition_id: ev4-builder-to-responsive-transition@1.0.0
+    orchestration_baseline: implemented
     cli_exposure: not_implemented
+    producer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
+    consumer_commit: df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a
+    owner_contract_lock: computed_from_pinned_owner_file_bytes
+    official_responsive_validator_integration: implemented
+    verification_state: pending_exact_head_ci
+    real_non_synthetic_handoff: insufficient_evidence
+    result_schema: schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json
+    lock_manifest: contracts/locks/builder-to-responsive-transition.v1.lock.json
   final_evidence_gate:
-    orchestration_baseline: not_implemented
+    gate_id: ev4-final-evidence-gate@1.0.0
+    orchestration_baseline: implemented
     cli_exposure: not_implemented
+    prior_lock_chain: pinned_to_immutable_project_gate_commit
+    official_responsive_validator_integration: implemented
+    verification_state: pending_exact_head_ci
+    real_non_synthetic_evidence: insufficient_evidence
+    result_schema: schemas/final-gate-result/final-gate-result.v1.schema.json
+    lock_manifest: contracts/locks/final-gate.v1.lock.json
   user_interface:
     status: not_implemented
 
@@ -52,13 +78,14 @@ verification:
     workflow_run_id: 28744810186
     workflow_head_sha: 42bfa484481c585f589d86c40424660c70b038a0
     scope_limit: not_real_non_synthetic_handoff
-  behavioral_coverage:
-    PG-C2B-001: validator_backed
-    PG-C2B-002: validator_backed
-    PG-DOWNSTREAM-001: fixture_tested
+  prompt_05:
+    state: pending_exact_head_ci
+    evidence_type: pinned_owner_contract_and_official_validator_integration
+    scope_limit: not_real_non_synthetic_handoff_or_frontend_correctness
 
 remaining_insufficient_evidence:
-  - exact_current_main_head_ci_result
+  - exact_foundation_main_head_ci_result
   - real_non_synthetic_CE_to_Builder_transition_evidence
-  - Builder_to_Responsive_Project_Gate_transition
-  - final_evidence_gate
+  - real_Builder_execution_evidence_bundle
+  - real_Responsive_input_and_output_evidence_bundle
+  - accessibility_export_and_frontend_correctness_evidence

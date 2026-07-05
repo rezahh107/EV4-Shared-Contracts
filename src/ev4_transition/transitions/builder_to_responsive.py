@@ -18,7 +18,7 @@ LOCK_SCHEMA_VERSION = "builder-to-responsive-transition-lock.v1"
 BUILDER_REPO = "rezahh107/EV4-Builder-Assistant-Repo"
 RESPONSIVE_REPO = "rezahh107/EV4-Responsive-Architect"
 BUILDER_COMMIT = "69a2c61edf6d06b4418ad770fcefbfdffcf275d6"
-RESPONSIVE_COMMIT = "main"
+RESPONSIVE_COMMIT = "df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a"
 RESPONSIVE_INPUT_SCHEMA = "ev4-builder-responsive-input@0.1.0"
 RESPONSIVE_INPUT_SCHEMA_PATH = "schemas/ev4-builder-responsive-input.schema.json"
 RESPONSIVE_INPUT_VALIDATOR = "validation/e2e/run_builder_responsive_input_boundary_check.py"
@@ -97,6 +97,9 @@ def verify_builder_to_responsive_lock(lock: dict[str, Any], source: ContractSour
             diagnostics.append(diagnostic("PG.B2R.LOCK_ENTRY_NOT_OBJECT", "error", "Lock entry must be an object.", path))
             continue
         role = item.get("role")
+        if not isinstance(role, str):
+            diagnostics.append(diagnostic("PG.B2R.LOCK_ROLE_UNEXPECTED", "error", "Lock entry role must be a string.", f"{path}.role", observed_type=type(role).__name__))
+            continue
         expected = EXPECTED_BUILDER_TO_RESPONSIVE_DEPENDENCIES.get(role)
         if expected is None:
             diagnostics.append(diagnostic("PG.B2R.LOCK_ROLE_UNEXPECTED", "error", "Unexpected lock role.", f"{path}.role", role=role))
@@ -232,8 +235,9 @@ def _run_responsive_validator(config: BuilderToResponsiveTransitionConfig, respo
 
 def _result(original: Any, responsive_input: dict[str, Any] | None, diagnostics: list[Diagnostic], accepted_requires: dict[str, bool], config: BuilderToResponsiveTransitionConfig) -> dict[str, Any]:
     ordered = sort_diagnostics(diagnostics)
-    if not ordered and not all(accepted_requires.values()):
-        missing = sorted(k for k, v in accepted_requires.items() if not v and k != "result_schema_valid")
+    accepted = {**accepted_requires, "result_schema_valid": True}
+    if not ordered and not all(accepted.values()):
+        missing = sorted(key for key, value in accepted.items() if not value)
         ordered = sort_diagnostics([diagnostic("PG.B2R.ACCEPTED_REQUIRES_MISSING", "insufficient_evidence", "Accepted status requires every accepted_requires item to be true.", "$.accepted_requires", missing=missing)])
     status = project_gate_status_from_diagnostics(ordered)
     result = {
@@ -242,22 +246,32 @@ def _result(original: Any, responsive_input: dict[str, Any] | None, diagnostics:
         "transition_id": TRANSITION_ID,
         "transition_version": TRANSITION_VERSION,
         "status": status,
-        "diagnostics": [d.to_dict() for d in ordered],
-        "accepted_requires": {**accepted_requires, "result_schema_valid": True},
+        "diagnostics": [item.to_dict() for item in ordered],
+        "accepted_requires": accepted,
         "hashes": {"source_input_hash": {"algorithm": "sha256", "canonicalization": "ev4-canonical-json.v1", "scope": "source_input", "value": _safe_hash(original)}},
         "output": responsive_input if status == "accepted" else None,
     }
-    _validate_result_schema(config.schema_root, result)
+    schema_path = config.schema_root / "builder-to-responsive-transition-result" / "builder-to-responsive-transition-result.v1.schema.json"
+    schema_diagnostics: list[Diagnostic] = []
+    if not schema_path.exists():
+        schema_diagnostics.append(diagnostic("PG.B2R.RESULT_SCHEMA_MISSING", "insufficient_evidence", "Builder→Responsive result schema is required.", "$.schema_version", schema_path=str(schema_path)))
+    else:
+        try:
+            schema = load_json_file(schema_path)
+            Draft202012Validator.check_schema(schema)
+            errors = sorted(Draft202012Validator(schema).iter_errors(result), key=lambda item: (list(item.path), item.message))
+            for error in errors:
+                schema_diagnostics.append(diagnostic("PG.B2R.RESULT_SCHEMA_VALIDATION_FAILED", "error", error.message, _json_path(list(error.path))))
+        except Exception as exc:
+            schema_diagnostics.append(diagnostic("PG.B2R.RESULT_SCHEMA_INVALID", "error", "Builder→Responsive result schema could not be validated.", "$.schema_version", error_type=type(exc).__name__))
+    if schema_diagnostics:
+        accepted["result_schema_valid"] = False
+        ordered = sort_diagnostics([*ordered, *schema_diagnostics])
+        result["status"] = project_gate_status_from_diagnostics(ordered)
+        result["diagnostics"] = [item.to_dict() for item in ordered]
+        result["accepted_requires"] = accepted
+        result["output"] = None
     return result
-
-
-def _validate_result_schema(schema_root: Path, result: dict[str, Any]) -> None:
-    path = schema_root / "builder-to-responsive-transition-result" / "builder-to-responsive-transition-result.v1.schema.json"
-    if not path.exists():
-        return
-    errors = sorted(Draft202012Validator(load_json_file(path)).iter_errors(result), key=lambda item: (list(item.path), item.message))
-    if errors:
-        raise RuntimeError("; ".join(f"{_json_path(list(e.path))}: {e.message}" for e in errors))
 
 
 def _missing_builder_evidence(value: dict[str, Any]) -> list[str]:

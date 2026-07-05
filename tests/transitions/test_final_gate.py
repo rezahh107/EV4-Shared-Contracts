@@ -133,3 +133,17 @@ def test_final_gate_lock_verification_detects_hash_mismatch(tmp_path: Path):
     lock["files"][0]["sha256_file_bytes"] = "0" * 64
     diagnostics = verify_final_gate_lock(lock, source)
     assert any(item.code == "PG.FINAL.EXTERNAL_HASH_MISMATCH" for item in diagnostics)
+
+def test_final_gate_lock_rejects_non_string_role_without_crash(tmp_path: Path):
+    pg, responsive, source, lock = _repos(tmp_path)
+    lock["files"][0]["role"] = []
+    diagnostics = verify_final_gate_lock(lock, source)
+    assert any(item.code == "PG.FINAL.LOCK_ROLE_UNEXPECTED" for item in diagnostics)
+
+
+def test_final_gate_missing_result_schema_is_insufficient_evidence(tmp_path: Path):
+    pg, responsive, source, lock = _repos(tmp_path)
+    result = run_final_gate(_output(), source, _config(tmp_path, lock, pg, responsive))
+    assert result["status"] == "insufficient_evidence"
+    assert result["accepted_requires"]["result_schema_valid"] is False
+    assert "PG.FINAL.RESULT_SCHEMA_MISSING" in _codes(result)

@@ -6,17 +6,14 @@ import re
 from pathlib import Path
 
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-USES_RE = re.compile(r"^\s*uses:\s*([^\s#]+)")
+USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)")
 
 
-def iter_workflows(root: Path, *, all_workflows: bool) -> list[Path]:
+def iter_workflows(root: Path) -> list[Path]:
     workflows = root / ".github" / "workflows"
     if not workflows.exists():
         return []
-    if all_workflows:
-        return sorted(path for path in workflows.iterdir() if path.suffix in {".yml", ".yaml"})
-    validate = workflows / "validate.yml"
-    return [validate] if validate.exists() else []
+    return sorted(path for path in workflows.iterdir() if path.suffix in {".yml", ".yaml"})
 
 
 def check_file(path: Path) -> list[str]:
@@ -25,7 +22,7 @@ def check_file(path: Path) -> list[str]:
         match = USES_RE.match(line)
         if not match:
             continue
-        value = match.group(1).strip().strip('"\'')
+        value = match.group(1).strip().strip("\"'")
         if "@" not in value:
             failures.append(f"{path}:{lineno}: uses entry has no ref: {value}")
             continue
@@ -37,21 +34,28 @@ def check_file(path: Path) -> list[str]:
     return failures
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Fail if workflow external actions are not pinned to full commit SHAs.")
-    parser.add_argument("root", nargs="?", default=".")
-    parser.add_argument("--all-workflows", action="store_true", help="Check every workflow file instead of the PROMPT-04 affected workflow.")
-    args = parser.parse_args()
-    root = Path(args.root)
+def check_repository(root: Path) -> list[str]:
+    workflows = iter_workflows(root)
+    if not workflows:
+        return [f"{root}: no workflow files found under .github/workflows"]
     failures: list[str] = []
-    for workflow in iter_workflows(root, all_workflows=args.all_workflows):
+    for workflow in workflows:
         failures.extend(check_file(workflow))
+    return failures
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Fail if any workflow uses an external GitHub Action without a full commit SHA.")
+    parser.add_argument("root", nargs="?", default=".")
+    parser.add_argument("--all-workflows", action="store_true", help="Compatibility flag; all workflows are checked by default.")
+    args = parser.parse_args()
+    failures = check_repository(Path(args.root))
     if failures:
         print("Mutable or unpinned GitHub Actions references found:")
         for item in failures:
             print(f"- {item}")
         return 1
-    print("Checked workflow action refs are pinned to full commit SHAs.")
+    print("All workflow external action refs are pinned to full commit SHAs.")
     return 0
 
 

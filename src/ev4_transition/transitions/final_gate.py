@@ -16,9 +16,9 @@ GATE_ID = "ev4-final-evidence-gate@1.0.0"
 GATE_VERSION = "1.0.0"
 LOCK_SCHEMA_VERSION = "final-gate-lock.v1"
 PG_REPO = "rezahh107/EV4-Project-Gate"
-PG_COMMIT = "main"
+PG_COMMIT = "__PROMPT05_STAGE1_COMMIT__"
 RESPONSIVE_REPO = "rezahh107/EV4-Responsive-Architect"
-RESPONSIVE_COMMIT = "main"
+RESPONSIVE_COMMIT = "df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a"
 RESPONSIVE_OUTPUT_SCHEMA = "ev4-responsive-output@0.3.0"
 RESPONSIVE_OUTPUT_SCHEMA_PATH = "schemas/ev4-responsive-output.schema.json"
 RESPONSIVE_OUTPUT_VALIDATOR = "validation/e2e/run_responsive_tree_architecture_refactor_check.py"
@@ -90,6 +90,9 @@ def verify_final_gate_lock(lock: dict[str, Any], source: ContractSource) -> list
             diagnostics.append(diagnostic("PG.FINAL.LOCK_ENTRY_NOT_OBJECT", "error", "Lock entry must be an object.", path))
             continue
         role = item.get("role")
+        if not isinstance(role, str):
+            diagnostics.append(diagnostic("PG.FINAL.LOCK_ROLE_UNEXPECTED", "error", "Lock entry role must be a string.", f"{path}.role", observed_type=type(role).__name__))
+            continue
         expected = EXPECTED_FINAL_GATE_DEPENDENCIES.get(role)
         if expected is None:
             diagnostics.append(diagnostic("PG.FINAL.LOCK_ROLE_UNEXPECTED", "error", "Unexpected final gate lock role.", f"{path}.role", role=role))
@@ -211,8 +214,9 @@ def _run_responsive_output_validator(config: FinalGateConfig, output: dict[str, 
 
 def _result(original: Any, output: dict[str, Any] | None, diagnostics: list[Diagnostic], accepted_requires: dict[str, bool], config: FinalGateConfig) -> dict[str, Any]:
     ordered = sort_diagnostics(diagnostics)
-    if not ordered and not all(accepted_requires.values()):
-        missing = sorted(k for k, v in accepted_requires.items() if not v and k != "result_schema_valid")
+    accepted = {**accepted_requires, "result_schema_valid": True}
+    if not ordered and not all(accepted.values()):
+        missing = sorted(key for key, value in accepted.items() if not value)
         ordered = sort_diagnostics([diagnostic("PG.FINAL.ACCEPTED_REQUIRES_MISSING", "insufficient_evidence", "Accepted final status requires every accepted_requires item to be true.", "$.accepted_requires", missing=missing)])
     status = project_gate_status_from_diagnostics(ordered)
     result = {
@@ -221,22 +225,32 @@ def _result(original: Any, output: dict[str, Any] | None, diagnostics: list[Diag
         "gate_id": GATE_ID,
         "gate_version": GATE_VERSION,
         "status": status,
-        "diagnostics": [d.to_dict() for d in ordered],
-        "accepted_requires": {**accepted_requires, "result_schema_valid": True},
+        "diagnostics": [item.to_dict() for item in ordered],
+        "accepted_requires": accepted,
         "hashes": {"source_input_hash": {"algorithm": "sha256", "canonicalization": "ev4-canonical-json.v1", "scope": "source_input", "value": _safe_hash(original)}},
         "output": output if status == "accepted" else None,
     }
-    _validate_result_schema(config.schema_root, result)
+    schema_path = config.schema_root / "final-gate-result" / "final-gate-result.v1.schema.json"
+    schema_diagnostics: list[Diagnostic] = []
+    if not schema_path.exists():
+        schema_diagnostics.append(diagnostic("PG.FINAL.RESULT_SCHEMA_MISSING", "insufficient_evidence", "Final gate result schema is required.", "$.schema_version", schema_path=str(schema_path)))
+    else:
+        try:
+            schema = load_json_file(schema_path)
+            Draft202012Validator.check_schema(schema)
+            errors = sorted(Draft202012Validator(schema).iter_errors(result), key=lambda item: (list(item.path), item.message))
+            for error in errors:
+                schema_diagnostics.append(diagnostic("PG.FINAL.RESULT_SCHEMA_VALIDATION_FAILED", "error", error.message, _json_path(list(error.path))))
+        except Exception as exc:
+            schema_diagnostics.append(diagnostic("PG.FINAL.RESULT_SCHEMA_INVALID", "error", "Final gate result schema could not be validated.", "$.schema_version", error_type=type(exc).__name__))
+    if schema_diagnostics:
+        accepted["result_schema_valid"] = False
+        ordered = sort_diagnostics([*ordered, *schema_diagnostics])
+        result["status"] = project_gate_status_from_diagnostics(ordered)
+        result["diagnostics"] = [item.to_dict() for item in ordered]
+        result["accepted_requires"] = accepted
+        result["output"] = None
     return result
-
-
-def _validate_result_schema(schema_root: Path, result: dict[str, Any]) -> None:
-    path = schema_root / "final-gate-result" / "final-gate-result.v1.schema.json"
-    if not path.exists():
-        return
-    errors = sorted(Draft202012Validator(load_json_file(path)).iter_errors(result), key=lambda item: (list(item.path), item.message))
-    if errors:
-        raise RuntimeError("; ".join(f"{_json_path(list(e.path))}: {e.message}" for e in errors))
 
 
 def _find_forbidden_claims(value: Any) -> list[str]:

@@ -1,0 +1,89 @@
+{
+  "capabilities": {
+    "architect_to_ce": {
+      "cli_exposure": "implemented",
+      "orchestration_baseline": "implemented",
+      "real_non_synthetic_handoff": "insufficient_evidence",
+      "verification_state": "synthetic_fixture_only"
+    },
+    "builder_to_responsive": {
+      "cli_exposure": "not_implemented",
+      "official_responsive_validator_integration": "implemented",
+      "orchestration_baseline": "implemented",
+      "owner_contract_lock": "computed_from_pinned_owner_file_bytes",
+      "real_non_synthetic_handoff": "insufficient_evidence",
+      "verification_state": "pending_exact_head_ci"
+    },
+    "ce_to_builder": {
+      "cli_exposure": "not_implemented",
+      "orchestration_baseline": "implemented",
+      "owner_fixture_integration": "verified",
+      "real_non_synthetic_handoff": "insufficient_evidence"
+    },
+    "final_evidence_gate": {
+      "cli_exposure": "not_implemented",
+      "official_responsive_validator_integration": "implemented",
+      "orchestration_baseline": "implemented",
+      "prior_lock_chain": "pinned_to_immutable_project_gate_commit",
+      "real_non_synthetic_evidence": "insufficient_evidence",
+      "verification_state": "pending_exact_head_ci"
+    },
+    "user_interface": {
+      "status": "not_implemented"
+    }
+  },
+  "evidence": {
+    "ce_to_builder_owner_fixture_integration": {
+      "head_sha": "42bfa484481c585f589d86c40424660c70b038a0",
+      "pull_request": 20,
+      "result": "success",
+      "scope": "owner_fixture_integration_only",
+      "workflow": "Skeleton Health",
+      "workflow_run_id": 28744810186
+    },
+    "current_main_head_ci": {
+      "observed_head_sha": "4233d2ff22310f86305b2e67055c8e4eeb03d6df",
+      "reason": "No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.",
+      "status": "insufficient_evidence"
+    },
+    "foundation_main_head_ci": {
+      "observed_head_sha": "4233d2ff22310f86305b2e67055c8e4eeb03d6df",
+      "reason": "No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.",
+      "status": "insufficient_evidence"
+    },
+    "last_verified_project_gate_pr": {
+      "head_sha": "ce356b6f6a8dee5f807679aed0f78aa057152d1b",
+      "pull_request": 21,
+      "result": "success",
+      "workflow": "Skeleton Health",
+      "workflow_run_id": 28748324684
+    }
+  },
+  "implemented": [
+    "canonical_json",
+    "sha256",
+    "structured_diagnostics",
+    "stage_bundle_validation",
+    "transition_result_schema_foundation",
+    "status_presentation_mapping",
+    "behavioral_coverage_validation",
+    "architect-to-ce transition",
+    "ce-to-builder orchestration baseline",
+    "builder-to-responsive orchestration baseline",
+    "final evidence gate orchestration baseline",
+    "minimal_cli"
+  ],
+  "not_implemented": [
+    "ce-to-builder public CLI exposure",
+    "builder-to-responsive public CLI exposure",
+    "final evidence gate public CLI exposure",
+    "real EV4 artifact validation",
+    "UI"
+  ],
+  "package": "ev4-project-gate",
+  "public_cli_transitions": [
+    "architect-to-ce"
+  ],
+  "repository": "rezahh107/EV4-Project-Gate",
+  "schema_version": "ev4-project-gate-capability-status.v1"
+}

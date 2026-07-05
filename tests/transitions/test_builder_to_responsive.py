@@ -184,3 +184,17 @@ def test_builder_to_responsive_lock_verification_detects_hash_mismatch(tmp_path:
     lock["files"][0]["sha256_file_bytes"] = "0" * 64
     diagnostics = verify_builder_to_responsive_lock(lock, source)
     assert any(item.code == "PG.B2R.EXTERNAL_HASH_MISMATCH" for item in diagnostics)
+
+def test_builder_to_responsive_lock_rejects_non_string_role_without_crash(tmp_path: Path):
+    builder, responsive, source, lock = _repos(tmp_path)
+    lock["files"][0]["role"] = {"malformed": True}
+    diagnostics = verify_builder_to_responsive_lock(lock, source)
+    assert any(item.code == "PG.B2R.LOCK_ROLE_UNEXPECTED" for item in diagnostics)
+
+
+def test_builder_to_responsive_missing_result_schema_is_insufficient_evidence(tmp_path: Path):
+    builder, responsive, source, lock = _repos(tmp_path)
+    result = transition_builder_to_responsive(_responsive_input(), source, _config(tmp_path, lock, builder, responsive))
+    assert result["status"] == "insufficient_evidence"
+    assert result["accepted_requires"]["result_schema_valid"] is False
+    assert "PG.B2R.RESULT_SCHEMA_MISSING" in _codes(result)
