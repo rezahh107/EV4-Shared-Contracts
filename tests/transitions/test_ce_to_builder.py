@@ -144,7 +144,7 @@ def test_ce_to_builder_builder_output_validated_by_builder_owned_rules(tmp_path)
 
 def test_ce_to_builder_synthetic_fixture_cannot_count_as_real_evidence(tmp_path):
     ce, builder, lock = _repos(tmp_path)
-    bundle = {"schema_version": "stage-evidence-bundle.v1", "bundle_id": "b", "stage": "ce", "payload_schema": {"id": CE_PACKAGE_SCHEMA, "version": "1.0.0", "owner_repository": CE_REPO}, "produced_by": {"repository": CE_REPO, "ref": "x"}, "evidence_status": "complete", "payload": {"schema_id": CE_PACKAGE_SCHEMA, "data": {"builder_executable_package": _ce_package()}}, "evidence": [{"id": "e", "kind": "fixture", "state": "synthetic", "description": "test"}], "provenance": {}, "synthetic": True}
+    bundle = {"schema_version": "stage-evidence-bundle.v1", "bundle_id": "b", "stage": "ce", "payload_schema": {"id": CE_PACKAGE_SCHEMA, "version": "1.0.0", "owner_repository": CE_REPO}, "produced_by": {"repository": CE_REPO, "ref": "x"}, "evidence_status": "complete", "payload": {"schema_id": CE_PACKAGE_SCHEMA, "data": {"builder_executable_package": _ce_package()}}, "evidence": [{"id": "e", "kind": "fixture", "state": "unverified", "description": "generated test fixture", "artifact_hash": {"algorithm": "sha256", "value": bytes_sha256(b"sample"), "scope": "canonical_json"}, "source": {"type": "synthetic_fixture", "reference": "tests/transitions/test_ce_to_builder.py"}}], "provenance": {"source": "generated", "created_by": "pytest"}, "synthetic": True}
     r = transition_ce_to_builder(bundle, _source(ce, builder), _config(ce, builder, lock, real=True))
     assert r["status"] == "insufficient_evidence"
 
