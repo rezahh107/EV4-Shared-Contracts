@@ -1,6 +1,6 @@
 # EV4 Transition Boundary Map
 
-Status: `PROMPT-04` CE→Builder baseline is CI-evidenced on PR `#20` head `87a4a84640c999cee049a0d40865c25efabeafb0`. This map records Project Gate-owned orchestration boundaries. Specialist schemas and runtime logic remain owner-repository artifacts; Project Gate pins, hashes, validates, calls official tools, and emits diagnostics/results only.
+Status: PR #20 is merged. CE→Builder orchestration is implemented and owner-fixture integration passed on PR head `42bfa484481c585f589d86c40424660c70b038a0` in workflow run `28744810186`. Real non-synthetic CE→Builder handoff evidence remains unavailable, and CE→Builder is not a public CLI transition.
 
 ## Status vocabulary
 
@@ -19,10 +19,9 @@ invalid
 
 ```yaml
 transition_id: ev4-architect-to-ce-transition@1.0.0
-project_gate_status: implemented_synthetic_verified
-source_repository: rezahh107/EV4-Architect-Repo
-target_repository: rezahh107/EV4-Constructability-Engineer-Repo
-verification_state: synthetic_fixture_and_ci_coverage_existing_before_PROMPT_04
+orchestration_baseline: implemented
+cli_exposure: implemented
+verification_state: synthetic_fixture_only
 ```
 
 Allowed Project Gate behavior:
@@ -37,20 +36,16 @@ Architect Stage Evidence Bundle
 → Architect→CE transition result validation
 ```
 
-Forbidden Project Gate behavior:
-
-```text
-- create CE constructability decisions
-- prove Elementor buildability
-- authorize Builder runtime
-- claim production readiness
-```
+Forbidden Project Gate behavior includes creating CE constructability decisions, proving Elementor buildability, authorizing Builder runtime, or claiming production readiness.
 
 ## CE → Builder
 
 ```yaml
 transition_id: ev4-ce-to-builder-transition@1.0.0
-project_gate_status: ci_evidenced_baseline_with_synthetic_owner_fixture_smoke
+orchestration_baseline: implemented
+cli_exposure: not_implemented
+owner_fixture_integration: verified
+real_non_synthetic_handoff: insufficient_evidence
 source_repository: rezahh107/EV4-Constructability-Engineer-Repo
 source_commit: cfceec5c20269c75a1cc19b2675d7087cede4599
 consumer_repository: rezahh107/EV4-Builder-Assistant-Repo
@@ -60,8 +55,8 @@ project_gate_result_schema: schemas/ce-to-builder-transition-result/ce-to-builde
 project_gate_transition_module: src/ev4_transition/transitions/ce_to_builder.py
 ci_lock_verifier: scripts/verify-ce-to-builder-lock.py
 ci_smoke: scripts/ce-to-builder-smoke.py
-latest_checked_ci_run: 28741498875
-latest_checked_ci_head: 87a4a84640c999cee049a0d40865c25efabeafb0
+verified_pr_head: 42bfa484481c585f589d86c40424660c70b038a0
+verified_workflow_run: 28744810186
 ```
 
 Current boundary:
@@ -78,54 +73,22 @@ CE Builder Executable Package
 → Project Gate CE→Builder transition result
 ```
 
-Project Gate may:
+Project Gate may verify repository, commit, path, identity marker, and file-byte SHA-256 pins; run official tools through the runner infrastructure; validate Builder output through Builder-owned contracts; record execution hashes; and emit Project Gate diagnostics/results.
 
-```text
-- verify CE/Builder repository, commit, path, identity marker, and file-byte SHA-256 pins;
-- run official CE validator through runner infrastructure;
-- run official Builder Contract Gate through runner infrastructure;
-- call the official Builder adapter only after the Builder gate passes;
-- validate Builder output with Builder-owned schema and validator;
-- record stdout/stderr hashes and structured execution records;
-- emit accepted/invalid/insufficient_evidence diagnostics and a Project Gate-owned result envelope.
-```
-
-Project Gate must not:
-
-```text
-- copy CE or Builder canonical schemas into Project Gate;
-- implement CE constructability rules;
-- implement Builder normalization/adapter logic;
-- bypass the Builder Contract Gate;
-- silently repair or normalize CE output;
-- treat synthetic fixtures as real EV4 evidence;
-- emit accepted when any accepted_requires item is false.
-```
-
-Important current limitation:
-
-```yaml
-lock_hash_state: exact_file_byte_sha256_values_committed_from_pinned_owner_ci_checkouts
-merge_state: ci_green_but_pr_kept_draft_pending_review
-real_handoff_evidence_state: not_proven_by_PROMPT_04_smoke
-```
+Project Gate must not copy specialist schemas, implement CE constructability rules, implement Builder normalization, bypass the Builder Contract Gate, silently repair CE output, treat fixtures as real handoff evidence, or emit accepted when an `accepted_requires` item is false.
 
 ## Builder → Responsive
 
 ```yaml
 transition_id: ev4-builder-to-responsive-transition@1.0.0
-project_gate_status: not_implemented
+orchestration_baseline: not_implemented
+cli_exposure: not_implemented
 producer_repository: rezahh107/EV4-Builder-Assistant-Repo
 consumer_repository: rezahh107/EV4-Responsive-Architect
 ```
 
-Current boundary remains future-only:
+The boundary remains future-only and fail-closed. Project Gate must not claim Responsive correctness, frontend correctness, accessibility completion, export validation completion, or production readiness without explicit owning-repository evidence.
 
-```text
-verified Builder execution evidence
-→ future Project Gate transport/eligibility checks
-→ Responsive-owned input validation
-→ Responsive output and viewport evidence
-```
+## Current main CI note
 
-Project Gate must not claim Responsive correctness, frontend correctness, accessibility completion, export validation completion, or production readiness before explicit Responsive/frontend evidence exists.
+The exact automatic post-merge `main` head audited was `dca39ed177d5660d96df04a05fff0a0314c6c339`. No workflow run was visible for that exact head, so its CI status remains `insufficient_evidence`.
