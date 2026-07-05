@@ -14,10 +14,14 @@ release_readiness_reason: >-
 repository:
   name: rezahh107/EV4-Project-Gate
   default_branch: main
+  current_main_head: not_observed_by_connector_during_prompt_07
+  current_main_head_ci:
+    status: insufficient_evidence
+    reason: GitHub connector confirmed repository and PR/workflow evidence, but did not expose an exact current main ref SHA for closure-branch validation.
   current_main_ref_sha: not_observed_by_connector_during_prompt_07
   current_main_ref_ci:
     status: insufficient_evidence
-    reason: GitHub connector confirmed repository and PR/workflow evidence, but did not expose an exact current main ref SHA for closure-branch validation.
+    reason: Alias for the Prompt-07 current main ref observation; retained separately from the historical current_main_head_ci compatibility key.
   foundation_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
   foundation_main_head_ci:
     status: insufficient_evidence
@@ -57,6 +61,7 @@ repository:
       historical_merge_ledger: 28754835391
   prompt_07:
     branch: project-gate-prompt-07-closure-audit
+    pull_request: 26
     scope: closure_audit_and_stale_prose_cleanup
     ci_status: pending_or_not_yet_observed
 
