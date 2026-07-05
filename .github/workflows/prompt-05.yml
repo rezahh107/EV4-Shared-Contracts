@@ -25,6 +25,7 @@ jobs:
         run: |
           python -m py_compile \
             src/ev4_transition/progress.py \
+            src/ev4_transition/runners/responsive_tools.py \
             src/ev4_transition/transitions/builder_to_responsive.py \
             src/ev4_transition/transitions/final_gate.py \
             scripts/compute-builder-to-responsive-lock.py \
