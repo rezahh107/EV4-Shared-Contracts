@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "accepted_requires": {
+      "type": "object"
+    },
+    "diagnostics": {
+      "type": "array"
+    },
+    "gate_id": {
+      "const": "ev4-final-evidence-gate@1.0.0"
+    },
+    "hashes": {
+      "type": "object"
+    },
+    "result_type": {
+      "const": "final_evidence_gate"
+    },
+    "schema_version": {
+      "const": "final-gate-result.v1"
+    },
+    "status": {
+      "enum": [
+        "accepted",
+        "repair_needed",
+        "insufficient_evidence",
+        "invalid"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "result_type",
+    "gate_id",
+    "status",
+    "diagnostics",
+    "accepted_requires",
+    "hashes"
+  ],
+  "type": "object"
+}
