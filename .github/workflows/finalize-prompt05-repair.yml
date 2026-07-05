@@ -1,4 +1,4 @@
-name: Publish Prompt 05 Workflows
+name: Stage Prompt 05 Workflow Blobs
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  publish:
+  stage:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -35,13 +35,17 @@ jobs:
           module.patch_primary_workflow()
           PY
 
-      - name: Remove temporary repair surfaces
-        run: rm .github/workflows/finalize-prompt05-repair.yml scripts/bootstrap-prompt05-repair.py
+      - name: Stage generated workflow blobs as ordinary files
+        run: |
+          mkdir -p tmp/prompt05-final-workflows
+          cp .github/workflows/prompt-05.yml tmp/prompt05-final-workflows/prompt-05.yml.txt
+          cp .github/workflows/validate.yml tmp/prompt05-final-workflows/validate.yml.txt
+          git checkout HEAD -- .github/workflows
 
-      - name: Publish final workflows
+      - name: Publish staged workflow blobs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows scripts/bootstrap-prompt05-repair.py
-          git commit -m "Publish Prompt-05 exact-head CI gates"
+          git add tmp/prompt05-final-workflows
+          git commit -m "Stage Prompt-05 workflow blobs [skip ci]"
           git push origin HEAD:fix/prompt-05-foundation-reconciliation
