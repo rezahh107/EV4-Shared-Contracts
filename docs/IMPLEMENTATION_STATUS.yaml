@@ -1,5 +1,5 @@
 prompt_id: PROMPT-04
-status: ce_to_builder_baseline_ci_evidenced_pr_draft
+status: ce_to_builder_followup_fixes_applied_ci_pending
 updated_at: 2026-07-05
 scope: continue_PR_20_after_PR_Inspector_RED_DO_NOT_MERGE
 
@@ -10,8 +10,8 @@ capability_handshake:
   pull_request: 20
   codex: UNKNOWN
   local_test_runner: UNAVAILABLE_FOR_REPO_CHECKOUT
-  github_actions_status: AVAILABLE_SUCCESS_ON_LATEST_CHECKED_HEAD
-  external_owner_checkout_in_ci: AVAILABLE_SUCCESS_ON_LATEST_CHECKED_HEAD
+  github_actions_status: PENDING_AFTER_FOLLOWUP_PATCH
+  external_owner_checkout_in_ci: PENDING_AFTER_FOLLOWUP_PATCH
 
 repository:
   name: rezahh107/EV4-Project-Gate
@@ -29,31 +29,14 @@ implementation_summary:
     non_finite_number_rejection: implemented_initial_v1
   package_generation:
     architect_to_ce: implemented_synthetic_verified
-    ce_to_builder: ci_evidenced_baseline_with_synthetic_owner_fixture_smoke
+    ce_to_builder: followup_fixes_applied_ci_pending
     builder_to_responsive: not_implemented
     final_evidence_gate: not_implemented
 
-project_gate_owned_contracts:
-  schemas_present:
-    - schemas/stage-bundle/stage-bundle.v1.schema.json
-    - schemas/transition-result/transition-result.v1.schema.json
-    - schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json
-    - schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json
-    - schemas/diagnostic/diagnostic.v1.schema.json
-    - schemas/lock-manifest/lock-manifest.v1.schema.json
-    - schemas/behavioral-coverage/behavioral-coverage.v1.schema.json
-    - schemas/validator-evidence/validator-evidence.v1.schema.json
-  copied_specialist_schemas_detected_in_project_gate: false
-  specialist_schema_policy: pin_hash_call_do_not_copy
-
 active_transitions:
-  architect_to_ce:
-    transition_id: ev4-architect-to-ce-transition@1.0.0
-    status: implemented_synthetic_verified
-    official_validators_called_by_cli_when_local_checkouts_are_supplied: true
   ce_to_builder:
     transition_id: ev4-ce-to-builder-transition@1.0.0
-    status: ci_evidenced_baseline_with_synthetic_owner_fixture_smoke
+    status: followup_fixes_applied_ci_pending
     source_repository: rezahh107/EV4-Constructability-Engineer-Repo
     source_commit: cfceec5c20269c75a1cc19b2675d7087cede4599
     consumer_repository: rezahh107/EV4-Builder-Assistant-Repo
@@ -61,32 +44,32 @@ active_transitions:
     result_schema: schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json
     lock_manifest: contracts/locks/ce-to-builder-transition.v1.lock.json
     lock_hashes: exact_file_byte_sha256_values_committed_from_pinned_owner_ci_checkouts
-    ci_steps_passing_on_latest_checked_head:
-      - CE-to-Builder transition pytest
-      - CE-to-Builder lock verification
-      - CE-to-Builder live owner tool smoke
-    acceptance_state: baseline_smoke_accepted_with_synthetic_owner_fixture_not_real_handoff_evidence
+    followup_fixes:
+      immutable_action_sha_pinning: applied
+      action_pinning_static_guard: applied
+      raw_no_source_real_evidence_fail_closed: applied
+      raw_no_source_negative_test: applied
+      handoff_coverage_status_consistency: applied
+    behavioral_coverage_status:
+      PG-C2B-001: validator_backed
+      PG-C2B-002: validator_backed
+      PG-DOWNSTREAM-001: fixture_tested
+    acceptance_state: integration_smoke_only_not_real_handoff_evidence
 
 ci_baseline:
   workflow: .github/workflows/validate.yml
-  latest_green_checked_head_sha: 87a4a84640c999cee049a0d40865c25efabeafb0
-  latest_green_checked_run_id: 28741498875
-  latest_green_checked_workflow_result: success
-  note: Later documentation-only commits may trigger newer runs; verify latest PR head before merge.
-  prompt_04_changes:
-    schema_allowlist_includes_ce_to_builder_result_schema: true
-    prompt_04_branch_push_trigger: true
-    builder_checkout_added: true
-    ce_to_builder_pytest_step_added: true
-    ce_to_builder_lock_verification_step_added: true
-    ce_to_builder_live_owner_tool_smoke_step_added: true
-    ce_to_builder_computed_lock_artifact_step_added: true
-    ce_to_builder_debug_artifacts_added_for_failed_pytest_lock_and_smoke: true
+  latest_known_green_before_followup_patch:
+    head_sha: f5bf9414813faf6709d139686600017b865f63bd
+    run_id: 28742198943
+    result: success
+  latest_followup_head_sha: pending_after_this_status_commit
+  latest_followup_workflow_result: pending
+  note: Re-run CI and PR Inspector review are required after followup fixes.
 
 critical_or_high_gaps:
   - id: GAP-C2B-REAL-EVIDENCE
     severity: high
-    description: Passing live owner smoke uses a Builder-owned fixture and is integration evidence only; it is not a real non-synthetic CE handoff evidence package.
+    description: Passing live owner smoke uses an owner fixture and is integration evidence only; it is not a real non-synthetic CE handoff evidence package.
   - id: GAP-BUILDER-RESPONSIVE-PG
     severity: critical
     description: Builder-to-Responsive Project Gate transition remains not implemented.
@@ -95,8 +78,9 @@ critical_or_high_gaps:
     description: Final evidence gate remains not implemented.
 
 remaining_insufficient_evidence:
+  - post_followup_green_ci_on_latest_head
   - real_non_synthetic_CE_to_Builder_transition_evidence
   - Builder_to_Responsive_Project_Gate_transition
   - final_evidence_gate
 
-next_allowed_prompt: PR_review_or_PROMPT-05_after_owner_accepts_PROMPT-04_baseline
+next_allowed_prompt: rerun_CI_and_PR_Inspector_review_after_followup_patch
