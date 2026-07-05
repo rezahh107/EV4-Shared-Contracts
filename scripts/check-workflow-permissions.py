@@ -23,23 +23,23 @@ def _load_workflow(path: Path) -> dict[str, Any]:
     return value
 
 
-def _checkout_steps(workflow: dict[str, Any]) -> list[dict[str, Any]]:
-    steps: list[dict[str, Any]] = []
+def _checkout_steps(workflow: dict[str, Any]) -> list[tuple[str, int, dict[str, Any]]]:
+    steps: list[tuple[str, int, dict[str, Any]]] = []
     jobs = workflow.get("jobs")
     if not isinstance(jobs, dict):
         return steps
-    for job in jobs.values():
+    for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
         job_steps = job.get("steps")
         if not isinstance(job_steps, list):
             continue
-        for step in job_steps:
+        for step_index, step in enumerate(job_steps):
             if not isinstance(step, dict):
                 continue
             uses = step.get("uses")
             if isinstance(uses, str) and uses.startswith("actions/checkout@"):
-                steps.append(step)
+                steps.append((job_id, step_index, step))
     return steps
 
 
