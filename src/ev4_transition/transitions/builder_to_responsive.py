@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from ev4_transition.canonical_json import bytes_sha256, canonical_sha256, load_json_file, write_canonical_json
+from ev4_transition.canonical_json import bytes_sha256, canonical_sha256, load_json_file
 from ev4_transition.contract_source import ContractSource, LocalCheckoutContractSource
 from ev4_transition.diagnostics import Diagnostic, diagnostic, project_gate_status_from_diagnostics, sort_diagnostics
+from ev4_transition.runners.responsive_tools import execute_responsive_input_boundary_validator
 
 TRANSITION_ID = "ev4-builder-to-responsive-transition@1.0.0"
 TRANSITION_VERSION = "1.0.0"
@@ -181,9 +179,10 @@ def transition_builder_to_responsive(builder_input: Any, contract_source: Contra
         diagnostics.append(diagnostic("PG.B2R.VIEWPORT_EVIDENCE_MISSING", "insufficient_evidence", "Viewport evidence is required before accepted Responsive intake.", "$.viewport_evidence", missing_viewports=viewport_missing))
     accepted_requires["viewport_evidence_present"] = not viewport_missing
 
-    if _synthetic_only(builder_input):
+    synthetic_only = _synthetic_only(builder_input)
+    if synthetic_only:
         diagnostics.append(diagnostic("PG.B2R.SYNTHETIC_ONLY_EVIDENCE", "insufficient_evidence", "Synthetic fixtures cannot be used as real Responsive evidence.", "$"))
-    accepted_requires["synthetic_only_evidence_not_used_as_real_evidence"] = not _synthetic_only(builder_input)
+    accepted_requires["synthetic_only_evidence_not_used_as_real_evidence"] = not synthetic_only
 
     schema = _load_responsive_schema(contract_source, diagnostics)
     if schema is not None:
@@ -191,7 +190,7 @@ def transition_builder_to_responsive(builder_input: Any, contract_source: Contra
         for err in sorted(Draft202012Validator(schema).iter_errors(responsive_input), key=lambda item: (list(item.path), item.message)):
             diagnostics.append(diagnostic("PG.B2R.RESPONSIVE_SCHEMA_VALIDATION_FAILED", "error", err.message, _json_path(list(err.path))))
 
-    validator_ok = _run_responsive_validator(config, responsive_input, diagnostics)
+    validator_ok = _run_responsive_validator(config, responsive_input, diagnostics, progress_sink)
     accepted_requires["responsive_input_validator_passed"] = validator_ok
 
     return _result(builder_input, responsive_input, diagnostics, accepted_requires, config)
@@ -207,7 +206,7 @@ def _load_responsive_schema(source: ContractSource, diagnostics: list[Diagnostic
     return schema if isinstance(schema, dict) else None
 
 
-def _run_responsive_validator(config: BuilderToResponsiveTransitionConfig, responsive_input: dict[str, Any], diagnostics: list[Diagnostic]) -> bool:
+def _run_responsive_validator(config: BuilderToResponsiveTransitionConfig, responsive_input: dict[str, Any], diagnostics: list[Diagnostic], progress_sink: list[dict[str, Any]] | None) -> bool:
     if config.responsive_repo_root is None:
         diagnostics.append(diagnostic("PG.B2R.RESPONSIVE_VALIDATOR_MISSING", "insufficient_evidence", "Responsive repository checkout is required to run the official input boundary validator.", "$.responsive_validator"))
         return False
@@ -215,12 +214,18 @@ def _run_responsive_validator(config: BuilderToResponsiveTransitionConfig, respo
     if not validator.exists():
         diagnostics.append(diagnostic("PG.B2R.RESPONSIVE_VALIDATOR_MISSING", "insufficient_evidence", "Official Responsive input boundary validator is absent.", "$.responsive_validator", validator_path=RESPONSIVE_INPUT_VALIDATOR))
         return False
-    with tempfile.TemporaryDirectory(prefix="ev4-b2r-") as td:
-        payload = Path(td) / "builder-responsive-input.json"
-        write_canonical_json(payload, responsive_input)
-        completed = subprocess.run([sys.executable, str(validator), str(payload)], cwd=config.responsive_repo_root, text=True, capture_output=True, timeout=config.timeout_seconds, check=False)
-    if completed.returncode != 0:
-        diagnostics.append(diagnostic("PG.B2R.RESPONSIVE_VALIDATOR_FAILED", "insufficient_evidence", "Official Responsive input boundary validator did not pass.", "$.responsive_validator", exit_code=completed.returncode))
+    outcome = execute_responsive_input_boundary_validator(
+        repo_root=config.responsive_repo_root,
+        owner_repo=RESPONSIVE_REPO,
+        owner_commit=RESPONSIVE_COMMIT,
+        validator_path=RESPONSIVE_INPUT_VALIDATOR,
+        responsive_input=responsive_input,
+        timeout_seconds=config.timeout_seconds,
+        progress_sink=progress_sink,
+    )
+    diagnostics.extend(outcome.diagnostics)
+    if outcome.status != "accepted":
+        diagnostics.append(diagnostic("PG.B2R.RESPONSIVE_VALIDATOR_FAILED", "insufficient_evidence", "Official Responsive input boundary validator did not pass.", "$.responsive_validator", runner_status=outcome.status, failure_code=outcome.execution_record.failure_code))
         return False
     return True
 
