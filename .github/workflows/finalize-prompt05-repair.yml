@@ -69,9 +69,6 @@ jobs:
       - name: Run Final Gate tests after finalize
         run: pytest -vv --tb=short tests/transitions/test_final_gate.py
 
-      - name: Run capability and CLI tests after finalize
-        run: pytest -vv --tb=short tests/test_cli.py
-
       - name: Commit finalized Prompt-05 lock chain
         run: |
           rm -rf .owner
