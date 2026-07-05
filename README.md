@@ -13,6 +13,40 @@ Architect → Project Gate → CE → Project Gate → Builder
 
 Each specialist repository remains authoritative for its own schemas, validators, adapters, fixtures, and domain behavior. This repository coordinates cross-repository checks and package handoffs. It is not a canonical shared-schema owner or a fifth architecture authority.
 
+## Current Status
+
+```yaml
+capabilities:
+  architect_to_ce:
+    cli_exposure: implemented
+    orchestration_baseline: implemented
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: synthetic_fixture_only
+  builder_to_responsive:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    owner_contract_lock: computed_from_pinned_owner_file_bytes
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  ce_to_builder:
+    cli_exposure: not_implemented
+    orchestration_baseline: implemented
+    owner_fixture_integration: verified
+    real_non_synthetic_handoff: insufficient_evidence
+  final_evidence_gate:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    prior_lock_chain: pinned_to_immutable_project_gate_commit
+    real_non_synthetic_evidence: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  user_interface:
+    status: not_implemented
+public_cli_transitions:
+  - architect-to-ce
+```
+
 ## Implemented now
 
 This repository contains the deterministic Python foundation:
