@@ -226,7 +226,7 @@ def build_demo():
         title="EV4 Project Gate Local Operator Panel",
         css=operator_panel_css(),
     ) as demo:
-        gr.Markdown(operator_header_html())
+        gr.HTML(operator_header_html())
 
         with gr.Group(elem_classes=["ev4-section", "ev4-transition-section"]):
             with gr.Row():
