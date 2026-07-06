@@ -32,7 +32,7 @@ def _bootstrap_src_path() -> None:
 def _module_state(module_name: str, owner: str) -> dict[str, str]:
     try:
         spec = importlib.util.find_spec(module_name)
-    except (ImportError, ModuleNotFoundError, AttributeError, ValueError) as exc:
+    except Exception as exc:
         return {"module": module_name, "status": "missing", "owner": owner, "detail": f"{type(exc).__name__}: {exc}"}
     if spec is None:
         return {"module": module_name, "status": "missing", "owner": owner}
@@ -41,6 +41,16 @@ def _module_state(module_name: str, owner: str) -> dict[str, str]:
 
 def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _safe_fixture_metadata(path: Path) -> tuple[bool, Any, str | None]:
+    try:
+        bundle = _load_json(path)
+    except Exception as exc:
+        return False, None, f"{type(exc).__name__}: {exc}"
+    if not isinstance(bundle, dict):
+        return False, None, "top-level JSON value is not an object"
+    return bool(bundle.get("synthetic")), bundle.get("evidence_status"), None
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -59,16 +69,32 @@ def _relative(path: Path) -> str:
 
 
 def _validate_fixture(path: Path, validator: Any) -> dict[str, Any]:
-    bundle = _load_json(path)
+    synthetic, declared_status, metadata_error = _safe_fixture_metadata(path)
     result = validator.validate_file(path)
-    return {
+    payload = {
         "path": _relative(path),
-        "synthetic": bool(bundle.get("synthetic")),
-        "declared_evidence_status": bundle.get("evidence_status"),
+        "synthetic": synthetic,
+        "declared_evidence_status": declared_status,
         "validation_status": result.get("status"),
         "diagnostics": result.get("diagnostics", []),
         "result": result,
     }
+    if metadata_error:
+        payload["metadata_error"] = metadata_error
+    return payload
+
+
+def _create_unique_run_dir(output_root: Path, run_id: str) -> Path:
+    output_root.mkdir(parents=True, exist_ok=True)
+    for index in range(1000):
+        suffix = "" if index == 0 else f"-{index:03d}"
+        candidate = output_root / f"{run_id}{suffix}"
+        try:
+            candidate.mkdir(parents=False, exist_ok=False)
+            return candidate
+        except FileExistsError:
+            continue
+    raise RuntimeError(f"Could not create a unique demo output directory for run id {run_id!r}")
 
 
 def _render_markdown(demo_result: dict[str, Any]) -> str:
@@ -82,6 +108,10 @@ def _render_markdown(demo_result: dict[str, Any]) -> str:
         "- نوع داده: فقط `synthetic`",
         "- ادعای شواهد واقعی: `false`",
         "- ادعای production readiness: `false`",
+        "- ادعای real Elementor validation: `false`",
+        "- ادعای export validation: `false`",
+        "- ادعای accessibility completion: `false`",
+        "- ادعای real end-to-end readiness: `false`",
         "",
         "این demo فقط مسیر بسته‌بندی مصرف شخصی را نشان می‌دهد. اگر UI یا service هنوز merge نشده باشد، همان مرحله `pending` می‌ماند و نتیجه واقعی end-to-end ساخته نمی‌شود.",
         "",
@@ -92,8 +122,9 @@ def _render_markdown(demo_result: dict[str, Any]) -> str:
         "## نمونه‌های بررسی‌شده",
     ]
     for sample in demo_result["samples"]:
+        metadata_note = f" / metadata_error: `{sample['metadata_error']}`" if sample.get("metadata_error") else ""
         lines.append(
-            f"- `{sample['path']}` → status: `{sample['validation_status']}` / synthetic: `{sample['synthetic']}` / evidence: `{sample['declared_evidence_status']}`"
+            f"- `{sample['path']}` → status: `{sample['validation_status']}` / synthetic: `{sample['synthetic']}` / evidence: `{sample['declared_evidence_status']}`{metadata_note}"
         )
     lines.extend(
         [
@@ -127,7 +158,8 @@ def _render_html(markdown_text: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the EV4 Project Gate controlled synthetic personal-use demo.")
-    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Directory that will contain demo-* run folders.")
+    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Directory that will contain unique demo-* run folders.")
+    parser.add_argument("--run-id", help="Optional deterministic run id for tests. A numeric suffix is added if the directory already exists.")
     parser.add_argument("--valid-fixture", type=Path, default=DEFAULT_VALID_FIXTURE)
     parser.add_argument("--insufficient-fixture", type=Path, default=DEFAULT_INSUFFICIENT_FIXTURE)
     args = parser.parse_args(argv)
@@ -141,9 +173,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {type(exc).__name__}: {exc}")
         return 1
 
-    run_id = "demo-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    run_dir = args.output_root / run_id
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_id = args.run_id or "demo-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_dir = _create_unique_run_dir(args.output_root, run_id)
 
     validator = BundleValidator(schema_root=ROOT / "schemas")
     samples = [
@@ -163,6 +194,11 @@ def main(argv: list[str] | None = None) -> int:
         "real_evidence_claimed": False,
         "production_readiness_claimed": False,
         "real_elementor_validation_claimed": False,
+        "export_validation_claimed": False,
+        "accessibility_completion_claimed": False,
+        "frontend_correctness_claimed": False,
+        "responsive_correctness_claimed": False,
+        "real_end_to_end_readiness_claimed": False,
         "ui": ui_state,
         "service": service_state,
         "samples": samples,
@@ -178,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
     diagnostics = {
         "schema_version": "ev4-personal-demo-diagnostics.v1",
         "diagnostics": [
-            {"sample": sample["path"], "diagnostics": sample["diagnostics"]} for sample in samples
+            {"sample": sample["path"], "diagnostics": sample["diagnostics"], "metadata_error": sample.get("metadata_error")} for sample in samples
         ],
     }
     report_md = _render_markdown(demo_result)
@@ -193,7 +229,14 @@ def main(argv: list[str] | None = None) -> int:
     expected_valid = samples[0]["validation_status"] in {"valid", "accepted"}
     expected_insufficient = samples[1]["validation_status"] == "insufficient_evidence"
     synthetic_only = all(sample["synthetic"] for sample in samples)
-    safe_claims = not demo_result["real_evidence_claimed"] and not demo_result["production_readiness_claimed"]
+    safe_claims = (
+        not demo_result["real_evidence_claimed"]
+        and not demo_result["production_readiness_claimed"]
+        and not demo_result["real_elementor_validation_claimed"]
+        and not demo_result["export_validation_claimed"]
+        and not demo_result["accessibility_completion_claimed"]
+        and not demo_result["real_end_to_end_readiness_claimed"]
+    )
 
     print("✅ Controlled synthetic demo completed.")
     print("این demo شواهد واقعی یا آمادگی production را ادعا نمی‌کند.")
