@@ -3,7 +3,7 @@ from __future__ import annotations
 from html import escape
 from typing import Any
 
-from ev4_transition.presentation.bidi import isolate_ltr_text, markdown_code_ltr
+from ev4_transition.presentation.bidi import html_code_ltr, isolate_ltr_text, markdown_code_ltr
 from ev4_transition.presentation.status_mapping import presentation_for_status
 from ev4_transition.service.guidance import OperatorGuidance, build_operator_guidance
 
@@ -178,7 +178,7 @@ def _diagnostic_groups_html(guidance: OperatorGuidance) -> str:
         messages = "".join(f"<li>{escape(message)}</li>" for message in group.top_messages if message)
         rows.append(
             "<li>"
-            f"<strong>{escape(group.title_fa)}</strong> — count: {markdown_code_ltr(group.count)}"
+            f"<strong>{escape(group.title_fa)}</strong> — count: {html_code_ltr(group.count)}"
             f"<ul>{messages}</ul>"
             f"<p><strong>اقدام گروه:</strong> {escape(group.next_action_fa)}</p>"
             "</li>"
