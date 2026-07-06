@@ -75,6 +75,18 @@ response.next_action_fa
 
 `response.to_dict()` returns a plain UI-friendly dictionary.
 
+## Result vs output
+
+The UI download named `result.json` is a report of the UI/service run. It is not automatically the next-stage input.
+
+Rules:
+
+- `validate_bundle` only validates; it does not build CE output.
+- `architect_to_ce` converts an Architect Stage Evidence Bundle into a CE input bundle only if schema, lock, hash and official validator checks pass.
+- `result.json` is the UI run result.
+- `output: null` means no downstream package was produced.
+- `output.stage == "ce"` means the produced output is a CE input bundle, still limited by the current status/evidence scope.
+
 ## Status meanings
 
 | status | meaning |
@@ -135,3 +147,11 @@ if response.status == "insufficient_evidence":
 - `html_report` -> `response.download_filenames["html"]`
 
 If a report field is `None`, hide that download option.
+
+## UX contracts
+
+See also:
+
+- `docs/OPERATOR_PANEL_UX_CONTRACT.md`
+- `docs/PERSIAN_RTL_UI_CONTRACT.md`
+- `docs/VISUAL_THEME_CONTRACT.md`

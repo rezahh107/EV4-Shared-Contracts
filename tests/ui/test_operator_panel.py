@@ -236,7 +236,9 @@ def test_markdown_report_neutralizes_triple_backtick_without_mutating_result_jso
     assert loaded_json == result
     assert "```breakout" not in md
     assert "``​`breakout" in md
-    assert md.count("```") == 2
+    assert "## Raw diagnostics" in md
+    assert "## Raw JSON result" in md
+    assert md.count("```") == 4
     assert {Path(path).name for path in paths} == {"result.json", "report.md", "report.html"}
 
 
