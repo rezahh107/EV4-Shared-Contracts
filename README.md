@@ -13,40 +13,6 @@ Architect → Project Gate → CE → Project Gate → Builder
 
 Each specialist repository remains authoritative for its own schemas, validators, adapters, fixtures, and domain behavior. This repository coordinates cross-repository checks and package handoffs. It is not a canonical shared-schema owner or a fifth architecture authority.
 
-## Current Status
-
-```yaml
-capabilities:
-  architect_to_ce:
-    cli_exposure: implemented
-    orchestration_baseline: implemented
-    real_non_synthetic_handoff: insufficient_evidence
-    verification_state: synthetic_fixture_only
-  builder_to_responsive:
-    cli_exposure: not_implemented
-    official_responsive_validator_integration: implemented
-    orchestration_baseline: implemented
-    owner_contract_lock: computed_from_pinned_owner_file_bytes
-    real_non_synthetic_handoff: insufficient_evidence
-    verification_state: verified_by_exact_head_ci
-  ce_to_builder:
-    cli_exposure: not_implemented
-    orchestration_baseline: implemented
-    owner_fixture_integration: verified
-    real_non_synthetic_handoff: insufficient_evidence
-  final_evidence_gate:
-    cli_exposure: not_implemented
-    official_responsive_validator_integration: implemented
-    orchestration_baseline: implemented
-    prior_lock_chain: pinned_to_immutable_project_gate_commit
-    real_non_synthetic_evidence: insufficient_evidence
-    verification_state: verified_by_exact_head_ci
-  user_interface:
-    status: not_implemented
-public_cli_transitions:
-  - architect-to-ce
-```
-
 ## Implemented now
 
 This repository contains the deterministic Python foundation:
@@ -225,35 +191,6 @@ EV4-Project-Gate
   deterministic envelope validation, diagnostics, provenance, hashes, external pin verification, and package orchestration
 ```
 
-## Personal local use
-
-Personal-use setup and controlled demo docs:
-
-- `docs/LOCAL_SETUP_GUIDE.md`
-- `docs/PERSONAL_USE_GUIDE.md`
-- `docs/E2E_DEMO_WORKFLOW.md`
-
-Local launcher scripts:
-
-```bash
-python scripts/run-project-gate-ui.py
-python scripts/run-project-gate-demo.py
-```
-
-Windows helpers:
-
-```text
-scripts/run-project-gate-ui.ps1
-scripts/run-project-gate-ui.bat
-```
-
-Notes:
-
-- UI/operator panel support requires the Prompt 1 UI branch/merge.
-- Internal service/API integration requires the Prompt 2 service branch/merge.
-- The controlled demo uses synthetic fixtures only and does not claim production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, export validation, or real end-to-end readiness.
-- Generated local outputs belong under `outputs/runs/<timestamp-or-run-id>/` and should not be committed.
-
 ## Validation
 
 Python checks:
@@ -279,4 +216,78 @@ Existing Node skeleton checks remain available temporarily:
 ```bash
 npm run status
 npm run validate
+```
+
+## Personal local use
+
+Personal-use setup and controlled demo docs:
+
+- `docs/LOCAL_SETUP_GUIDE.md`
+- `docs/PERSONAL_USE_GUIDE.md`
+- `docs/E2E_DEMO_WORKFLOW.md`
+
+Local launcher scripts:
+
+```bash
+python scripts/run-project-gate-ui.py
+python scripts/run-project-gate-demo.py
+```
+
+Windows helpers:
+
+```text
+scripts/run-project-gate-ui.ps1
+scripts/run-project-gate-ui.bat
+```
+
+Notes:
+
+- This section is packaging-only and does not own active capability truth.
+- UI/operator panel behavior depends on the Prompt 1 UI branch/merge.
+- Internal service/API integration depends on the Prompt 2 service branch/merge.
+- The controlled demo uses synthetic fixtures only and does not claim production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, export validation, or real end-to-end readiness.
+- Controlled demo outputs belong under `outputs/runs/<timestamp-or-run-id>/` and should not be committed.
+- UI downloads may use UI-provided artifacts until a final integration PR aligns UI, service, and demo output conventions.
+
+## Current Status
+
+```yaml
+repository_role: project_workflow_control_center
+capabilities:
+  architect_to_ce:
+    cli_exposure: implemented
+    orchestration_baseline: implemented
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: synthetic_fixture_only
+  builder_to_responsive:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    owner_contract_lock: computed_from_pinned_owner_file_bytes
+    real_non_synthetic_handoff: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  ce_to_builder:
+    cli_exposure: not_implemented
+    orchestration_baseline: implemented
+    owner_fixture_integration: verified
+    real_non_synthetic_handoff: insufficient_evidence
+  final_evidence_gate:
+    cli_exposure: not_implemented
+    official_responsive_validator_integration: implemented
+    orchestration_baseline: implemented
+    prior_lock_chain: pinned_to_immutable_project_gate_commit
+    real_non_synthetic_evidence: insufficient_evidence
+    verification_state: verified_by_exact_head_ci
+  user_interface:
+    status: not_implemented
+public_cli_transitions:
+  - architect-to-ce
+python_deterministic_core: implemented_initial_v1
+stage_bundle_validation: implemented_initial_v1
+structured_diagnostics: implemented_initial_v1
+canonical_json_sha256: implemented_initial_v1
+real_cross_repository_validation: not_available
+current_main_head_ci: insufficient_evidence
+canonical_schema_owner: false
+node_skeleton: preserved_temporarily
 ```
