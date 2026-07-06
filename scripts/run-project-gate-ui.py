@@ -46,18 +46,27 @@ def _check_package_import() -> bool:
     return True
 
 
-def _find_first_module(candidates: Iterable[str]) -> str | None:
+def _find_first_module(candidates: Iterable[str]) -> tuple[str | None, list[str]]:
+    discovery_errors: list[str] = []
     for module_name in candidates:
         try:
             if importlib.util.find_spec(module_name) is not None:
-                return module_name
-        except (ImportError, ModuleNotFoundError, AttributeError, ValueError):
+                return module_name, discovery_errors
+        except Exception as exc:
+            discovery_errors.append(f"{module_name}: {type(exc).__name__}: {exc}")
             continue
-    return None
+    return None, discovery_errors
 
 
 def _launch_module(module_name: str) -> int:
-    module = importlib.import_module(module_name)
+    try:
+        module = importlib.import_module(module_name)
+    except Exception as exc:
+        print(f"❌ UI module import failed: {module_name}")
+        print("ماژول UI پیدا شد، اما هنگام import خطا داد.")
+        print(f"error: {type(exc).__name__}: {exc}")
+        return 3
+
     for attr in ("launch", "main", "run"):
         candidate = getattr(module, attr, None)
         if callable(candidate):
@@ -84,10 +93,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     candidates = tuple(args.modules) if args.modules else DEFAULT_UI_MODULES
-    module_name = _find_first_module(candidates)
+    module_name, discovery_errors = _find_first_module(candidates)
     if module_name is None:
         print(f"⚠️ {MISSING_UI_MESSAGE_FA}")
         print(MISSING_UI_MESSAGE_EN)
+        if discovery_errors:
+            print("Optional UI discovery errors:")
+            for item in discovery_errors[:5]:
+                print(f"- {item}")
+        print("Next action: merge Prompt 1 UI branch, then run this launcher again.")
+        print("اقدام بعدی: ابتدا Prompt 1 UI را merge کن، سپس launcher را دوباره اجرا کن.")
         print("Current safe fallback: run the controlled synthetic demo:")
         print("python scripts/run-project-gate-demo.py")
         return 2
