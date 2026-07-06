@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#30` | `Expose guarded fail-closed CLI entries for CE→Builder, Builder→-Responsive, and Final Evidence Gate` | `codex/implement-public-cli-support-for-transitions` | `ba5310ee3b00b6b64a737aa9264ab7208657b498` | `d921975b3e22062c33c81bd1b9265df7af3b6121` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#27` | `Add personal-use setup and controlled demo package` | `personal-use/e2e-package` | `fbe0bfbdeeec90ad73b6aae165df8caf34e43d7c` | `88c7e1a491b08cd0bb21d211ec14c3c92d2ea92b` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#28` | `Add local Project Gate operator UI` | `ui/operator-panel` | `daafd4b870ced063dbeb6d8e5da756c32787ee8e` | `50ac6a812ecc95704a553a2769e153cb3991cb3c` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#29` | `Add Project Gate service API for UI integration` | `feature/gate-service-api` | `534873d1bf17bb95a12ff8701e9343710d098d20` | `89cf4f52abc7273989dccb51016e26c92d836fc1` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
