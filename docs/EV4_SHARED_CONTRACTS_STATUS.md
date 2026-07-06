@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#38` | `Harden operator panel UX contracts and regression tests` | `ux/operator-panel-final-hardening-patch-4` | `c5ddda6cc43d27a46d056876aa7ea0c2afe73eba` | `e44edeb4d4c0ea49ec2632856c5b140d2a2aefe1` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#37` | `Add local repository preflight assistant` | `ux/local-repo-preflight-setup-assistant-patch-3` | `558bc4be24310c603b4589779cc51964a071089b` | `a18ed34dc818b6927dbd98d0ba13297c5345a65f` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#36` | `Add operator guidance and diagnostic help layer` | `ux/operator-guidance-diagnostic-help-patch-2` | `1126e728d24a71bf5c3f5372bbbf1ff59f1aa193` | `4cf75a13ea7bb436c137b9b3b4b7b8ad480770a6` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#35` | `Polish operator panel RTL layout and visual theme` | `ux/operator-panel-rtl-visual-polish-patch-1` | `ec1775c16447ea65457b3dffd86c82c124712f9a` | `3e4a92ecf57f6045147e4b819e7f26d4915ff78f` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
