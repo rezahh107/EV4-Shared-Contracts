@@ -9,7 +9,8 @@ RTL_MARK = "\u200f"
 
 def escape_html(value: object) -> str:
     """Escape text for HTML output without changing directionality."""
-
+    if value is None:
+        return ""
     return _escape(str(value), quote=True)
 
 
