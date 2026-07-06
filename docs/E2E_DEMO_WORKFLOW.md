@@ -14,11 +14,13 @@
 python scripts/run-project-gate-demo.py
 ```
 
-خروجی در مسیر زیر ساخته می‌شود:
+خروجی demo در مسیر زیر ساخته می‌شود:
 
 ```text
-outputs/runs/demo-<timestamp>/
+outputs/runs/demo-<timestamp-or-run-id>/
 ```
+
+این مسیر فقط قرارداد demo کنترل‌شده است. UI بعد از merge شدن می‌تواند download artifactهای خودش را ارائه کند؛ یک PR integration نهایی باید در صورت نیاز مسیرهای UI، service و demo را هم‌راستا کند.
 
 ## مسیر مفهومی demo
 
@@ -40,6 +42,7 @@ Validate Stage Evidence Bundle
 - اگر service layer از Prompt 2 merge نشده باشد، مرحله service با status `missing` یا `pending` گزارش می‌شود.
 - اگر UI از Prompt 1 merge نشده باشد، مرحله UI با status `missing` یا `pending` گزارش می‌شود.
 - اگر شواهد واقعی وجود نداشته باشد، تصمیم نهایی باید `insufficient_evidence` باقی بماند.
+- demo نباید real Elementor validation، export validation، accessibility completion، frontend correctness، responsive correctness، production readiness یا real end-to-end readiness ادعا کند.
 
 ## فایل‌های خروجی demo
 
@@ -58,6 +61,7 @@ diagnostics.json
 3. demo بررسی می‌کند که UI و service module موجود هستند یا نه.
 4. demo خروجی فارسی و JSON می‌سازد.
 5. demo هرگز ادعای real Elementor validation یا production readiness نمی‌کند.
+6. اگر run id تکراری شود، demo یک پوشه suffixدار مثل `demo-fixed-001` می‌سازد تا خروجی stale با run جدید قاطی نشود.
 
 ## چیزی که این demo ثابت نمی‌کند
 
