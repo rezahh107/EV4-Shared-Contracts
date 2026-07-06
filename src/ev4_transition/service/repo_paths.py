@@ -50,8 +50,21 @@ def _validate_single_required_path(field_name: str, value: str | None) -> list[S
                 {"field": field_name, "observed": value},
             )
         ]
-    path = Path(value).expanduser()
-    if not path.exists():
+    try:
+        path = Path(value).expanduser()
+        exists = path.exists()
+        is_directory = path.is_dir() if exists else False
+    except (OSError, ValueError) as exc:
+        return [
+            ServiceDiagnostic(
+                "PG.SERVICE.REPO_PATH_INACCESSIBLE",
+                "insufficient_evidence",
+                "Required local repository checkout path is invalid or inaccessible.",
+                path_expr,
+                {"field": field_name, "path": value, "error_type": type(exc).__name__},
+            )
+        ]
+    if not exists:
         return [
             ServiceDiagnostic(
                 "PG.SERVICE.REPO_PATH_DOES_NOT_EXIST",
@@ -61,7 +74,7 @@ def _validate_single_required_path(field_name: str, value: str | None) -> list[S
                 {"field": field_name, "path": value},
             )
         ]
-    if not path.is_dir():
+    if not is_directory:
         return [
             ServiceDiagnostic(
                 "PG.SERVICE.REPO_PATH_NOT_DIRECTORY",
@@ -87,7 +100,10 @@ def resolve_relative_to_project_gate(repo_paths: RepoPaths, candidate: str) -> P
 
 
 def _looks_like_url(value: str) -> bool:
-    parsed = urlparse(value)
+    try:
+        parsed = urlparse(value)
+    except ValueError:
+        return False
     if parsed.scheme and parsed.netloc:
         return True
     lowered = value.lower()
