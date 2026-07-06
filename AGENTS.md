@@ -29,19 +29,19 @@ capabilities:
     real_non_synthetic_handoff: insufficient_evidence
     verification_state: synthetic_fixture_only
   builder_to_responsive:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     official_responsive_validator_integration: implemented
     orchestration_baseline: implemented
     owner_contract_lock: computed_from_pinned_owner_file_bytes
     real_non_synthetic_handoff: insufficient_evidence
     verification_state: verified_by_exact_head_ci
   ce_to_builder:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     orchestration_baseline: implemented
     owner_fixture_integration: verified
     real_non_synthetic_handoff: insufficient_evidence
   final_evidence_gate:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     official_responsive_validator_integration: implemented
     orchestration_baseline: implemented
     prior_lock_chain: pinned_to_immutable_project_gate_commit
@@ -51,6 +51,9 @@ capabilities:
     status: implemented_initial_operator_panel
 public_cli_transitions:
   - architect-to-ce
+  - ce-to-builder
+  - builder-to-responsive
+  - final-evidence-gate
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
 canonical_schema_owner: false
@@ -123,7 +126,7 @@ The lock manifest records pinned external contract bytes. It is Project Gate orc
 
 `ev4-ce-to-builder-transition@1.0.0` is an implemented orchestration baseline. It may verify pinned CE/Builder owner files, run official tools through `src/ev4_transition/runners/`, and emit a Project Gate-owned result envelope. It must not implement CE constructability logic or Builder adapter behavior internally.
 
-The baseline is not exposed as a general public CLI transition. Owner-fixture integration is verified by PR #20 workflow evidence. Real non-synthetic handoff evidence remains `insufficient_evidence`.
+The baseline is exposed only as a guarded fail-closed CLI transition, not as functional readiness or a general verified handoff workflow. Owner-fixture integration is verified by PR #20 workflow evidence. Real non-synthetic handoff evidence remains `insufficient_evidence`.
 
 ## Hard Boundaries
 

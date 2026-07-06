@@ -73,13 +73,13 @@ def test_cli_inspect_reports_layered_ce_to_builder_truth():
     ce_to_builder = payload["capabilities"]["ce_to_builder"]
     assert ce_to_builder == {
         "orchestration_baseline": "implemented",
-        "cli_exposure": "not_implemented",
+        "cli_exposure": "guarded",
         "owner_fixture_integration": "verified",
         "real_non_synthetic_handoff": "insufficient_evidence",
     }
     assert "ce-to-builder transition" not in payload["not_implemented"]
-    assert "ce-to-builder public CLI exposure" in payload["not_implemented"]
-    assert "ce-to-builder" not in payload["public_cli_transitions"]
+    assert "ce-to-builder public CLI exposure" not in payload["not_implemented"]
+    assert "ce-to-builder" in payload["public_cli_transitions"]
 
 
 def test_cli_inspect_does_not_overclaim_real_ce_to_builder_handoff():
@@ -221,7 +221,7 @@ def test_cli_inspect_reports_prompt05_layered_truth():
     payload = json.loads(completed.stdout)
     assert payload["capabilities"]["builder_to_responsive"] == {
         "orchestration_baseline": "implemented",
-        "cli_exposure": "not_implemented",
+        "cli_exposure": "guarded",
         "owner_contract_lock": "computed_from_pinned_owner_file_bytes",
         "official_responsive_validator_integration": "implemented",
         "verification_state": "verified_by_exact_head_ci",
@@ -229,13 +229,50 @@ def test_cli_inspect_reports_prompt05_layered_truth():
     }
     assert payload["capabilities"]["final_evidence_gate"] == {
         "orchestration_baseline": "implemented",
-        "cli_exposure": "not_implemented",
+        "cli_exposure": "guarded",
         "prior_lock_chain": "pinned_to_immutable_project_gate_commit",
         "official_responsive_validator_integration": "implemented",
         "verification_state": "verified_by_exact_head_ci",
         "real_non_synthetic_evidence": "insufficient_evidence",
     }
     assert payload["evidence"]["prompt_05_owner_contract_and_validator_integration"]["result"] == "success"
-    assert "builder-to-responsive public CLI exposure" in payload["not_implemented"]
-    assert "final evidence gate public CLI exposure" in payload["not_implemented"]
-    assert "builder-to-responsive" not in payload["public_cli_transitions"]
+    assert "builder-to-responsive public CLI exposure" not in payload["not_implemented"]
+    assert "final evidence gate public CLI exposure" not in payload["not_implemented"]
+    assert "builder-to-responsive" in payload["public_cli_transitions"]
+
+def test_cli_guarded_ce_to_builder_requires_local_paths():
+    completed = run_cli("transition", "ce-to-builder", str(ROOT / "fixtures/valid/architect-stage-bundle.v1.json"))
+    assert completed.returncode == 2
+    payload = json.loads(completed.stdout)
+    assert payload["status"] == "insufficient_evidence"
+    assert payload["diagnostics"][0]["code"] == "CLI_LOCAL_PATH_REQUIRED"
+
+
+def test_cli_guarded_builder_to_responsive_rejects_github_url():
+    completed = run_cli(
+        "transition",
+        "builder-to-responsive",
+        str(ROOT / "fixtures/valid/architect-stage-bundle.v1.json"),
+        "--builder-repo",
+        "https://github.com/rezahh107/EV4-Builder-Assistant-Repo",
+        "--responsive-repo",
+        str(ROOT),
+    )
+    assert completed.returncode == 2
+    payload = json.loads(completed.stdout)
+    assert payload["diagnostics"][0]["code"] == "CLI_GITHUB_URL_REJECTED"
+
+
+def test_cli_guarded_final_gate_missing_path_fails_closed():
+    completed = run_cli(
+        "transition",
+        "final-evidence-gate",
+        str(ROOT / "fixtures/valid/architect-stage-bundle.v1.json"),
+        "--project-gate-repo",
+        str(ROOT),
+        "--responsive-repo",
+        str(ROOT / "missing-responsive-repo"),
+    )
+    assert completed.returncode == 2
+    payload = json.loads(completed.stdout)
+    assert payload["diagnostics"][0]["code"] == "CLI_LOCAL_PATH_NOT_FOUND"

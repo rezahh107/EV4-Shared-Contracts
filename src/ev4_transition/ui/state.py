@@ -37,7 +37,7 @@ TRANSITION_OPTIONS: tuple[TransitionOption, ...] = (
         "CE → Builder",
         False,
         False,
-        "نیازمند اتصال service layer در Prompt 2",
+        "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
         "builder_to_responsive",
@@ -45,7 +45,7 @@ TRANSITION_OPTIONS: tuple[TransitionOption, ...] = (
         "Builder → Responsive",
         False,
         False,
-        "نیازمند اتصال service layer در Prompt 2",
+        "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
         "final_evidence_gate",
@@ -53,7 +53,7 @@ TRANSITION_OPTIONS: tuple[TransitionOption, ...] = (
         "Final Evidence Gate",
         False,
         False,
-        "نیازمند اتصال service layer در Prompt 2",
+        "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
         "inspect_capabilities",

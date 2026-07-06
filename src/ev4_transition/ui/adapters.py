@@ -81,10 +81,10 @@ def run_operator_check(
             "insufficient_evidence",
             "UI_TRANSITION_NOT_WIRED",
             "insufficient_evidence",
-            "این transition هنوز در UI اجرا نمی‌شود؛ نیازمند اتصال service layer در Prompt 2 است.",
+            "این transition در UI هنوز اجرای مستقیم ندارد؛ مسیر CLI/service فقط guarded و fail-closed است و شواهد واقعی owner می‌خواهد.",
             details={
                 "transition": option.transition_id,
-                "next_action": option.pending_reason_fa or "اتصال service layer در Prompt 2",
+                "next_action": option.pending_reason_fa or "تهیه شواهد واقعی، checkout محلی owner، و validator/adapter رسمی",
             },
         )
         return _finalize(result, capability_payload, output_dir)
@@ -126,7 +126,7 @@ def run_operator_check(
         "UI_TRANSITION_NOT_WIRED",
         "insufficient_evidence",
         "این transition در این UI هنوز به adapter امن متصل نشده است.",
-        details={"transition": option.transition_id, "next_action": "Prompt 2"},
+        details={"transition": option.transition_id, "next_action": "guarded CLI/service with real owner evidence"},
     )
     return _finalize(result, capability_payload, output_dir)
 

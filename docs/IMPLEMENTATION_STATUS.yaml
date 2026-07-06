@@ -82,7 +82,7 @@ capabilities:
   ce_to_builder:
     transition_id: ev4-ce-to-builder-transition@1.0.0
     orchestration_baseline: implemented
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     owner_fixture_integration: verified
     real_non_synthetic_handoff: insufficient_evidence
     source_repository: rezahh107/EV4-Constructability-Engineer-Repo
@@ -94,7 +94,7 @@ capabilities:
   builder_to_responsive:
     transition_id: ev4-builder-to-responsive-transition@1.0.0
     orchestration_baseline: implemented
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     producer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
     consumer_commit: df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a
     owner_contract_lock: computed_from_pinned_owner_file_bytes
@@ -106,7 +106,7 @@ capabilities:
   final_evidence_gate:
     gate_id: ev4-final-evidence-gate@1.0.0
     orchestration_baseline: implemented
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     prior_lock_chain: pinned_to_immutable_project_gate_commit
     official_responsive_validator_integration: implemented
     verification_state: verified_by_exact_head_ci

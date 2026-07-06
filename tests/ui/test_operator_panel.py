@@ -129,7 +129,7 @@ def test_unavailable_transition_is_marked_and_does_not_fake_execution(tmp_path: 
         assert output.result["status"] != "accepted"
         assert output.result["diagnostics"][0]["code"] == "UI_TRANSITION_NOT_WIRED"
         assert output.result["output"] is None
-        assert "Prompt 2" in output.result["diagnostics"][0]["message"]
+        assert "guarded" in output.result["diagnostics"][0]["message"]
 
 
 def test_report_and_result_rendering_does_not_mutate_original_result(tmp_path: Path):

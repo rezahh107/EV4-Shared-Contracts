@@ -1,6 +1,6 @@
 # EV4 Project Gate
 
-Status: The deterministic Python foundation and the `ev4-architect-to-ce-transition@1.0.0`, `ev4-ce-to-builder-transition@1.0.0`, `ev4-builder-to-responsive-transition@1.0.0`, and `ev4-final-evidence-gate@1.0.0` orchestration baselines are implemented at their documented scopes. Only Architect → CE is exposed through the public CLI. Real non-synthetic handoff evidence remains insufficient, and the initial local operator UI shell is implemented.
+Status: The deterministic Python foundation and the `ev4-architect-to-ce-transition@1.0.0`, `ev4-ce-to-builder-transition@1.0.0`, `ev4-builder-to-responsive-transition@1.0.0`, and `ev4-final-evidence-gate@1.0.0` orchestration baselines are implemented at their documented scopes. Architect → CE is functionally exposed through the public CLI. CE → Builder, Builder → Responsive, and Final Evidence Gate are guarded public CLI entries that fail closed when real evidence, local owner checkouts, or official owner tooling are missing. Real non-synthetic handoff evidence remains insufficient, and the initial local operator UI shell is implemented.
 
 ## Purpose
 
@@ -82,9 +82,9 @@ real_elementor_validation: not_available
 
 The following remain intentionally out of scope:
 
-- CE-to-Builder general public CLI exposure
-- Builder-to-Responsive general public CLI exposure
-- Final Evidence Gate general public CLI exposure
+- CE-to-Builder functional public CLI exposure beyond guarded fail-closed execution
+- Builder-to-Responsive functional public CLI exposure beyond guarded fail-closed execution
+- Final Evidence Gate functional public CLI exposure beyond guarded fail-closed execution
 - UI service-layer execution for CE→Builder, Builder→Responsive, and Final Evidence Gate
 - real non-synthetic CE-to-Builder handoff verification
 - real non-synthetic Builder-to-Responsive handoff verification
@@ -95,7 +95,7 @@ The following remain intentionally out of scope:
 - real Elementor artifact validation
 - legacy Node retirement
 
-The CE-to-Builder, Builder-to-Responsive, and Final Evidence Gate orchestration baselines, result schemas, lock verification, runner integration, and scoped tests exist in the repository. `ev4-transition inspect` reports the layered status from `src/ev4_transition/data/capability-status.v1.json`.
+The CE-to-Builder, Builder-to-Responsive, and Final Evidence Gate orchestration baselines, result schemas, lock verification, runner integration, scoped tests, and guarded fail-closed CLI entries exist in the repository. `ev4-transition inspect` reports the layered status from `src/ev4_transition/data/capability-status.v1.json`.
 
 Do not claim real EV4 end-to-end compatibility from synthetic transition fixtures, owner-fixture integration, pinned-owner validator execution, or the local operator UI shell.
 
@@ -110,6 +110,19 @@ ev4-transition transition architect-to-ce path/to/architect-stage-bundle.json \
   --ce-repo ../EV4-Constructability-Engineer-Repo \
   --format json
 ev4-transition inspect
+# Guarded fail-closed entries; these require local owner checkouts and real evidence.
+ev4-transition transition ce-to-builder path/to/ce-stage-bundle.json \
+  --ce-repo ../EV4-Constructability-Engineer-Repo \
+  --builder-repo ../EV4-Builder-Assistant-Repo \
+  --format json
+ev4-transition transition builder-to-responsive path/to/builder-stage-bundle.json \
+  --builder-repo ../EV4-Builder-Assistant-Repo \
+  --responsive-repo ../EV4-Responsive-Architect \
+  --format json
+ev4-transition transition final-evidence-gate path/to/final-evidence.json \
+  --project-gate-repo . \
+  --responsive-repo ../EV4-Responsive-Architect \
+  --format json
 ```
 
 Exit codes:
@@ -135,7 +148,7 @@ ev4-project-gate-ui
 
 The UI is Persian-first and local. It supports JSON upload/paste, safe malformed-JSON handling, local checkout path inputs, read-only capability inspection, diagnostics display, and downloads for `result.json`, `report.md`, and `report.html`.
 
-The UI does not prove production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, or export validation. It does not expose new public CLI transitions and does not change transition semantics.
+The UI does not prove production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, or export validation. It does not change transition semantics; guarded CLI entries for CE→Builder, Builder→Responsive, and Final Evidence Gate remain fail-closed and do not prove real readiness.
 
 ## Stage Evidence Bundle
 
@@ -262,7 +275,7 @@ Notes:
 
 - This section is packaging-only and does not own active capability truth.
 - UI/operator panel behavior depends on the Prompt 1 UI branch/merge.
-- Internal service/API integration depends on the Prompt 2 service branch/merge.
+- Service/API integration exists for the documented baselines and preserves guarded fail-closed status semantics; the UI still avoids direct execution for the guarded transitions.
 - The controlled demo uses synthetic fixtures only and does not claim production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, export validation, or real end-to-end readiness.
 - Controlled demo outputs belong under `outputs/runs/<timestamp-or-run-id>/` and should not be committed.
 - UI downloads may use UI-provided artifacts until a final integration PR aligns UI, service, and demo output conventions.
@@ -278,19 +291,19 @@ capabilities:
     real_non_synthetic_handoff: insufficient_evidence
     verification_state: synthetic_fixture_only
   builder_to_responsive:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     official_responsive_validator_integration: implemented
     orchestration_baseline: implemented
     owner_contract_lock: computed_from_pinned_owner_file_bytes
     real_non_synthetic_handoff: insufficient_evidence
     verification_state: verified_by_exact_head_ci
   ce_to_builder:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     orchestration_baseline: implemented
     owner_fixture_integration: verified
     real_non_synthetic_handoff: insufficient_evidence
   final_evidence_gate:
-    cli_exposure: not_implemented
+    cli_exposure: guarded
     official_responsive_validator_integration: implemented
     orchestration_baseline: implemented
     prior_lock_chain: pinned_to_immutable_project_gate_commit
@@ -300,6 +313,9 @@ capabilities:
     status: implemented_initial_operator_panel
 public_cli_transitions:
   - architect-to-ce
+  - ce-to-builder
+  - builder-to-responsive
+  - final-evidence-gate
 python_deterministic_core: implemented_initial_v1
 stage_bundle_validation: implemented_initial_v1
 structured_diagnostics: implemented_initial_v1
