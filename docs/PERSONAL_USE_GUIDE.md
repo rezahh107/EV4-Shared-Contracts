@@ -12,7 +12,7 @@
 4. مسیر پوشه‌های محلی ریپوها را انتخاب کن.
 5. روی Run کلیک کن.
 6. نتیجه فارسی و diagnostics را بخوان.
-7. فایل‌های `JSON`، `Markdown` و `HTML` report را دانلود یا از پوشه خروجی بردار.
+7. خروجی‌های UI را از همان UI دانلود کن؛ معمولاً `result.json`، `report.md` و `report.html` یا artifactهای downloadشده توسط UI هستند.
 8. تصمیم بگیر: عبور، اصلاح، یا تهیه شواهد بیشتر.
 
 ## وقتی UI هنوز آماده نیست
@@ -47,15 +47,15 @@ python scripts/run-project-gate-demo.py
 
 یعنی بسته قابل فهم است، اما موارد قابل اصلاح دارد. باید diagnosticها اصلاح شوند و دوباره check اجرا شود.
 
-## خروجی‌هایی که باید انتظار داشته باشی
+## قرارداد خروجی demo کنترل‌شده
 
-در هر run، خروجی‌ها زیر مسیر زیر ذخیره می‌شوند:
+مسیر زیر قرارداد خروجی demo کنترل‌شده و script محلی است:
 
 ```text
 outputs/runs/<timestamp-or-run-id>/
 ```
 
-فایل‌ها:
+فایل‌های مورد انتظار demo:
 
 ```text
 result.json
@@ -64,6 +64,8 @@ report.html
 input.snapshot.json
 diagnostics.json
 ```
+
+این قرارداد به معنی الزام نهایی برای رفتار download در UI نیست. UI می‌تواند artifactهای download خودش را ارائه کند تا وقتی یک PR integration نهایی مسیر UI، service و demo را هم‌راستا کند.
 
 ## تصمیم بعد از نتیجه
 
@@ -74,6 +76,6 @@ diagnostics.json
 
 ## محدودیت مهم demo
 
-نمونه‌های داخل `examples/personal-use/` و `fixtures/personal-use/` همگی synthetic هستند. آن‌ها برای یادگیری مسیر کار هستند، نه اثبات واقعی EV4، نه validation واقعی Elementor، و نه readiness برای production.
+نمونه‌های داخل `examples/personal-use/` و `fixtures/personal-use/` همگی synthetic هستند. آن‌ها برای یادگیری مسیر کار هستند، نه اثبات واقعی EV4، نه validation واقعی Elementor، نه export validation، نه accessibility completion، و نه readiness برای production.
 
 </section>
