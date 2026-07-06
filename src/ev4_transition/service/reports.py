@@ -13,10 +13,13 @@ def build_report_bundle(result: dict[str, Any]) -> ReportBundle:
     """Build UI-downloadable report strings without mutating the engine result."""
 
     snapshot = deepcopy(result)
+    render_diagnostics: list[dict[str, Any]] = []
     try:
         canonical_json = render_json_result(snapshot)
     except Exception as exc:
-        canonical_json = _fallback_canonical_json("PG.SERVICE.REPORT_JSON_RENDER_FAILED", exc)
+        diagnostic = _report_failure_diagnostic("PG.SERVICE.REPORT_JSON_RENDER_FAILED", exc)
+        render_diagnostics.append(diagnostic)
+        canonical_json = _fallback_canonical_json(diagnostic)
     try:
         persian_plain_summary = render_plain_summary(snapshot)
     except Exception as exc:
@@ -39,22 +42,25 @@ def build_report_bundle(result: dict[str, Any]) -> ReportBundle:
         markdown_report=markdown_report,
         html_report=html_report,
         result_hash=result_hash,
+        render_diagnostics=render_diagnostics,
     )
 
 
-def _fallback_canonical_json(code: str, exc: Exception) -> str:
+def _report_failure_diagnostic(code: str, exc: Exception) -> dict[str, Any]:
+    return {
+        "code": code,
+        "severity": "error",
+        "message": "Report JSON rendering failed; fallback report emitted without mutating engine result.",
+        "path": "$.report_bundle.canonical_json",
+        "details": {"error_type": type(exc).__name__},
+    }
+
+
+def _fallback_canonical_json(diagnostic: dict[str, Any]) -> str:
     payload = {
         "schema_version": "project-gate-service-report-fallback.v1",
         "status": "invalid",
-        "diagnostics": [
-            {
-                "code": code,
-                "severity": "error",
-                "message": "Report JSON rendering failed; fallback report emitted without mutating engine result.",
-                "path": "$.report_bundle.canonical_json",
-                "details": {"error_type": type(exc).__name__},
-            }
-        ],
+        "diagnostics": [deepcopy(diagnostic)],
         "output": None,
     }
     return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
