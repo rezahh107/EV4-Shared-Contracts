@@ -468,10 +468,10 @@ def _raw_diagnostics_html(diagnostics: Any) -> str:
     for diagnostic in diagnostics:
         if not isinstance(diagnostic, dict):
             continue
-        code = diagnostic.get("code", "UNKNOWN_DIAGNOSTIC")
-        severity = diagnostic.get("severity", "unknown")
-        path = diagnostic.get("path", "$")
-        message = diagnostic.get("message", "")
+        code = diagnostic.get("code") or "UNKNOWN_DIAGNOSTIC"
+        severity = diagnostic.get("severity") or "unknown"
+        path = diagnostic.get("path") or "$"
+        message = diagnostic.get("message") or ""
         items.append(
             "<li>"
             f"<strong>code:</strong> {bdi_ltr(code)} "
