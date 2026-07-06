@@ -85,7 +85,6 @@ The following remain intentionally out of scope:
 - CE-to-Builder functional public CLI exposure beyond guarded fail-closed execution
 - Builder-to-Responsive functional public CLI exposure beyond guarded fail-closed execution
 - Final Evidence Gate functional public CLI exposure beyond guarded fail-closed execution
-- UI service-layer execution for CE→Builder, Builder→Responsive, and Final Evidence Gate
 - real non-synthetic CE-to-Builder handoff verification
 - real non-synthetic Builder-to-Responsive handoff verification
 - real non-synthetic final evidence verification
@@ -146,7 +145,7 @@ Optional script entry point after installing the `ui` extra:
 ev4-project-gate-ui
 ```
 
-The UI is Persian-first and local. It supports JSON upload/paste, safe malformed-JSON handling, local checkout path inputs, read-only capability inspection, diagnostics display, and downloads for `result.json`, `report.md`, and `report.html`.
+The UI is Persian-first and local. It supports JSON upload/paste, safe malformed-JSON handling, local checkout path inputs, read-only capability inspection, service-routed checks for `validate_bundle`, `inspect_capabilities`, `architect_to_ce`, `ce_to_builder`, `builder_to_responsive`, and `final_gate`, diagnostics display, and downloads for `result.json`, `report.md`, and `report.html`.
 
 The UI does not prove production readiness, real Elementor validation, frontend correctness, responsive correctness, accessibility completion, or export validation. It does not change transition semantics; guarded CLI entries for CE→Builder, Builder→Responsive, and Final Evidence Gate remain fail-closed and do not prove real readiness.
 
@@ -310,6 +309,8 @@ capabilities:
     real_non_synthetic_evidence: insufficient_evidence
     verification_state: verified_by_exact_head_ci
   user_interface:
+    browser_accessibility_evidence: insufficient_evidence
+    service_routing: implemented_prompt_06_fail_closed
     status: implemented_initial_operator_panel
 public_cli_transitions:
   - architect-to-ce

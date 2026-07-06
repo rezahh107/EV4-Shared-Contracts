@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from ev4_transition.presentation.theme_tokens import css_custom_properties
+
 from .adapters import build_capability_rows, run_operator_check
 from .components import CAPABILITY_HEADERS, DIAGNOSTIC_HEADERS
 from .state import transition_choices
@@ -22,14 +24,19 @@ def build_demo():
 
     with gr.Blocks(
         title="EV4 Project Gate Local Operator Panel",
-        css="""
-        .ev4-rtl, .ev4-rtl textarea { direction: rtl; text-align: right; }
-        .ev4-ltr, .ev4-ltr textarea, .ev4-ltr code, .ev4-ltr pre { direction: ltr; text-align: left; unicode-bidi: isolate; }
+        css=css_custom_properties()
+        + """
+        .ev4-app, .ev4-rtl, .ev4-rtl textarea { direction: rtl; text-align: right; font-family: var(--ev4-font-fa-ui); line-height: 1.75; letter-spacing: normal; }
+        .ev4-ltr, .ev4-ltr textarea, .ev4-ltr code, .ev4-ltr pre, code, pre { direction: ltr; text-align: left; unicode-bidi: isolate; font-family: var(--ev4-font-code); }
+        .ev4-status[role="status"] { border: 1px solid var(--ev4-border-default); border-radius: 12px; padding: 1rem; background: var(--ev4-surface-raised); color: var(--ev4-text-primary); }
+        .ev4-app { color-scheme: light dark; background: var(--ev4-surface-base); color: var(--ev4-text-primary); }
+        .ev4-app :focus-visible { outline: 3px solid var(--ev4-focus-ring); outline-offset: 3px; }
+        @media (prefers-color-scheme: dark) { .ev4-app { background: var(--ev4-dark-surface-base); color: var(--ev4-dark-text-primary); } }
         """,
     ) as demo:
         gr.Markdown(
             f"""
-<div lang="fa" dir="rtl" class="ev4-rtl">
+<div lang="fa" dir="rtl" class="ev4-app ev4-rtl">
 
 # EV4 Project Gate Local Operator Panel
 
@@ -69,7 +76,7 @@ def build_demo():
             )
 
         with gr.Accordion("خلاصه نتیجه", open=True):
-            status_summary = gr.Markdown(elem_classes=["ev4-rtl"])
+            status_summary = gr.Markdown(elem_classes=["ev4-rtl", "ev4-status"], elem_id="ev4-status-live")
 
         with gr.Accordion("Diagnostics / جزئیات پیشرفته", open=False):
             diagnostics = gr.Dataframe(
@@ -121,7 +128,11 @@ def build_demo():
                 output.download_paths,
             )
 
-        run_button.click(
+        run_event = run_button.click(
+            lambda: "⏳ در حال پردازش…",
+            outputs=[status_summary],
+            queue=False,
+        ).then(
             _run,
             inputs=[transition, json_text, json_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path],
             outputs=[status_summary, diagnostics, capabilities, json_preview, downloads],

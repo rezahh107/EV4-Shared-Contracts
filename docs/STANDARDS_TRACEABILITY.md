@@ -23,3 +23,14 @@ Status: `PROMPT-06` traceability for report UX, Persian RTL/LTR typography, them
 ## Implementation boundary
 
 This traceability does not claim a production UI, accessibility completion, real frontend correctness, or release readiness. It only binds report-generation behavior and output-writing safety to tests and documentation.
+
+## Prompt 06 DMDS/TYPEKIT carriers
+
+| Standard area | Carrier | Honest status |
+|---|---|---|
+| DMDS semantic light/dark tokens | `src/ev4_transition/presentation/theme_tokens.py` | `ci_enforced` for token/static assertions |
+| Dark mode non-inversion | `THEME_TOKENS["dark"]` and `assert_theme_contract()` | `ci_enforced` for static token rules |
+| Focus visibility token/CSS | `focus.ring`, `.ev4-app :focus-visible` | `ci_enforced` static; browser behavior remains `insufficient_evidence` |
+| Persian font stack | `font.fa_ui`, Gradio scoped CSS | `ci_enforced` static |
+| LTR technical font stack/isolation | `font.code`, `ltr_token`, `.ev4-ltr` | `ci_enforced` static |
+| Persian letter-spacing | scoped CSS uses `letter-spacing: normal` and no arbitrary Persian spacing | `ci_enforced` static where tested |

@@ -3,15 +3,15 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 import json
+from html import escape
+import logging
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Any
 
-from ev4_transition.architect_to_ce import TransitionValidatorHooks, transition_from_local_paths
-from ev4_transition.bundle_validator import BundleValidator, ResultValidationError
 from ev4_transition.canonical_json import canonical_dumps, load_json_file
-from ev4_transition.reports import render_json_result, render_markdown_report, render_optional_html_report
-from ev4_transition.validator_runner import run_architect_validator, run_ce_validator
+from ev4_transition.service import GateRequest, RepoPaths, run_gate_request
 
 from .components import capability_rows_from_payload, diagnostics_to_rows, status_summary_markdown
 from .state import option_for_label
@@ -20,7 +20,7 @@ from .state import option_for_label
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 CAPABILITY_STATUS_PATH = PACKAGE_ROOT / "data" / "capability-status.v1.json"
-_REQUIRED_PROJECT_GATE_SCHEMA_FILE = Path("schemas") / "stage-bundle" / "stage-bundle.v1.schema.json"
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,32 @@ class UiRunOutput:
     capability_rows: list[list[str]]
     json_preview: str
     download_paths: list[str]
+
+
+@dataclass(frozen=True)
+class ErrorState:
+    code: str
+    message_fa: str
+    next_action_fa: str
+    error_type: str
+
+    def to_result(self, transition_choice: str) -> dict[str, Any]:
+        return {
+            "schema_version": "ev4-project-gate-ui-result.v1",
+            "result_type": "ui_error_state",
+            "transition_choice": transition_choice,
+            "status": "invalid",
+            "diagnostics": [
+                {
+                    "code": self.code,
+                    "severity": "error",
+                    "message": self.message_fa,
+                    "path": "$",
+                    "details": {"error_type": self.error_type, "next_action": self.next_action_fa},
+                }
+            ],
+            "output": None,
+        }
 
 
 def run_operator_check(
@@ -45,90 +71,70 @@ def run_operator_check(
     *,
     output_dir: str | Path | None = None,
 ) -> UiRunOutput:
-    """Run the selected UI action through safe Project Gate adapters.
-
-    This function is intentionally thin: it validates UI input, then delegates to
-    existing Project Gate validators/transition functions. It does not implement
-    transition semantics.
-    """
+    """Run the selected UI action through the internal Project Gate service API."""
 
     option = option_for_label(transition_label)
-    capability_payload = load_capability_payload()
-
-    if option.transition_id == "inspect_capabilities":
-        result = {
-            "schema_version": "ev4-project-gate-ui-result.v1",
-            "result_type": "capability_inspection",
-            "status": "accepted",
-            "diagnostics": [],
-            "output": deepcopy(capability_payload),
-            "provenance": {
-                "source": str(CAPABILITY_STATUS_PATH),
-                "mode": "read_only",
-            },
-        }
-        return _finalize(result, capability_payload, output_dir)
-
-    parsed_input: Any | None = None
-    if pasted_json or uploaded_file:
-        parsed, malformed = _parse_json_input(pasted_json, uploaded_file)
-        if malformed is not None:
-            return _finalize(malformed, capability_payload, output_dir)
-        parsed_input = parsed
-
-    if not option.wired:
-        result = _guard_result(
-            "insufficient_evidence",
-            "UI_TRANSITION_NOT_WIRED",
-            "insufficient_evidence",
-            "این transition در UI هنوز اجرای مستقیم ندارد؛ مسیر CLI/service فقط guarded و fail-closed است و شواهد واقعی owner می‌خواهد.",
-            details={
-                "transition": option.transition_id,
-                "next_action": option.pending_reason_fa or "تهیه شواهد واقعی، checkout محلی owner، و validator/adapter رسمی",
-            },
+    choice = option.service_choice
+    try:
+        request = build_gate_request(
+            transition_label,
+            pasted_json=pasted_json,
+            uploaded_file=uploaded_file,
+            project_gate_repo_path=project_gate_repo_path,
+            architect_repo_path=architect_repo_path,
+            ce_repo_path=ce_repo_path,
+            builder_repo_path=builder_repo_path,
+            responsive_repo_path=responsive_repo_path,
         )
-        return _finalize(result, capability_payload, output_dir)
+        response = run_gate_request(request)
+        result = _result_from_response(response)
+    except Exception as exc:  # Defensive UI boundary; primary view must not expose traceback.
+        LOGGER.exception("Unhandled exception in UI operator check")
+        result = ErrorState(
+            code="PG.UI.UNHANDLED_EXCEPTION",
+            message_fa="اجرای UI با خطای کنترل‌شده متوقف شد و traceback خام در نمای اصلی نمایش داده نشد.",
+            next_action_fa="گزارش فنی را دانلود کن و خطای مسیر، JSON، یا وابستگی محلی را بررسی کن.",
+            error_type=type(exc).__name__,
+        ).to_result(choice)
+    try:
+        return _finalize(result, output_dir)
+    except Exception as exc:  # Final UI rendering fallback; do not let report/capability failures crash the panel.
+        LOGGER.exception("Critical failure while finalizing UI operator output")
+        fallback = ErrorState(
+            code="PG.UI.CRITICAL_FINALIZATION_FAILURE",
+            message_fa="آماده‌سازی خروجی UI با خطای کنترل‌شده متوقف شد و traceback خام در نمای اصلی نمایش داده نشد.",
+            next_action_fa="گزارش technical/log را بررسی کن و فایل capability یا مسیر خروجی را اصلاح کن.",
+            error_type=type(exc).__name__,
+        ).to_result(choice)
+        return _minimal_output(fallback)
 
-    if option.required_json and parsed_input is None:
-        result = _guard_result(
-            "invalid",
-            "UI_INPUT_REQUIRED",
-            "error",
-            "برای اجرای این بررسی باید یک فایل JSON بارگذاری شود یا JSON در کادر ورودی paste شود.",
-            details={"transition": option.transition_id, "next_action": "JSON معتبر وارد کن و دوباره اجرا کن."},
-        )
-        return _finalize(result, capability_payload, output_dir)
 
-    if option.required_json and not isinstance(parsed_input, dict):
-        result = _guard_result(
-            "invalid",
-            "UI_INPUT_INVALID_TYPE",
-            "error",
-            "ورودی باید یک JSON Object باشد؛ آرایه، متن، عدد یا مقدار scalar برای این بررسی قابل اجرا نیست.",
-            details={
-                "transition": option.transition_id,
-                "observed_type": type(parsed_input).__name__,
-                "next_action": "یک JSON Object معتبر با کلید و مقدار وارد کن.",
-            },
-        )
-        return _finalize(result, capability_payload, output_dir)
-
-    if option.transition_id == "validate_stage_evidence_bundle":
-        result = _run_stage_bundle_validation(parsed_input, project_gate_repo_path)
-        return _finalize(result, capability_payload, output_dir)
-
-    if option.transition_id == "architect_to_ce":
-        result = _run_architect_to_ce(parsed_input, project_gate_repo_path, architect_repo_path, ce_repo_path)
-        return _finalize(result, capability_payload, output_dir)
-
-    result = _guard_result(
-        "insufficient_evidence",
-        "UI_TRANSITION_NOT_WIRED",
-        "insufficient_evidence",
-        "این transition در این UI هنوز به adapter امن متصل نشده است.",
-        details={"transition": option.transition_id, "next_action": "guarded CLI/service with real owner evidence"},
+def build_gate_request(
+    transition_label: str | None,
+    *,
+    pasted_json: str | None = None,
+    uploaded_file: Any | None = None,
+    project_gate_repo_path: str | None = None,
+    architect_repo_path: str | None = None,
+    ce_repo_path: str | None = None,
+    builder_repo_path: str | None = None,
+    responsive_repo_path: str | None = None,
+) -> GateRequest:
+    option = option_for_label(transition_label)
+    input_text = pasted_json if pasted_json and pasted_json.strip() else None
+    input_path = _uploaded_path(uploaded_file) if input_text is None else None
+    return GateRequest(
+        transition_choice=option.service_choice,  # type: ignore[arg-type]
+        input_json_path=input_path,
+        input_json_text=input_text,
+        repo_paths=RepoPaths(
+            project_gate_repo_path=_clean_path(project_gate_repo_path) or str(REPOSITORY_ROOT),
+            architect_repo_path=_clean_path(architect_repo_path),
+            ce_repo_path=_clean_path(ce_repo_path),
+            builder_repo_path=_clean_path(builder_repo_path),
+            responsive_repo_path=_clean_path(responsive_repo_path),
+        ),
     )
-    return _finalize(result, capability_payload, output_dir)
 
 
 def load_capability_payload(path: str | Path = CAPABILITY_STATUS_PATH) -> dict[str, Any]:
@@ -143,202 +149,110 @@ def build_capability_rows(path: str | Path = CAPABILITY_STATUS_PATH) -> list[lis
 
 
 def render_download_artifacts(result: dict[str, Any], output_dir: str | Path | None = None) -> list[str]:
-    snapshot = deepcopy(result)
     directory = Path(output_dir) if output_dir is not None else Path(tempfile.mkdtemp(prefix="ev4_project_gate_ui_"))
-    directory.mkdir(parents=True, exist_ok=True)
-
-    json_path = directory / "result.json"
-    md_path = directory / "report.md"
-    html_path = directory / "report.html"
-
-    json_path.write_text(render_json_result(snapshot), encoding="utf-8")
-    md_path.write_text(render_markdown_report(snapshot, title="گزارش Project Gate Operator Panel"), encoding="utf-8")
-    html_path.write_text(render_optional_html_report(snapshot, title="گزارش Project Gate Operator Panel"), encoding="utf-8")
-
-    return [str(json_path), str(md_path), str(html_path)]
-
-
-def _run_stage_bundle_validation(parsed_input: Any, project_gate_repo_path: str | None) -> dict[str, Any]:
-    root = _resolve_project_gate_root(project_gate_repo_path)
-    if isinstance(root, dict):
-        return root
-    return BundleValidator(root / "schemas").validate_bundle(deepcopy(parsed_input))
-
-
-def _run_architect_to_ce(
-    parsed_input: Any,
-    project_gate_repo_path: str | None,
-    architect_repo_path: str | None,
-    ce_repo_path: str | None,
-) -> dict[str, Any]:
-    root = _resolve_project_gate_root(project_gate_repo_path)
-    if isinstance(root, dict):
-        return root
-
-    architect_root = _required_local_repo_path(architect_repo_path, "Architect repo path")
-    if isinstance(architect_root, dict):
-        return architect_root
-
-    ce_root = _required_local_repo_path(ce_repo_path, "CE repo path")
-    if isinstance(ce_root, dict):
-        return ce_root
-
-    hooks = TransitionValidatorHooks(
-        architect=lambda payload: run_architect_validator(architect_root, payload),
-        ce=lambda payload, source_bundle: run_ce_validator(ce_root, payload, source_bundle),
-    )
+    written_paths: list[Path] = []
     try:
-        return transition_from_local_paths(
-            deepcopy(parsed_input),
-            root / "schemas",
-            root / "contracts" / "locks" / "architect-to-ce-transition.v1.lock.json",
-            architect_root,
-            ce_root,
-            validator_hooks=hooks,
-        )
-    except ResultValidationError as exc:
-        return _guard_result(
-            "invalid",
-            "TRANSITION_RESULT_SCHEMA_VALIDATION_FAILED",
-            "error",
-            "Transition result schema validation failed.",
-            details={"error": str(exc), "next_action": "schema و output transition را بررسی کن."},
-        )
+        directory.mkdir(parents=True, exist_ok=True)
+        files = {
+            "result.json": canonical_dumps(deepcopy(result)),
+            "report.md": _markdown_report(result),
+            "report.html": _html_report(result),
+        }
+        paths: list[str] = []
+        for name, content in files.items():
+            path = directory / name
+            path.write_text(content, encoding="utf-8")
+            written_paths.append(path)
+            paths.append(str(path))
+        return paths
     except OSError as exc:
-        return _guard_result(
-            "invalid",
-            "LOCAL_PATH_READ_ERROR",
-            "error",
-            "یکی از مسیرهای local checkout قابل خواندن نیست.",
-            details={"error_type": type(exc).__name__, "next_action": "مسیر پوشه‌های local را اصلاح کن."},
-        )
+        LOGGER.error("Failed to render download artifacts: %s", exc)
+        for path in written_paths:
+            path.unlink(missing_ok=True)
+        if output_dir is None:
+            shutil.rmtree(directory, ignore_errors=True)
+        return []
 
 
-def _parse_json_input(pasted_json: str | None, uploaded_file: Any | None) -> tuple[Any | None, dict[str, Any] | None]:
-    try:
-        text = _read_json_text(pasted_json, uploaded_file)
-        return json.loads(text, parse_constant=_reject_json_constant), None
-    except json.JSONDecodeError as exc:
-        return None, _guard_result(
-            "invalid",
-            "MALFORMED_JSON",
-            "error",
-            "JSON واردشده معتبر نیست و هیچ بررسی اجرا نشد.",
-            details={"line": exc.lineno, "column": exc.colno, "next_action": "syntax فایل JSON را اصلاح کن."},
-        )
-    except (OSError, ValueError) as exc:
-        return None, _guard_result(
-            "invalid",
-            "MALFORMED_JSON",
-            "error",
-            "JSON واردشده معتبر نیست و هیچ بررسی اجرا نشد.",
-            details={"error": str(exc), "next_action": "syntax فایل JSON را اصلاح کن."},
-        )
+def _minimal_output(result: dict[str, Any]) -> UiRunOutput:
+    return UiRunOutput(
+        result=result,
+        status_markdown=status_summary_markdown(result),
+        diagnostics_rows=diagnostics_to_rows(result.get("diagnostics", [])),
+        capability_rows=[],
+        json_preview=canonical_dumps(result),
+        download_paths=[],
+    )
 
 
-def _read_json_text(pasted_json: str | None, uploaded_file: Any | None) -> str:
-    if pasted_json and pasted_json.strip():
-        return pasted_json
-
-    if uploaded_file is None:
-        raise ValueError("JSON input is required")
-
-    file_name = uploaded_file if isinstance(uploaded_file, str) else getattr(uploaded_file, "name", None)
-    if not file_name:
-        raise ValueError("Uploaded JSON file path is not available")
-    return Path(file_name).read_text(encoding="utf-8")
-
-
-def _reject_json_constant(value: str) -> None:
-    raise ValueError(f"Invalid JSON constant: {value}")
-
-
-def _resolve_project_gate_root(project_gate_repo_path: str | None) -> Path | dict[str, Any]:
-    if not project_gate_repo_path or not project_gate_repo_path.strip():
-        root = REPOSITORY_ROOT
-    else:
-        resolved = _required_local_repo_path(project_gate_repo_path, "Project Gate repo path")
-        if isinstance(resolved, dict):
-            return resolved
-        root = resolved
-
-    schemas_dir = root / "schemas"
-    required_schema = root / _REQUIRED_PROJECT_GATE_SCHEMA_FILE
-    if not schemas_dir.is_dir() or not required_schema.is_file():
-        return _guard_result(
-            "invalid",
-            "UI_PROJECT_GATE_SCHEMA_ROOT_INVALID",
-            "error",
-            "مسیر Project Gate معتبر نیست؛ پوشه schemas یا schema اصلی Stage Bundle پیدا نشد.",
-            details={
-                "path": str(schemas_dir),
-                "required_file": str(required_schema),
-                "next_action": "مسیر صحیح checkout محلی EV4-Project-Gate را وارد کن.",
-            },
-        )
-    return root
-
-
-def _required_local_repo_path(value: str | None, label: str) -> Path | dict[str, Any]:
-    if not value or not value.strip():
-        return _guard_result(
-            "invalid",
-            "UI_LOCAL_PATH_REQUIRED",
-            "error",
-            f"{label} باید مسیر یک پوشه local باشد، نه GitHub URL.",
-            details={"field": label, "next_action": "مسیر checkout محلی را وارد کن."},
-        )
-
-    text = value.strip()
-    if text.startswith(("http://", "https://")) or "github.com/" in text:
-        return _guard_result(
-            "invalid",
-            "UI_LOCAL_PATH_NOT_URL",
-            "error",
-            f"{label} باید مسیر پوشه local باشد، نه GitHub URL.",
-            details={"field": label, "observed": text, "next_action": "مثلاً ../EV4-Architect-Repo"},
-        )
-
-    path = Path(text).expanduser()
-    if not path.exists() or not path.is_dir():
-        return _guard_result(
-            "invalid",
-            "UI_LOCAL_PATH_NOT_FOUND",
-            "error",
-            f"{label} پیدا نشد یا پوشه نیست.",
-            details={"field": label, "path": str(path), "next_action": "مسیر local checkout را اصلاح کن."},
-        )
-    return path
-
-
-def _guard_result(
-    status: str,
-    code: str,
-    severity: str,
-    message: str,
-    *,
-    path: str = "$",
-    details: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    diagnostic: dict[str, Any] = {
-        "code": code,
-        "severity": severity,
-        "message": message,
-        "path": path,
-    }
-    if details:
-        diagnostic["details"] = details
+def _result_from_response(response: Any) -> dict[str, Any]:
+    payload = response.to_dict()
+    diagnostics = list(payload.get("service_diagnostics") or [])
+    engine_result = payload.get("engine_result")
+    if isinstance(engine_result, dict) and isinstance(engine_result.get("diagnostics"), list):
+        diagnostics.extend(deepcopy(engine_result["diagnostics"]))
     return {
         "schema_version": "ev4-project-gate-ui-result.v1",
-        "result_type": "ui_guard",
-        "status": status,
-        "diagnostics": [diagnostic],
-        "output": None,
+        "result_type": "service_response",
+        "transition_choice": payload.get("transition_choice"),
+        "status": payload.get("status", "invalid"),
+        "user_message_fa": payload.get("user_message_fa", ""),
+        "next_action_fa": payload.get("next_action_fa", ""),
+        "diagnostics": diagnostics,
+        "engine_result": engine_result,
+        "capabilities_snapshot": payload.get("capabilities_snapshot"),
+        "download_filenames": payload.get("download_filenames", {}),
+        "report_bundle": payload.get("report_bundle", {}),
+        "output": engine_result.get("output") if isinstance(engine_result, dict) else None,
     }
 
 
-def _finalize(result: dict[str, Any], capability_payload: dict[str, Any], output_dir: str | Path | None) -> UiRunOutput:
+def _uploaded_path(uploaded_file: Any | None) -> str | None:
+    if uploaded_file is None:
+        return None
+    if isinstance(uploaded_file, str):
+        return uploaded_file
+    name = getattr(uploaded_file, "name", None)
+    return str(name) if name else None
+
+
+def _clean_path(value: str | None) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _markdown_report(result: dict[str, Any]) -> str:
+    safe_json = _neutralize_markdown_fences(canonical_dumps(result))
+    return "\n".join(["# گزارش Project Gate Operator Panel", "", f"status: `{result.get('status', 'invalid')}`", "", "```json", safe_json, "```", ""])
+
+
+def _neutralize_markdown_fences(value: str) -> str:
+    return value.replace("```", "``\u200b`")
+
+
+def _html_report(result: dict[str, Any]) -> str:
+    escaped_json = escape(json.dumps(result, ensure_ascii=False, indent=2))
+    return (
+        '<!doctype html><html lang="fa" dir="rtl">'
+        '<meta charset="utf-8"><title>Project Gate Report</title>'
+        f'<pre dir="ltr">{escaped_json}</pre></html>'
+    )
+
+
+def _finalize(result: dict[str, Any], output_dir: str | Path | None) -> UiRunOutput:
     downloads = render_download_artifacts(result, output_dir)
+    if not downloads:
+        result = deepcopy(result)
+        result.setdefault("diagnostics", []).append(
+            {
+                "code": "PG.UI.REPORT_WRITE_FAILED",
+                "severity": "error",
+                "message": "نوشتن فایل‌های گزارش انجام نشد؛ لینک دانلود موفق نمایش داده نمی‌شود.",
+                "path": "$.downloads",
+                "details": {"next_action": "مجوز نوشتن output directory را بررسی کن."},
+            }
+        )
+        result["status"] = "invalid"
+    capability_payload = result.get("capabilities_snapshot") if isinstance(result.get("capabilities_snapshot"), dict) else load_capability_payload()
     return UiRunOutput(
         result=result,
         status_markdown=status_summary_markdown(result),
