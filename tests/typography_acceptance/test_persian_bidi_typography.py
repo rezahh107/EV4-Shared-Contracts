@@ -30,3 +30,20 @@ def test_plain_text_ltr_isolation_uses_unicode_isolates():
     isolated = isolate_ltr_text("PG-UNICODE-001")
     assert isolated.startswith(LTR_ISOLATE_START)
     assert isolated.endswith(ISOLATE_END)
+
+
+def test_typekit_font_stacks_are_available_in_theme_tokens():
+    from ev4_transition.presentation.theme_tokens import THEME_TOKENS
+
+    for theme in ("light", "dark"):
+        assert "Vazirmatn, Vazir, IRANSansX, IranSansXV, Tahoma, system-ui, sans-serif" == THEME_TOKENS[theme]["font.fa_ui"]
+        assert "Cascadia Code, JetBrains Mono, Fira Code, Consolas, monospace" == THEME_TOKENS[theme]["font.code"]
+
+
+def test_operator_panel_root_and_ltr_css_carriers_exist():
+    from pathlib import Path
+
+    source = Path("src/ev4_transition/ui/app.py").read_text(encoding="utf-8")
+    assert 'lang="fa" dir="rtl" class="ev4-app ev4-rtl"' in source
+    assert "unicode-bidi: isolate" in source
+    assert "letter-spacing: normal" in source

@@ -27,15 +27,15 @@ ev4-project-gate-ui
 
 اگر `gradio` نصب نشده باشد، entry point باید با پیام روشن خطا بدهد و کاربر را به نصب `.[ui]` راهنمایی کند. `gradio` وابستگی اجباری core package نیست.
 
-## محدوده اجرایی Prompt 1
+## محدوده اجرایی Prompt 06
 
 | بخش | وضعیت UI | توضیح |
 |---|---|---|
 | Validate Stage Evidence Bundle | wired | از `BundleValidator` موجود استفاده می‌کند. |
 | Architect → CE | wired with local paths | فقط با مسیرهای local checkout برای Architect و CE اجرا می‌شود. |
-| CE → Builder | pending | fake execution ندارد؛ نیازمند service layer در Prompt 2 است. |
-| Builder → Responsive | pending | fake execution ندارد؛ نیازمند service layer در Prompt 2 است. |
-| Final Evidence Gate | pending | fake execution ندارد؛ نیازمند service layer در Prompt 2 است. |
+| CE → Builder | wired through service | از service layer اجرا می‌شود و بدون checkout/evidence معتبر fail-closed می‌ماند. |
+| Builder → Responsive | wired through service | از service layer اجرا می‌شود و بدون checkout/evidence معتبر fail-closed می‌ماند. |
+| Final Evidence Gate | wired through service | از service layer اجرا می‌شود و بدون checkout/evidence معتبر fail-closed می‌ماند. |
 | Inspect Capabilities | wired | فقط `capability-status.v1.json` را read-only می‌خواند. |
 
 ## هشدار محدوده
@@ -63,4 +63,4 @@ ev4-project-gate-ui
 - `report.md`
 - `report.html`
 
-رندر report از `src/ev4_transition/reports/` استفاده می‌کند و result object را mutate نمی‌کند.
+رندر report/download از adapter محلی و service response ساخته می‌شود، result object را mutate نمی‌کند، و اگر نوشتن گزارش fail شود لینک دانلود موفق جعلی تولید نمی‌کند.

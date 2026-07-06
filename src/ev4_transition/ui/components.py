@@ -33,7 +33,7 @@ def status_summary_markdown(result: dict[str, Any]) -> str:
 
     return "\n".join(
         [
-            '<section lang="fa" dir="rtl">',
+            '<section lang="fa" dir="rtl" role="status" aria-live="polite">',
             "### نتیجه بررسی",
             f"<p>{presentation.icon} <strong>وضعیت: {escape(presentation.persian_label)}</strong> {status_line}</p>",
             f"<p><strong>معنی:</strong> {escape(meaning)}</p>",
@@ -106,24 +106,24 @@ def capability_rows_from_payload(payload: dict[str, Any]) -> list[list[str]]:
             ltr_token(ce_to_builder.get("orchestration_baseline", "unknown")),
             ltr_token(ce_to_builder.get("cli_exposure", "unknown")),
             ltr_token(ce_to_builder.get("real_non_synthetic_handoff", "unknown")),
-            ltr_token("guarded/fail-closed in service; UI execution unavailable"),
-            "در UI اجرای مستقیم ندارد؛ مسیر service/CLI فقط guarded و fail-closed است.",
+            ltr_token("wired through internal service; guarded/fail-closed"),
+            "در UI از مسیر service اجرا می‌شود و در نبود شواهد/checkout معتبر fail-closed می‌ماند.",
         ],
         [
             "Builder → Responsive",
             ltr_token(builder_to_responsive.get("orchestration_baseline", "unknown")),
             ltr_token(builder_to_responsive.get("cli_exposure", "unknown")),
             ltr_token(builder_to_responsive.get("real_non_synthetic_handoff", "unknown")),
-            ltr_token("guarded/fail-closed in service; UI execution unavailable"),
-            "service/CLI guarded است، اما UI اجرای مستقیم این transition را آماده نشان نمی‌دهد.",
+            ltr_token("wired through internal service; guarded/fail-closed"),
+            "در UI از مسیر service اجرا می‌شود و بدون owner evidence معتبر accepted نمی‌شود.",
         ],
         [
             "Final Evidence Gate",
             ltr_token(final_gate.get("orchestration_baseline", "unknown")),
             ltr_token(final_gate.get("cli_exposure", "unknown")),
             ltr_token(final_gate.get("real_non_synthetic_evidence", "unknown")),
-            ltr_token("guarded/fail-closed in service; UI execution unavailable"),
-            "در UI فقط وضعیت capability خوانده می‌شود؛ transition واقعی آماده/accepted فرض نمی‌شود.",
+            ltr_token("wired through internal service; guarded/fail-closed"),
+            "در UI از مسیر service اجرا می‌شود و بدون evidence نهایی معتبر accepted نمی‌شود.",
         ],
         [
             "UI",
