@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from pathlib import Path
 
 from ev4_transition.service import GateRequest, RepoPaths, build_report_bundle, run_gate_request
 from ev4_transition.service import dispatcher
 from ev4_transition.service.capabilities import _CAPABILITY_STATUS_PATH, get_capabilities
+from ev4_transition.service import reports as service_reports
 
 
 def _repo_paths(tmp_path: Path) -> RepoPaths:
@@ -37,11 +39,37 @@ def test_malformed_json_returns_invalid_without_crash():
     assert response.engine_result is None
 
 
+def test_non_finite_pasted_json_constant_is_rejected():
+    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_text='{"value": NaN}'))
+
+    assert response.status == "invalid"
+    assert response.service_diagnostics[0]["code"] == "PG.SERVICE.NON_FINITE_JSON_CONSTANT"
+    assert response.service_diagnostics[0]["details"]["constant"] == "NaN"
+
+
+def test_non_finite_file_json_constant_is_rejected(tmp_path: Path):
+    source = tmp_path / "bundle.json"
+    source.write_text('{"value": Infinity}', encoding="utf-8")
+
+    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_path=str(source)))
+
+    assert response.status == "invalid"
+    assert response.service_diagnostics[0]["code"] == "PG.SERVICE.NON_FINITE_JSON_CONSTANT"
+    assert response.service_diagnostics[0]["details"]["constant"] == "Infinity"
+
+
 def test_missing_json_input_returns_invalid():
     response = run_gate_request(GateRequest(transition_choice="validate_bundle"))
 
     assert response.status == "invalid"
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.JSON_INPUT_MISSING"
+
+
+def test_invalid_input_file_path_returns_structured_invalid_result():
+    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_path="bad\0path.json"))
+
+    assert response.status == "invalid"
+    assert response.service_diagnostics[0]["code"] == "PG.SERVICE.FILE_READ_ERROR"
 
 
 def test_github_url_repo_path_is_rejected_as_local_path(tmp_path: Path):
@@ -57,6 +85,19 @@ def test_github_url_repo_path_is_rejected_as_local_path(tmp_path: Path):
 
     assert response.status == "insufficient_evidence"
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.REPO_PATH_NOT_LOCAL"
+
+
+def test_invalid_repo_path_returns_insufficient_evidence():
+    response = run_gate_request(
+        GateRequest(
+            transition_choice="ce_to_builder",
+            input_data={"schema": "ev4-builder-executable-package@1.0.0"},
+            repo_paths=RepoPaths(ce_repo_path="bad\0path", builder_repo_path="also-missing"),
+        )
+    )
+
+    assert response.status == "insufficient_evidence"
+    assert response.service_diagnostics[0]["code"] == "PG.SERVICE.REPO_PATH_INACCESSIBLE"
 
 
 def test_missing_required_repo_path_returns_insufficient_evidence(tmp_path: Path):
@@ -184,6 +225,21 @@ def test_final_gate_service_path_calls_existing_gate_function(monkeypatch, tmp_p
     assert calls["responsive_repo"] == paths.responsive_repo_path
 
 
+def test_report_renderer_exceptions_do_not_crash_service(monkeypatch):
+    def explode(_result):
+        raise RuntimeError("renderer failed")
+
+    monkeypatch.setattr(service_reports, "render_json_result", explode)
+    monkeypatch.setattr(service_reports, "render_plain_summary", explode)
+
+    bundle = build_report_bundle({"status": "not-a-real-status", "diagnostics": []})
+
+    parsed = json.loads(bundle.canonical_json)
+    assert parsed["status"] == "invalid"
+    assert parsed["diagnostics"][0]["code"] == "PG.SERVICE.REPORT_JSON_RENDER_FAILED"
+    assert "fallback امن" in bundle.persian_plain_summary
+
+
 def test_report_bundle_generation_does_not_mutate_original_result():
     result = {
         "status": "accepted",
@@ -199,6 +255,18 @@ def test_report_bundle_generation_does_not_mutate_original_result():
     assert "accepted" in bundle.canonical_json
     assert bundle.markdown_report is not None
     assert bundle.html_report is not None
+
+
+def test_service_report_generation_does_not_mutate_engine_result(monkeypatch):
+    engine_result = _engine_result("accepted")
+    original = deepcopy(engine_result)
+
+    monkeypatch.setattr(dispatcher, "BundleValidator", lambda _schema_root: type("V", (), {"validate_bundle": lambda self, payload, required_evidence_ids=None: engine_result})())
+
+    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_data={"schema_version": "stage-evidence-bundle.v1"}))
+
+    assert response.engine_result == original
+    assert engine_result == original
 
 
 def test_report_hash_ignores_progress_only_ui_events():
