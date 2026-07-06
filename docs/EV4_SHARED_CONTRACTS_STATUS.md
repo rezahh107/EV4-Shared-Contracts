@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#33` | `Make uv the default local and CI installer` | `codex/make-uv-the-default-installer` | `ae970cafc0454d322bab28e7fe687635f1da7dbd` | `23dcf5342706efb0c689f6503429cf20b7f6f703` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#32` | `Operator UI: route through internal service, add theme CSS/TYPEKIT, tests and docs for Prompt 06` | `codex/complete-ui/ux-and-service-integration-gaps-978dcl` | `c904cbac4227275474fab99a6264ecaa6447d31c` | `cf6bb8846ae705aa7f18476d569f566631803c94` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#30` | `Expose guarded fail-closed CLI entries for CE→Builder, Builder→-Responsive, and Final Evidence Gate` | `codex/implement-public-cli-support-for-transitions` | `ba5310ee3b00b6b64a737aa9264ab7208657b498` | `d921975b3e22062c33c81bd1b9265df7af3b6121` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#27` | `Add personal-use setup and controlled demo package` | `personal-use/e2e-package` | `fbe0bfbdeeec90ad73b6aae165df8caf34e43d7c` | `88c7e1a491b08cd0bb21d211ec14c3c92d2ea92b` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
