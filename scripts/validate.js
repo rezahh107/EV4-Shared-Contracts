@@ -57,14 +57,14 @@ const capabilities = capability.capabilities || {};
 
 assertExactCapability(capabilities.ce_to_builder, {
   orchestration_baseline: 'implemented',
-  cli_exposure: 'not_implemented',
+  cli_exposure: 'guarded',
   owner_fixture_integration: 'verified',
   real_non_synthetic_handoff: 'insufficient_evidence'
 }, 'CE-to-Builder');
 
 assertExactCapability(capabilities.builder_to_responsive, {
   orchestration_baseline: 'implemented',
-  cli_exposure: 'not_implemented',
+  cli_exposure: 'guarded',
   owner_contract_lock: 'computed_from_pinned_owner_file_bytes',
   official_responsive_validator_integration: 'implemented',
   verification_state: 'verified_by_exact_head_ci',
@@ -73,7 +73,7 @@ assertExactCapability(capabilities.builder_to_responsive, {
 
 assertExactCapability(capabilities.final_evidence_gate, {
   orchestration_baseline: 'implemented',
-  cli_exposure: 'not_implemented',
+  cli_exposure: 'guarded',
   prior_lock_chain: 'pinned_to_immutable_project_gate_commit',
   official_responsive_validator_integration: 'implemented',
   verification_state: 'verified_by_exact_head_ci',
@@ -81,9 +81,9 @@ assertExactCapability(capabilities.final_evidence_gate, {
 }, 'Final Evidence Gate');
 
 const publicTransitions = capability.public_cli_transitions || [];
-for (const transition of ['ce-to-builder', 'builder-to-responsive', 'final-evidence-gate']) {
-  if (publicTransitions.includes(transition)) {
-    console.error(`${transition} must not be exposed as a public CLI transition.`);
+for (const transition of ['architect-to-ce', 'ce-to-builder', 'builder-to-responsive', 'final-evidence-gate']) {
+  if (!publicTransitions.includes(transition)) {
+    console.error(`${transition} guarded/functionally documented CLI transition is missing from capability truth.`);
     process.exit(1);
   }
 }

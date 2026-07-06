@@ -7,7 +7,7 @@
       "verification_state": "synthetic_fixture_only"
     },
     "builder_to_responsive": {
-      "cli_exposure": "not_implemented",
+      "cli_exposure": "guarded",
       "official_responsive_validator_integration": "implemented",
       "orchestration_baseline": "implemented",
       "owner_contract_lock": "computed_from_pinned_owner_file_bytes",
@@ -15,13 +15,13 @@
       "verification_state": "verified_by_exact_head_ci"
     },
     "ce_to_builder": {
-      "cli_exposure": "not_implemented",
+      "cli_exposure": "guarded",
       "orchestration_baseline": "implemented",
       "owner_fixture_integration": "verified",
       "real_non_synthetic_handoff": "insufficient_evidence"
     },
     "final_evidence_gate": {
-      "cli_exposure": "not_implemented",
+      "cli_exposure": "guarded",
       "official_responsive_validator_integration": "implemented",
       "orchestration_baseline": "implemented",
       "prior_lock_chain": "pinned_to_immutable_project_gate_commit",
@@ -83,14 +83,14 @@
     "minimal_cli"
   ],
   "not_implemented": [
-    "ce-to-builder public CLI exposure",
-    "builder-to-responsive public CLI exposure",
-    "final evidence gate public CLI exposure",
     "real EV4 artifact validation"
   ],
   "package": "ev4-project-gate",
   "public_cli_transitions": [
-    "architect-to-ce"
+    "architect-to-ce",
+    "ce-to-builder",
+    "builder-to-responsive",
+    "final-evidence-gate"
   ],
   "repository": "rezahh107/EV4-Project-Gate",
   "schema_version": "ev4-project-gate-capability-status.v1"
