@@ -20,6 +20,7 @@ from .state import option_for_label
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 CAPABILITY_STATUS_PATH = PACKAGE_ROOT / "data" / "capability-status.v1.json"
+_REQUIRED_PROJECT_GATE_SCHEMA_FILE = Path("schemas") / "stage-bundle" / "stage-bundle.v1.schema.json"
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,20 @@ def run_operator_check(
             "error",
             "برای اجرای این بررسی باید یک فایل JSON بارگذاری شود یا JSON در کادر ورودی paste شود.",
             details={"transition": option.transition_id, "next_action": "JSON معتبر وارد کن و دوباره اجرا کن."},
+        )
+        return _finalize(result, capability_payload, output_dir)
+
+    if option.required_json and not isinstance(parsed_input, dict):
+        result = _guard_result(
+            "invalid",
+            "UI_INPUT_INVALID_TYPE",
+            "error",
+            "ورودی باید یک JSON Object باشد؛ آرایه، متن، عدد یا مقدار scalar برای این بررسی قابل اجرا نیست.",
+            details={
+                "transition": option.transition_id,
+                "observed_type": type(parsed_input).__name__,
+                "next_action": "یک JSON Object معتبر با کلید و مقدار وارد کن.",
+            },
         )
         return _finalize(result, capability_payload, output_dir)
 
@@ -240,8 +255,28 @@ def _reject_json_constant(value: str) -> None:
 
 def _resolve_project_gate_root(project_gate_repo_path: str | None) -> Path | dict[str, Any]:
     if not project_gate_repo_path or not project_gate_repo_path.strip():
-        return REPOSITORY_ROOT
-    return _required_local_repo_path(project_gate_repo_path, "Project Gate repo path")
+        root = REPOSITORY_ROOT
+    else:
+        resolved = _required_local_repo_path(project_gate_repo_path, "Project Gate repo path")
+        if isinstance(resolved, dict):
+            return resolved
+        root = resolved
+
+    schemas_dir = root / "schemas"
+    required_schema = root / _REQUIRED_PROJECT_GATE_SCHEMA_FILE
+    if not schemas_dir.is_dir() or not required_schema.is_file():
+        return _guard_result(
+            "invalid",
+            "UI_PROJECT_GATE_SCHEMA_ROOT_INVALID",
+            "error",
+            "مسیر Project Gate معتبر نیست؛ پوشه schemas یا schema اصلی Stage Bundle پیدا نشد.",
+            details={
+                "path": str(schemas_dir),
+                "required_file": str(required_schema),
+                "next_action": "مسیر صحیح checkout محلی EV4-Project-Gate را وارد کن.",
+            },
+        )
+    return root
 
 
 def _required_local_repo_path(value: str | None, label: str) -> Path | dict[str, Any]:
