@@ -40,6 +40,6 @@ def test_status_summary_keeps_persian_status_rtl_and_technical_meta_ltr():
     assert 'class="ev4-status-content"' in rendered
     assert "⚠️" in rendered
     assert "شواهد کافی نیست" in rendered
-    assert '<span dir="ltr">status</span>' in rendered
+    assert '<span dir="ltr">status:</span>' in rendered
     assert '<bdi dir="ltr"><code>insufficient_evidence</code></bdi>' in rendered
-    assert '<span dir="ltr">semantic tone</span>' in rendered
+    assert '<span dir="ltr">semantic tone:</span>' in rendered
