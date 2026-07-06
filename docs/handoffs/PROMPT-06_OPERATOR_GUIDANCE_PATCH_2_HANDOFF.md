@@ -6,8 +6,9 @@ patch_id: operator-guidance-diagnostic-help-patch-2
 branch: ux/operator-guidance-diagnostic-help-patch-2
 base_branch: main
 base_head_sha: 5a1cebcbf1c0b769690eb594a41d3e57590449b9
-pull_request: pending_at_handoff_write
-commits_before_handoff_write:
+pull_request: 36
+latest_head_sha_before_handoff_update: d1f84e3d847dd76d44c50c920581dda6bc98048c
+commits_before_handoff_update:
   - c3820e8d0c1d7cb5a84fce348430dc839359fc39
   - e7e433fdae6394efa9c5680d3c925dc8858442dd
   - 392efca50c9f3f9318d92fc11918b14db16ca95f
@@ -18,6 +19,8 @@ commits_before_handoff_write:
   - 27ef636d548f1bc4c8c30e54895a8875fe4a5d0d
   - f905a230a1e084cb93b034af5e3bbb255c55a56f
   - 2042ea71431ba666f6b700e1a90554b2eb133ef7
+  - 3e353c20327f2170f2cb066ae5d1071f0d9f4d26
+  - d1f84e3d847dd76d44c50c920581dda6bc98048c
 files_changed:
   - src/ev4_transition/data/operator-guidance.v1.json
   - src/ev4_transition/service/guidance.py
@@ -37,13 +40,27 @@ tests_run:
   - python -m py_compile /tmp/ev4patch/src/ev4_transition/ui/adapters.py
   - python -m py_compile /tmp/ev4patch/tests/service/test_operator_guidance.py
   - python -m json.tool /tmp/ev4patch/src/ev4_transition/data/operator-guidance.v1.json
+  - GitHub Actions on d1f84e3d847dd76d44c50c920581dda6bc98048c: UI Runtime Smoke
+  - GitHub Actions on d1f84e3d847dd76d44c50c920581dda6bc98048c: Prompt 05 Builder Responsive Final Gate
+  - GitHub Actions on d1f84e3d847dd76d44c50c920581dda6bc98048c: Prompt 06 Report UX
+  - GitHub Actions on d1f84e3d847dd76d44c50c920581dda6bc98048c: Skeleton Health
+tests_passed:
+  - UI Runtime Smoke run 28818684598: success
+  - Prompt 05 Builder Responsive Final Gate run 28818684473: success
+  - Prompt 06 Report UX run 28818684461: success
+  - Skeleton Health run 28818684610: success
+ci_repair:
+  blocking_review_status_before_repair: RED_DO_NOT_MERGE
+  failing_reviewed_head: 3e353c20327f2170f2cb066ae5d1071f0d9f4d26
+  blocking_failure: Service layer tests failed in Prompt 06 Report UX and Skeleton Health
+  repair_commit: d1f84e3d847dd76d44c50c920581dda6bc98048c
+  repair_summary: Added explicit checkout wording to PG_A2C_EXTERNAL_FILE_READ_FAILED guidance so service guidance tests match the user-facing action contract.
 tests_not_run:
-  - python -m pytest -q
-  - uv run pytest tests/service/test_operator_guidance.py tests/ui/test_operator_panel.py
+  - full local python -m pytest -q in this assistant environment
   - UI launch smoke test in a browser
 reason_tests_not_run:
   - live repository clone was unavailable in this environment because github.com DNS resolution failed
-  - GitHub connector can write/read repository files but does not provide a Python test runner
+  - browser screenshot/interactive Gradio launch was not available through the GitHub connector
 coverage_rules_advanced:
   - PG-UNICODE-001: guidance/status main panel keeps Persian RTL and technical identifiers LTR via existing presentation helpers
   - PG-OUTPUT-001: output:null is classified and explained as no downstream package produced when applicable
@@ -53,7 +70,6 @@ coverage_rules_still_gap:
   - no browser accessibility completion claim
   - no frontend/Elementor/responsive correctness claim
   - no downstream_contract_enforced claim
-  - full pytest and CI remain pending until PR checks run
 new_diagnostics:
   - PG.UI.PREFLIGHT_RESULT_JSON_USED_AS_SOURCE
   - PG.UI.PREFLIGHT_WRONG_STAGE_FOR_TRANSITION
@@ -68,12 +84,14 @@ important_design_decisions:
   - existing raw diagnostics table remains available
   - repair prompt is generated only for known repairable Architect schema failures and includes paths/messages only
   - report.md and report.html now include operational guidance, grouped diagnostics, repair prompt when available, and raw JSON in LTR code/pre blocks
+  - CI repair changed only guidance wording, not transition behavior or status semantics
 web_sources_used:
   - none
 next_allowed_prompt:
-  - PR review / CI repair for this Patch 2 branch
+  - PR Inspector re-review on latest head
+  - Merge only after owner review and current-head CI remains green
 blockers:
-  - full local pytest could not be run in this environment
+  - none known after d1f84e3d847dd76d44c50c920581dda6bc98048c, subject to CI on this handoff-update commit
 remaining_insufficient_evidence:
   - real non-synthetic CE-to-Builder evidence
   - real Builder execution evidence bundle
