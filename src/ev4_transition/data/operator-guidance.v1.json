@@ -39,7 +39,7 @@
       "title_fa": "فایل pin‌شده از ریپوی مالک خوانده نشد",
       "meaning_fa": "در گذار Architect → CE، یکی از فایل‌های خارجی pin‌شده از ریپوی Architect یا CE قابل خواندن نیست.",
       "common_causes_fa": ["checkout محلی روی commit مورد انتظار نیست.", "path داخل lock با فایل‌های فعلی owner repo نمی‌خواند."],
-      "next_actions_fa": ["Architect و CE repo را به commit/path pin‌شده برسان.", "وجود فایل‌های pin‌شده در lock را دستی بررسی کن."]
+      "next_actions_fa": ["Architect و CE checkout را به commit/path pin‌شده برسان.", "وجود فایل‌های pin‌شده در lock را دستی بررسی کن."]
     },
     {
       "code": "PG_A2C_EXTERNAL_HASH_MISMATCH",
