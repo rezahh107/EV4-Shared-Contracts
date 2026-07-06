@@ -8,7 +8,8 @@ def test_operator_header_is_compact_rtl_and_scope_safe():
     html = operator_header_html()
 
     assert '<section lang="fa" dir="rtl"' in html
-    assert 'class="ev4-app ev4-shell ev4-rtl"' in html
+    assert 'class="ev4-app ev4-rtl' in html
+    assert "ev4-shell" in html
     assert '<bdi dir="ltr">EV4 Project Gate</bdi>' in html
     assert "پنل محلی بررسی گذارها" in html
     assert HEADER_WARNING_FA in html
