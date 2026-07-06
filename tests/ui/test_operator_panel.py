@@ -236,8 +236,28 @@ def test_markdown_report_neutralizes_triple_backtick_without_mutating_result_jso
     assert loaded_json == result
     assert "```breakout" not in md
     assert "``​`breakout" in md
-    assert md.count("```") == 2
+    assert "## Raw diagnostics" in md
+    assert "## Raw JSON result" in md
+    assert md.count("```") == 4
     assert {Path(path).name for path in paths} == {"result.json", "report.md", "report.html"}
+
+
+def test_markdown_report_uses_preflight_fallbacks_for_explicit_null_values(tmp_path: Path):
+    result = {
+        "schema_version": "ev4-project-gate-ui-result.v1",
+        "result_type": "service_response",
+        "status": "invalid",
+        "diagnostics": [],
+        "preflight_result": {"status": None, "summary_fa": None},
+        "output": None,
+    }
+
+    render_download_artifacts(result, tmp_path)
+    md = (tmp_path / "report.md").read_text(encoding="utf-8")
+
+    assert "preflight_status: `unknown`" in md
+    assert "Preflight summary موجود است." in md
+    assert "None" not in md
 
 
 def test_gradio_is_optional_ui_dependency_only():
