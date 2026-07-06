@@ -158,6 +158,32 @@ def test_report_and_result_rendering_does_not_mutate_original_result(tmp_path: P
     assert loaded == before
 
 
+def test_html_report_escapes_untrusted_json_payload(tmp_path: Path):
+    payload = '</pre><script>alert(1)</script>'
+    result = {
+        "schema_version": "ev4-project-gate-ui-result.v1",
+        "result_type": "service_response",
+        "status": "invalid",
+        "diagnostics": [
+            {
+                "code": "PG.UI.XSS_REGRESSION",
+                "severity": "error",
+                "message": payload,
+                "path": "$.payload",
+            }
+        ],
+        "output": {"untrusted": payload},
+    }
+
+    paths = render_download_artifacts(result, tmp_path)
+    html_path = next(Path(path) for path in paths if Path(path).name == "report.html")
+    html = html_path.read_text(encoding="utf-8")
+
+    assert "&lt;/pre&gt;&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "</pre><script>" not in html
+    assert "<script>alert(1)</script>" not in html
+
+
 def test_gradio_is_optional_ui_dependency_only():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 

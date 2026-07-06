@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 import json
+from html import escape
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -192,7 +193,12 @@ def _markdown_report(result: dict[str, Any]) -> str:
 
 
 def _html_report(result: dict[str, Any]) -> str:
-    return f'<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><title>Project Gate Report</title><pre dir="ltr">{json.dumps(result, ensure_ascii=False, indent=2)}</pre></html>'
+    escaped_json = escape(json.dumps(result, ensure_ascii=False, indent=2))
+    return (
+        '<!doctype html><html lang="fa" dir="rtl">'
+        '<meta charset="utf-8"><title>Project Gate Report</title>'
+        f'<pre dir="ltr">{escaped_json}</pre></html>'
+    )
 
 
 def _finalize(result: dict[str, Any], output_dir: str | Path | None) -> UiRunOutput:

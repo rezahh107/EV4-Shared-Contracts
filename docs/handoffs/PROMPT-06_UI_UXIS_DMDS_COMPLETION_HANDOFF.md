@@ -14,7 +14,7 @@ Initial inspected commit before edits: `5fcffd26149602bed715c5ee77e4d361d18a602e
 - Exposed service choices: `validate_bundle`, `inspect_capabilities`, `architect_to_ce`, `ce_to_builder`, `builder_to_responsive`, and `final_gate`.
 - Kept missing local checkout paths, GitHub URL paths, and missing evidence fail-closed through service diagnostics; no placeholder accepted state is produced.
 - Added scoped Gradio CSS backed by semantic theme tokens, Persian UI font stack, code font stack, focus ring, RTL container behavior, and LTR technical isolation.
-- Preserved Advanced/Evidence/Diagnostics as collapsed UI details and added safer report-write failure behavior.
+- Preserved Advanced/Evidence/Diagnostics as collapsed UI details, added safer report-write failure behavior, and escaped serialized JSON in `report.html` to prevent local/report HTML injection.
 - Updated CI prompt workflow to enforce UI and service tests along with UX/theme/typography/reporting checks.
 
 ## Files changed
@@ -35,6 +35,7 @@ Initial inspected commit before edits: `5fcffd26149602bed715c5ee77e4d361d18a602e
 ## Tests run
 
 - `python -m pip install -e '.[dev]'`
+- `pytest tests/ui/test_operator_panel.py`
 - `pytest tests/ui tests/service tests/theme_acceptance tests/typography_acceptance tests/ux_acceptance tests/reporting`
 - `python scripts/check-capability-truth.py`
 - `python scripts/check-workflow-permissions.py`
@@ -73,7 +74,7 @@ No public CLI transition was added or renamed. `.github/workflows/prompt-06.yml`
 ## Design decisions
 
 - The UI adapter now delegates JSON parsing, repo-path validation, transition dispatch, capability inspection, and fail-closed behavior to `ev4_transition.service` instead of shelling out or duplicating transition logic.
-- Download files are written only if report artifacts can be written. A write failure returns an invalid UI result and no fake success download list.
+- Download files are written only if report artifacts can be written. A write failure returns an invalid UI result and no fake success download list. HTML report JSON is escaped with `html.escape(...)` before being embedded in `<pre>`.
 - Scoped CSS uses semantic `--ev4-*` variables and `prefers-color-scheme`; no persistence claim is made.
 
 ## Web sources used
