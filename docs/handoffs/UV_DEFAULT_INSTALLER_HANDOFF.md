@@ -2,15 +2,20 @@
 
 ## Branch
 
-`project-gate-uv-default-installer`
+`codex/make-uv-the-default-installer`
 
 ## PR URL
 
-Pending: not created yet at validation time.
+`https://github.com/rezahh107/EV4-Project-Gate/pull/33`
 
 ## Commits
 
-Pending: final commit will be recorded after this file is updated.
+Original uv migration commits are recorded in PR history. CI repair follow-up commits added after PR review:
+
+- `67033295dc91c26be27b50efc250ec687ced0375` — `Fix Prompt 05 owner validator Python environment`
+- `688768d66bcac58612c3d23e56c81587c20b8d18` — `Fix Skeleton Health owner validator Python environment`
+- `2af91baa5ac7c9db4a914b5eefeef93af0f821d4` — `Update uv owner-validator regression coverage`
+- Current handoff update commit: see branch history / final repair report.
 
 ## Required change versus optional recommendation
 
@@ -21,7 +26,9 @@ Optional recommendation: continue using `setuptools` and `[project.optional-depe
 ## Repositories and contract boundaries affected
 
 - Primary repository: `rezahh107/EV4-Project-Gate`.
-- Specialist repository schemas, validators, adapters, and transition semantics were not changed.
+- Specialist repository schemas, validators, adapters, fixtures, and transition semantics were not changed.
+- Official specialist validators are still executed from their owner repository working directories.
+- The CI repair only changes the Python interpreter used to run those owner scripts: Project Gate's `uv sync` creates `.venv`, and the owner scripts are invoked with `${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python` so required Python dependencies such as `jsonschema` are available.
 
 ## Official uv docs consulted
 
@@ -45,11 +52,19 @@ Kept `[project.optional-dependencies]` for `dev` and `ui`. They are documented a
 
 ## Lockfile status
 
-`uv.lock` was generated with `uv lock` and should be committed.
+`uv.lock` was generated with `uv lock` and is committed in this PR.
 
 ## CI changes
 
-Python-installing workflows now install uv via a full-SHA-pinned `astral-sh/setup-uv`, run `uv lock --check`, sync with `uv sync --locked --extra dev --extra ui`, and execute Python tests/checks through `uv run` where changed.
+Python-installing workflows now install uv via a full-SHA-pinned `astral-sh/setup-uv`, run `uv lock --check`, sync with `uv sync --locked --extra dev --extra ui`, and execute Project Gate Python tests/checks through `uv run` where changed.
+
+Owner-validator CI steps are handled as a boundary case:
+
+- `Prompt 05 / Run pinned official Responsive validators` runs inside `EV4-Responsive-Architect`, but uses Project Gate `.venv/bin/python`.
+- `Skeleton Health / python-core / Official Architect validator fixture suite` runs inside `EV4-Architect-Repo`, but uses Project Gate `.venv/bin/python`.
+- `Skeleton Health / python-core / Official CE validator fixture suite` runs inside `EV4-Constructability-Engineer-Repo`, but uses Project Gate `.venv/bin/python`.
+
+This keeps the owner repository path boundary while avoiding the previous system-Python dependency gap.
 
 ## Docs updated
 
@@ -62,12 +77,23 @@ Python-installing workflows now install uv via a full-SHA-pinned `astral-sh/setu
 - `outputs/README.md`
 - `examples/personal-use/README.md`
 - `fixtures/personal-use/README.md`
+- `docs/handoffs/UV_DEFAULT_INSTALLER_HANDOFF.md`
 
 ## Scripts added
 
 - `scripts/setup-windows-uv.ps1`: safe Windows setup helper that refuses to auto-install uv and prints official install options if uv is missing.
 
-## Tests run
+## Regression coverage advanced
+
+`tests/personal_use/test_personal_use_package.py` now checks that owner validator steps:
+
+- keep the owner repository `working-directory`;
+- define `PROJECT_GATE_PYTHON` as `${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python`;
+- invoke official owner scripts through `"$PROJECT_GATE_PYTHON"` instead of bare system `python`.
+
+## Tests run before PR review
+
+Author-reported/local validation from earlier PR work:
 
 - `uv --version`
 - `uv lock --check`
@@ -82,73 +108,39 @@ Python-installing workflows now install uv via a full-SHA-pinned `astral-sh/setu
 - `npm run status`
 - `npm run validate`
 
-## Tests not run
+## Tests run during CI repair follow-up
 
-- Native Windows execution of `scripts/setup-windows-uv.ps1` was not run in this Linux container.
-- GitHub Actions CI was not inspected after local commit because no remote workflow run evidence was available in this session.
+No local test command was executed in this connector session after the CI repair commits. Live GitHub Actions logs were inspected, and the failing root cause was reproduced from the workflow job logs.
 
-## Remaining gaps
+## Tests not run / still pending
 
-- CI run status is unknown until GitHub Actions execute on the committed branch/PR.
-- Native Windows script behavior needs a Windows runner/user validation pass.
+- Native Windows execution of `scripts/setup-windows-uv.ps1` was not run.
+- A local `uv run --locked pytest` pass was not run in this connector session.
+- Remote GitHub Actions must rerun on the new PR head before CI success can be claimed.
 
-## pip fallback status
+## CI failure root cause fixed in follow-up
 
-Preserved only under sections titled `Fallback if uv is unavailable` or equivalent user-facing fallback guidance.
+The reviewed head `02a832846fe3d56810f37961727dc6cab69a22fc` failed because official owner validators were launched with bare system `python`, while the required `jsonschema` dependency existed in the Project Gate uv-managed environment. The failing logs showed `ModuleNotFoundError: No module named 'jsonschema'` in both:
+
+- `EV4-Responsive-Architect/validation/e2e/run_builder_responsive_input_boundary_check.py`
+- `EV4-Architect-Repo/scripts/check-architect-stage-payload.py`
+
+The repair invokes official owner scripts with Project Gate `.venv/bin/python` after `uv sync --locked --extra dev --extra ui` completes.
+
+## Important design decision
+
+Do not install dependencies separately inside every owner repository and do not edit owner repositories from this PR. Project Gate owns the CI orchestration environment for this PR, while owner repositories continue to own their validators and contracts.
 
 ## Rollback guidance
 
-Revert this branch commit to restore the previous `pip`-primary documentation and CI install path. Do not change transition locks or specialist contracts during rollback.
+Revert the CI repair commits to restore the previous bare owner-validator `python` calls. Do not change transition locks or specialist contracts during rollback.
 
 ## Next safe action
 
-Run `uv lock --check`, `uv sync --locked --extra dev --extra ui`, and the repository validation commands, then open a draft PR.
+Wait for GitHub Actions on the new PR head, then verify that `Prompt 05 Builder Responsive Final Gate`, `Skeleton Health`, `Prompt 06 Report UX`, and `UI Runtime Smoke` all pass before merge consideration.
 
-## Review follow-up fixes
+## Remaining gaps
 
-A follow-up review found that required CI jobs still had uv ordering and bare command gaps. This branch now fixes those gaps by:
-
-- installing and syncing uv before uv commands in the `validate.yml` `skeleton` job;
-- replacing the CE→Builder bare `pytest` gate with `uv run pytest` while preserving tee/log capture;
-- running Project Gate lock recompute, lock verification, smoke, behavioral coverage, CLI smoke, and Prompt 05 Python gates through `uv run`;
-- adding workflow-structure tests that fail if a job runs uv before `setup-uv` or if uv workflows contain bare `python`, `pytest`, or `ev4-transition` commands.
-
-Additional validation after the follow-up fix:
-
-- `uv lock --check`
-- `uv sync --locked --extra dev --extra ui`
-- `uv run --locked pytest tests/personal_use tests/reporting/test_workflow_permissions.py tests/test_cli.py`
-- `uv run --locked python scripts/check-github-action-pinning.py`
-- `uv run --locked python scripts/check-workflow-permissions.py`
-- `uv run --locked python scripts/check-capability-truth.py`
-- `uv run --locked pytest`
-- `npm run status`
-- `npm run validate`
-- `uv run --locked ev4-transition inspect`
-- `uv run --locked python scripts/run-project-gate-demo.py --run-id uv-ci-fix-smoke`
-
-Remote GitHub Actions still need to run on the updated head before CI can be reported as successful.
-
-## External validator and Node validation boundary follow-up
-
-A later CI review found two remaining environment-boundary failures. This branch now makes those boundaries explicit:
-
-- Project Gate policy checks invoked by `scripts/validate.js` use `uv run --locked python` instead of system `python`/`python3`.
-- Official owner-repository validators run from their owner repository working directories with the runner `python` provided by `actions/setup-python`, preserving the original owner-validator execution contract instead of running `uv` in an owner repository context.
-- Regression tests now cover both Node-mediated Python invocation and the explicit owner-validator system-Python boundary.
-
-Additional validation after this boundary fix:
-
-- `uv lock --check`
-- `uv sync --locked --extra dev --extra ui`
-- `uv run --locked pytest tests/personal_use tests/reporting/test_workflow_permissions.py tests/test_cli.py`
-- `uv run --locked python scripts/check-github-action-pinning.py`
-- `uv run --locked python scripts/check-workflow-permissions.py`
-- `uv run --locked python scripts/check-capability-truth.py`
-- `npm run validate`
-- `uv run --locked pytest`
-- `npm run status`
-- `uv run --locked ev4-transition inspect`
-- `uv run --locked python scripts/run-project-gate-demo.py --run-id uv-boundary-fix-smoke`
-
-Remote GitHub Actions still need to rerun on the updated head before CI success can be claimed.
+- CI success on the new head is not yet evidenced in this handoff.
+- Native Windows script behavior still needs a Windows runner/user validation pass.
+- Full `uv.lock` dependency audit remains outside this repair.
