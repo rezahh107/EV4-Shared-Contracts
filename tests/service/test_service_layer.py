@@ -4,10 +4,12 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
+import ev4_transition.service.json_input as service_json_input
+import ev4_transition.service.repo_paths as service_repo_paths
+import ev4_transition.service.reports as service_reports
 from ev4_transition.service import GateRequest, RepoPaths, build_report_bundle, run_gate_request
 from ev4_transition.service import dispatcher
 from ev4_transition.service.capabilities import _CAPABILITY_STATUS_PATH, get_capabilities
-from ev4_transition.service import reports as service_reports
 
 
 def _repo_paths(tmp_path: Path) -> RepoPaths:
@@ -49,13 +51,13 @@ def test_non_finite_pasted_json_constant_is_rejected():
 
 def test_non_finite_file_json_constant_is_rejected(tmp_path: Path):
     source = tmp_path / "bundle.json"
-    source.write_text('{"value": Infinity}', encoding="utf-8")
+    source.write_text('{"value": -Infinity}', encoding="utf-8")
 
     response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_path=str(source)))
 
     assert response.status == "invalid"
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.NON_FINITE_JSON_CONSTANT"
-    assert response.service_diagnostics[0]["details"]["constant"] == "Infinity"
+    assert response.service_diagnostics[0]["details"]["constant"] == "-Infinity"
 
 
 def test_missing_json_input_returns_invalid():
@@ -65,8 +67,13 @@ def test_missing_json_input_returns_invalid():
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.JSON_INPUT_MISSING"
 
 
-def test_invalid_input_file_path_returns_structured_invalid_result():
-    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_path="bad\0path.json"))
+def test_invalid_input_file_path_returns_structured_invalid_result(monkeypatch):
+    def raise_value_error(self, encoding=None):
+        raise ValueError("invalid path")
+
+    monkeypatch.setattr(service_json_input.Path, "read_text", raise_value_error)
+
+    response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_json_path="invalid-path.json"))
 
     assert response.status == "invalid"
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.FILE_READ_ERROR"
@@ -79,7 +86,10 @@ def test_github_url_repo_path_is_rejected_as_local_path(tmp_path: Path):
         GateRequest(
             transition_choice="ce_to_builder",
             input_data={"schema": "ev4-builder-executable-package@1.0.0"},
-            repo_paths=RepoPaths(ce_repo_path="https://github.com/rezahh107/EV4-Constructability-Engineer-Repo", builder_repo_path=str(builder)),
+            repo_paths=RepoPaths(
+                ce_repo_path="https://github.com/rezahh107/EV4-Constructability-Engineer-Repo",
+                builder_repo_path=str(builder),
+            ),
         )
     )
 
@@ -87,12 +97,17 @@ def test_github_url_repo_path_is_rejected_as_local_path(tmp_path: Path):
     assert response.service_diagnostics[0]["code"] == "PG.SERVICE.REPO_PATH_NOT_LOCAL"
 
 
-def test_invalid_repo_path_returns_insufficient_evidence():
+def test_invalid_repo_path_returns_insufficient_evidence(monkeypatch):
+    def raise_os_error(self):
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(service_repo_paths.Path, "exists", raise_os_error)
+
     response = run_gate_request(
         GateRequest(
             transition_choice="ce_to_builder",
             input_data={"schema": "ev4-builder-executable-package@1.0.0"},
-            repo_paths=RepoPaths(ce_repo_path="bad\0path", builder_repo_path="also-missing"),
+            repo_paths=RepoPaths(ce_repo_path="/local/ce", builder_repo_path="/local/builder"),
         )
     )
 
@@ -261,7 +276,14 @@ def test_service_report_generation_does_not_mutate_engine_result(monkeypatch):
     engine_result = _engine_result("accepted")
     original = deepcopy(engine_result)
 
-    monkeypatch.setattr(dispatcher, "BundleValidator", lambda _schema_root: type("V", (), {"validate_bundle": lambda self, payload, required_evidence_ids=None: engine_result})())
+    class FakeBundleValidator:
+        def __init__(self, schema_root):
+            self.schema_root = schema_root
+
+        def validate_bundle(self, payload, required_evidence_ids=None):
+            return engine_result
+
+    monkeypatch.setattr(dispatcher, "BundleValidator", FakeBundleValidator)
 
     response = run_gate_request(GateRequest(transition_choice="validate_bundle", input_data={"schema_version": "stage-evidence-bundle.v1"}))
 
