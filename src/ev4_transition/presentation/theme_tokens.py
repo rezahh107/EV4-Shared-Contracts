@@ -19,6 +19,7 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "accent.hover": "#1d4ed8",
         "focus.ring": "#2563eb",
         "code.bg": "#eef2ff",
+        "shadow.raised": "rgba(15, 23, 42, 0.08)",
         "status.accepted": {"tone": "success", "foreground": "#065f46", "background": "#d1fae5", "icon": "✅", "label": "پذیرفته شد"},
         "status.repair_needed": {"tone": "warning", "foreground": "#92400e", "background": "#fef3c7", "icon": "🛠️", "label": "نیازمند اصلاح"},
         "status.insufficient_evidence": {"tone": "warning", "foreground": "#92400e", "background": "#ffedd5", "icon": "⚠️", "label": "شواهد کافی نیست"},
@@ -39,6 +40,7 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "accent.hover": "#bfdbfe",
         "focus.ring": "#8bc4ff",
         "code.bg": "#020617",
+        "shadow.raised": "rgba(0, 0, 0, 0.28)",
         "status.accepted": {"tone": "success", "foreground": "#bbf7d0", "background": "#064e3b", "icon": "✅", "label": "پذیرفته شد"},
         "status.repair_needed": {"tone": "warning", "foreground": "#fde68a", "background": "#78350f", "icon": "🛠️", "label": "نیازمند اصلاح"},
         "status.insufficient_evidence": {"tone": "warning", "foreground": "#fed7aa", "background": "#7c2d12", "icon": "⚠️", "label": "شواهد کافی نیست"},
@@ -65,6 +67,7 @@ REQUIRED_TOKEN_KEYS = (
     "accent.hover",
     "focus.ring",
     "code.bg",
+    "shadow.raised",
 )
 
 
@@ -106,6 +109,7 @@ def css_custom_properties() -> str:
       --ev4-accent-hover: {light["accent.hover"]};
       --ev4-focus-ring: {light["focus.ring"]};
       --ev4-code-bg: {light["code.bg"]};
+      --ev4-shadow-raised: {light["shadow.raised"]};
       --ev4-font-fa-ui: {light["font.fa_ui"]};
       --ev4-font-code: {light["font.code"]};
       --ev4-status-accepted-fg: {light["status.accepted"]["foreground"]};
@@ -131,6 +135,7 @@ def css_custom_properties() -> str:
         --ev4-accent-hover: {dark["accent.hover"]};
         --ev4-focus-ring: {dark["focus.ring"]};
         --ev4-code-bg: {dark["code.bg"]};
+        --ev4-shadow-raised: {dark["shadow.raised"]};
         --ev4-status-accepted-fg: {dark["status.accepted"]["foreground"]};
         --ev4-status-accepted-bg: {dark["status.accepted"]["background"]};
         --ev4-status-warning-fg: {dark["status.insufficient_evidence"]["foreground"]};
