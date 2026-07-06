@@ -27,15 +27,20 @@ def status_summary_markdown(result: dict[str, Any]) -> str:
     meaning = STATUS_MEANINGS_FA[status]
     next_action = STATUS_NEXT_ACTION_FA[status]
     original_status = str(result.get("status", status))
-    status_line = f"/ status: {markdown_code_ltr(status)} / semantic tone: {markdown_code_ltr(presentation.tone)}"
+    status_meta = (
+        f'<span class="ev4-status-meta"><span dir="ltr">status:</span> {markdown_code_ltr(status)} '
+        f'· <span dir="ltr">semantic tone:</span> {markdown_code_ltr(presentation.tone)}'
+    )
     if original_status != status:
-        status_line += f" / engine status: {markdown_code_ltr(original_status)}"
+        status_meta += f' · <span dir="ltr">engine status:</span> {markdown_code_ltr(original_status)}'
+    status_meta += "</span>"
 
     return "\n".join(
         [
-            '<section lang="fa" dir="rtl" role="status" aria-live="polite">',
-            "### نتیجه بررسی",
-            f"<p>{presentation.icon} <strong>وضعیت: {escape(presentation.persian_label)}</strong> {status_line}</p>",
+            '<section lang="fa" dir="rtl" role="status" aria-live="polite" class="ev4-status-content">',
+            "<h3>نتیجه بررسی</h3>",
+            f'<p class="ev4-status-title">{presentation.icon} <strong>وضعیت: {escape(presentation.persian_label)}</strong></p>',
+            f"<p>{status_meta}</p>",
             f"<p><strong>معنی:</strong> {escape(meaning)}</p>",
             f"<p><strong>اقدام بعدی:</strong> {escape(next_action)}</p>",
             (
