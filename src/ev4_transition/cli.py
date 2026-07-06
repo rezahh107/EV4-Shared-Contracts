@@ -218,7 +218,7 @@ def _emit(payload: dict[str, Any], fmt: str) -> None:
         if "status" in payload:
             print(render_plain_summary(payload), end="")
         else:
-            print("هسته قطعی و Architect → CE در CLI فعال‌اند؛ خط مبنای orchestration برای CE → Builder پیاده‌سازی شده، اما CLI عمومی و شواهد handoff واقعی آن هنوز موجود نیست.")
+            print("هسته قطعی و Architect → CE به‌صورت functional در CLI فعال‌اند؛ CE → Builder، Builder → Responsive و Final Evidence Gate فقط به‌صورت guarded/fail-closed در CLI موجودند و شواهد real non-synthetic همچنان insufficient_evidence است.")
         return
     print(canonical_dumps(payload))
 

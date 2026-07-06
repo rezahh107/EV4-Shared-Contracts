@@ -188,3 +188,7 @@ Final test results are reported in the final agent response. Initial focused CLI
 ```text
 In the appropriate owner repository, add an official, deterministic validator/adapter for real Elementor/export/accessibility evidence, document its input/output contract, add non-synthetic fixtures with provenance, and expose a stable local command. Do not modify Project Gate until the owner validator path, commit, file-byte SHA-256 hashes, and real validation evidence are available for pinning through a Project Gate runner boundary.
 ```
+
+## PR review update
+
+PR review found that `ev4-transition inspect --format persian` still used stale wording after guarded CLI exposure was added. The follow-up commit updates the Persian fallback text and adds a regression test for the guarded/fail-closed inspect wording. Remote CI evidence referenced by the reviewer remains external to this local handoff snapshot.

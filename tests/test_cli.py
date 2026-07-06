@@ -64,6 +64,20 @@ def test_cli_persian_insufficient_evidence_output():
     assert "شواهد کافی نیست" in completed.stdout
 
 
+
+def test_cli_inspect_persian_reports_guarded_transition_truth():
+    completed = run_cli("inspect", "--format", "persian")
+
+    assert completed.returncode == 0
+    assert "Architect → CE" in completed.stdout
+    assert "functional" in completed.stdout
+    assert "CE → Builder" in completed.stdout
+    assert "Builder → Responsive" in completed.stdout
+    assert "Final Evidence Gate" in completed.stdout
+    assert "guarded/fail-closed" in completed.stdout
+    assert "insufficient_evidence" in completed.stdout
+    assert "CLI عمومی و شواهد handoff واقعی آن هنوز موجود نیست" not in completed.stdout
+
 def test_cli_inspect_reports_layered_ce_to_builder_truth():
     completed = run_cli("inspect")
     assert completed.returncode == 0
