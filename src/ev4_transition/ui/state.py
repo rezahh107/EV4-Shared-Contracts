@@ -9,6 +9,7 @@ from ev4_transition.presentation.status_mapping import ProjectGateStatus, normal
 @dataclass(frozen=True)
 class TransitionOption:
     transition_id: str
+    service_choice: str
     label_en: str
     label_fa: str
     wired: bool
@@ -19,12 +20,14 @@ class TransitionOption:
 TRANSITION_OPTIONS: tuple[TransitionOption, ...] = (
     TransitionOption(
         "validate_stage_evidence_bundle",
+        "validate_bundle",
         "Validate Stage Evidence Bundle",
         "اعتبارسنجی Stage Evidence Bundle",
         True,
         True,
     ),
     TransitionOption(
+        "architect_to_ce",
         "architect_to_ce",
         "Architect → CE",
         "Architect → CE",
@@ -33,29 +36,33 @@ TRANSITION_OPTIONS: tuple[TransitionOption, ...] = (
     ),
     TransitionOption(
         "ce_to_builder",
+        "ce_to_builder",
         "CE → Builder",
         "CE → Builder",
-        False,
-        False,
+        True,
+        True,
         "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
         "builder_to_responsive",
+        "builder_to_responsive",
         "Builder → Responsive",
         "Builder → Responsive",
-        False,
-        False,
+        True,
+        True,
         "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
         "final_evidence_gate",
+        "final_gate",
         "Final Evidence Gate",
         "Final Evidence Gate",
-        False,
-        False,
+        True,
+        True,
         "guarded/fail-closed؛ نیازمند شواهد واقعی و checkout محلی owner",
     ),
     TransitionOption(
+        "inspect_capabilities",
         "inspect_capabilities",
         "Inspect Capabilities",
         "بازبینی قابلیت‌ها",
@@ -87,7 +94,7 @@ def transition_choices() -> list[str]:
 def option_for_label(label: str | None) -> TransitionOption:
     if label:
         for option in TRANSITION_OPTIONS:
-            if label in {option.label_en, option.label_fa, option.transition_id}:
+            if label in {option.label_en, option.label_fa, option.transition_id, option.service_choice}:
                 return option
     return TRANSITION_OPTIONS[0]
 

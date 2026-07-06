@@ -65,3 +65,47 @@ def assert_theme_contract() -> None:
                 raise AssertionError(f"status.{status} in {theme} must include tone, colors, icon, and label")
     if THEME_TOKENS["light"]["surface.base"] == THEME_TOKENS["dark"]["text.primary"]:
         raise AssertionError("dark theme appears to be a simple inversion")
+
+
+def css_custom_properties() -> str:
+    """Return scoped CSS custom properties backed by semantic DMDS tokens."""
+
+    light = THEME_TOKENS["light"]
+    dark = THEME_TOKENS["dark"]
+    return f"""
+    .ev4-app {{
+      --ev4-surface-base: {light["surface.base"]};
+      --ev4-surface-raised: {light["surface.raised"]};
+      --ev4-text-primary: {light["text.primary"]};
+      --ev4-text-secondary: {light["text.secondary"]};
+      --ev4-border-default: {light["border.default"]};
+      --ev4-focus-ring: {light["focus.ring"]};
+      --ev4-font-fa-ui: {light["font.fa_ui"]};
+      --ev4-font-code: {light["font.code"]};
+      --ev4-dark-surface-base: {dark["surface.base"]};
+      --ev4-dark-surface-raised: {dark["surface.raised"]};
+      --ev4-dark-text-primary: {dark["text.primary"]};
+      --ev4-status-accepted-fg: {light["status.accepted"]["foreground"]};
+      --ev4-status-accepted-bg: {light["status.accepted"]["background"]};
+      --ev4-status-warning-fg: {light["status.insufficient_evidence"]["foreground"]};
+      --ev4-status-warning-bg: {light["status.insufficient_evidence"]["background"]};
+      --ev4-status-danger-fg: {light["status.invalid"]["foreground"]};
+      --ev4-status-danger-bg: {light["status.invalid"]["background"]};
+    }}
+    @media (prefers-color-scheme: dark) {{
+      .ev4-app {{
+        --ev4-surface-base: {dark["surface.base"]};
+        --ev4-surface-raised: {dark["surface.raised"]};
+        --ev4-text-primary: {dark["text.primary"]};
+        --ev4-text-secondary: {dark["text.secondary"]};
+        --ev4-border-default: {dark["border.default"]};
+        --ev4-focus-ring: {dark["focus.ring"]};
+        --ev4-status-accepted-fg: {dark["status.accepted"]["foreground"]};
+        --ev4-status-accepted-bg: {dark["status.accepted"]["background"]};
+        --ev4-status-warning-fg: {dark["status.insufficient_evidence"]["foreground"]};
+        --ev4-status-warning-bg: {dark["status.insufficient_evidence"]["background"]};
+        --ev4-status-danger-fg: {dark["status.invalid"]["foreground"]};
+        --ev4-status-danger-bg: {dark["status.invalid"]["background"]};
+      }}
+    }}
+    """

@@ -1,4 +1,4 @@
-# UI/UX Traceability — Operator Panel Prompt 1
+# UI/UX Traceability — Operator Panel Prompt 06
 
 ## Scope boundary
 
@@ -34,3 +34,13 @@
 - No claim is made about real non-synthetic handoff evidence.
 - No claim is made about production readiness, frontend correctness, real Elementor validation, responsive correctness, accessibility completion, or export validation.
 - UI visual accessibility was not proven by browser automation in this prompt.
+
+## Prompt 06 implementation carriers
+
+| Rule | Carrier | Enforcement |
+|---|---|---|
+| UI calls internal service API | `src/ev4_transition/ui/adapters.py::build_gate_request`, `run_operator_check` | `tests/ui/test_operator_panel.py` |
+| CE→Builder, Builder→Responsive, Final Gate reachable without fake success | service choices in `src/ev4_transition/ui/state.py` and fail-closed service diagnostics | `tests/ui`, `tests/service` |
+| Advanced diagnostics collapsed by default | `src/ev4_transition/ui/app.py` Gradio Accordion | static/component test only |
+| Live/status region text | `src/ev4_transition/ui/components.py::status_summary_markdown` | static/component test only |
+| Browser-level accessibility | not yet browser/manual tested | `insufficient_evidence` |
