@@ -85,13 +85,17 @@ def _response(choice: str, status: str, engine_result: dict[str, Any] | None, di
     status = _normalize_status(status)
     service_diagnostics = [item.to_dict() for item in diagnostics]
     report_source = deepcopy(engine_result) if engine_result is not None else {"schema_version": "project-gate-service-result.v1", "result_type": "service_layer_failure", "transition_choice": choice, "status": status, "diagnostics": service_diagnostics, "output": None}
+    report_bundle = build_report_bundle(report_source)
+    if report_bundle.render_diagnostics:
+        status = "invalid"
+        service_diagnostics.extend(deepcopy(report_bundle.render_diagnostics))
     return GateResponse(
         status=status,
         transition_choice=choice,
         engine_result=deepcopy(engine_result),
         service_diagnostics=deepcopy(service_diagnostics),
         capabilities_snapshot=deepcopy(capabilities_snapshot) if capabilities_snapshot is not None else _safe_capabilities(),
-        report_bundle=build_report_bundle(report_source),
+        report_bundle=report_bundle,
         download_filenames=_download_filenames(choice),
         user_message_fa=_user_message(status),
         next_action_fa=_next_action(status),
