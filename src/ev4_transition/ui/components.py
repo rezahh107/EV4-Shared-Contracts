@@ -28,11 +28,11 @@ def status_summary_markdown(result: dict[str, Any]) -> str:
     next_action = STATUS_NEXT_ACTION_FA[status]
     original_status = str(result.get("status", status))
     status_meta = (
-        f'<span class="ev4-status-meta"><span dir="ltr">status</span>: {markdown_code_ltr(status)} '
-        f'· <span dir="ltr">semantic tone</span>: {markdown_code_ltr(presentation.tone)}'
+        f'<span class="ev4-status-meta"><span dir="ltr">status:</span> {markdown_code_ltr(status)} '
+        f'· <span dir="ltr">semantic tone:</span> {markdown_code_ltr(presentation.tone)}'
     )
     if original_status != status:
-        status_meta += f' · <span dir="ltr">engine status</span>: {markdown_code_ltr(original_status)}'
+        status_meta += f' · <span dir="ltr">engine status:</span> {markdown_code_ltr(original_status)}'
     status_meta += "</span>"
 
     return "\n".join(
