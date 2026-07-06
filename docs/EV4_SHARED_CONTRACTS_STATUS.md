@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#37` | `Add local repository preflight assistant` | `ux/local-repo-preflight-setup-assistant-patch-3` | `558bc4be24310c603b4589779cc51964a071089b` | `a18ed34dc818b6927dbd98d0ba13297c5345a65f` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#36` | `Add operator guidance and diagnostic help layer` | `ux/operator-guidance-diagnostic-help-patch-2` | `1126e728d24a71bf5c3f5372bbbf1ff59f1aa193` | `4cf75a13ea7bb436c137b9b3b4b7b8ad480770a6` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#35` | `Polish operator panel RTL layout and visual theme` | `ux/operator-panel-rtl-visual-polish-patch-1` | `ec1775c16447ea65457b3dffd86c82c124712f9a` | `3e4a92ecf57f6045147e4b819e7f26d4915ff78f` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#34` | `Add double-click Windows launcher for the local UI` | `chore/windows-double-click-launcher` | `3a6720840002332a42087642d889ed6441d259f7` | `961d9665665849e23e519ec60d34931c852c1a6c` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
