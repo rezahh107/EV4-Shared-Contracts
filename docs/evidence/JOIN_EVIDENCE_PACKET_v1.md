@@ -28,6 +28,10 @@ Purpose: reconcile live Producer evidence before Prompt 5 without modifying Prod
 
 `verified` in metadata columns means observed through GitHub PR/CI evidence. `verified_path_unhashed` means the path was observed, but SHA-256 verification by `git show <commit_sha>:<path> | sha256sum` was not completed. No `verified` or `verified_path_unhashed` artifact status overrides `prompt_5_ready: false` or `blocking_insufficient_evidence`.
 
+## Project Gate branch CI note
+
+CI evidence is head-specific. Head `2d21ae9a4e8934513cb427714e76a4e7a0f6e29b` was observed with Project Gate workflow conclusions `success` before the later documentation synchronization updates. If the PR head changes after that observation, exact-head CI must be rechecked before merge.
+
 ## Handoff discrepancy table
 
 | Producer | Source | Status | Detail |
