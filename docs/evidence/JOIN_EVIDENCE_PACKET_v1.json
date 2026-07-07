@@ -68,7 +68,6 @@
             "commit_sha": "be64ea1a90dd0ad66c2e721597a4c35056f71b4f",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28840102941,
             "url": "https://github.com/rezahh107/EV4-Architect-Repo/actions/runs/28840102941",
             "exact_head_evidence": true
           },
@@ -77,7 +76,6 @@
             "commit_sha": "be64ea1a90dd0ad66c2e721597a4c35056f71b4f",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28840102788,
             "url": "https://github.com/rezahh107/EV4-Architect-Repo/actions/runs/28840102788",
             "exact_head_evidence": true
           }
@@ -104,21 +102,6 @@
           {"path": "fixtures/project-gate-export/valid/blocked-run.v1.json", "kind": "valid", "status": "verified"},
           {"path": "fixtures/build-tree/invalid/cases.v1.json", "kind": "invalid", "status": "verified"},
           {"path": "fixtures/project-gate-export/invalid/cases.v1.json", "kind": "invalid", "status": "verified"}
-        ],
-        "all_paths": [
-          "manifests/architect-pipeline-manifest.v1.json",
-          "schemas/ev4-architect-stage-payload.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.lock.json",
-          "contracts/project-gate/stage-bundle.v1.schema.json",
-          "scripts/check-architect-producer-gate-adoption.py",
-          ".github/workflows/verify-project-gate-contract.yml",
-          ".github/workflows/validate-architect-producer-gate-adoption.yml",
-          "fixtures/build-tree/valid/voice-assistant-reference.v1.json",
-          "fixtures/project-gate-export/valid/blocked-run.v1.json",
-          "fixtures/build-tree/invalid/cases.v1.json",
-          "fixtures/project-gate-export/invalid/cases.v1.json",
-          "docs/PROJECT_GATE_PRODUCER_ADOPTION.md"
         ]
       },
       "hash_verification": {
@@ -131,7 +114,7 @@
             "method": "git show bf0b63c1f5d78725e7ea24371bab3360d9452a4f:<artifact_path>",
             "sha256": null,
             "status": "insufficient_evidence",
-            "notes": ["git_blob_bytes_unavailable", "see_artifacts.all_paths"]
+            "notes": ["git_blob_bytes_unavailable", "all required artifact path hashes must be expanded by evidence repair before Prompt 5"]
           }
         ]
       },
@@ -165,7 +148,6 @@
             "commit_sha": "50235056f2b6ca72a3372ae68ba2d76f358e15e5",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28829665976,
             "url": "https://github.com/rezahh107/EV4-Constructability-Engineer-Repo/actions/runs/28829665976",
             "exact_head_evidence": true
           },
@@ -174,7 +156,6 @@
             "commit_sha": "50235056f2b6ca72a3372ae68ba2d76f358e15e5",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28829665211,
             "url": "https://github.com/rezahh107/EV4-Constructability-Engineer-Repo/actions/runs/28829665211",
             "exact_head_evidence": true
           }
@@ -199,26 +180,20 @@
         "stage_payload_schema": {"path": "schemas/ce_stage_payload.v1.schema.json", "status": "verified"},
         "producer_gate_export_schema": {"path": "contracts/project-gate/producer-gate-export.v1.schema.json", "status": "verified"},
         "producer_gate_export_lock": {"path": "contracts/project-gate/producer-gate-export.v1.lock.json", "status": "verified"},
-        "stage_bundle_schema": {"path": null, "status": "not_applicable"},
+        "stage_bundle_schema": {
+          "path": null,
+          "status": "insufficient_evidence",
+          "notes": [
+            "common_producer_gate_export_requires_final_stage_bundle",
+            "no_ce_stage_bundle_schema_path_verified",
+            "not_applicable_removed_after_prf_002"
+          ]
+        },
         "validator": {"path": "validator/project_gate_export.py", "status": "verified"},
         "ci_workflow": {"path": ".github/workflows/verify-project-gate-contract.yml", "status": "verified"},
         "fixtures": [
           {"path": "fixtures/project_gate_export/valid_blocked_ce_producer_gate_export.json", "kind": "valid", "status": "verified"},
           {"path": "fixtures/project_gate_export/invalid_silent_fallback_true.json", "kind": "invalid", "status": "verified"}
-        ],
-        "all_paths": [
-          "manifests/ce_pipeline_manifest.v1.json",
-          "schemas/ce_pipeline_manifest.v1.schema.json",
-          "schemas/ce_stage_payload.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.lock.json",
-          "validator/project_gate_export.py",
-          "scripts/validate-project-gate-producer-adoption.py",
-          ".github/workflows/verify-project-gate-contract.yml",
-          ".github/workflows/validate-fixtures.yml",
-          "fixtures/project_gate_export/valid_blocked_ce_producer_gate_export.json",
-          "fixtures/project_gate_export/invalid_silent_fallback_true.json",
-          "patch-reports/CE_PROJECT_GATE_PRODUCER_ADOPTION.md"
         ]
       },
       "hash_verification": {
@@ -231,7 +206,7 @@
             "method": "git show 189163669cca0caf5adb62c97d78dae580129f15:<artifact_path>",
             "sha256": null,
             "status": "insufficient_evidence",
-            "notes": ["git_blob_bytes_unavailable", "see_artifacts.all_paths"]
+            "notes": ["git_blob_bytes_unavailable", "all required artifact path hashes must be expanded by evidence repair before Prompt 5"]
           }
         ]
       },
@@ -265,7 +240,6 @@
             "commit_sha": "5606f561f8a28555c4f8ee7afa37446daae7e8bb",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28839739083,
             "url": "https://github.com/rezahh107/EV4-Builder-Assistant-Repo/actions/runs/28839739083",
             "exact_head_evidence": true
           },
@@ -274,7 +248,6 @@
             "commit_sha": "5606f561f8a28555c4f8ee7afa37446daae7e8bb",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28839738912,
             "url": "https://github.com/rezahh107/EV4-Builder-Assistant-Repo/actions/runs/28839738912",
             "exact_head_evidence": true
           }
@@ -299,19 +272,6 @@
         "fixtures": [
           {"path": "tests/valid/builder_stage_payload_minimal.json", "kind": "valid", "status": "verified"},
           {"path": "tests/invalid/builder_stage_payload_completed_claims_production_ready.json", "kind": "invalid", "status": "verified"}
-        ],
-        "all_paths": [
-          "data/builder-pipeline-manifest.v1.json",
-          "schemas/builder-stage-payload.schema.json",
-          "schemas/responsive-handoff-candidate.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.lock.json",
-          "contracts/project-gate/stage-bundle.v1.schema.json",
-          "scripts/validate-builder-producer-adoption.mjs",
-          ".github/workflows/verify-project-gate-contract.yml",
-          "tests/valid/builder_stage_payload_minimal.json",
-          "tests/invalid/builder_stage_payload_completed_claims_production_ready.json",
-          "docs/BUILDER_PRODUCER_GATE_EXPORT.md"
         ]
       },
       "hash_verification": {
@@ -324,7 +284,7 @@
             "method": "git show 45459d0246f5d14486867224d26c2d2ba8a563b6:<artifact_path>",
             "sha256": null,
             "status": "insufficient_evidence",
-            "notes": ["git_blob_bytes_unavailable", "see_artifacts.all_paths"]
+            "notes": ["git_blob_bytes_unavailable", "all required artifact path hashes must be expanded by evidence repair before Prompt 5"]
           }
         ]
       },
@@ -358,7 +318,6 @@
             "commit_sha": "f565f0bdd48b53c5a3c70706cbfce1d44fcb72e1",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28850615732,
             "url": "https://github.com/rezahh107/EV4-Responsive-Architect/actions/runs/28850615732",
             "exact_head_evidence": true
           },
@@ -367,7 +326,6 @@
             "commit_sha": "f565f0bdd48b53c5a3c70706cbfce1d44fcb72e1",
             "status": "completed",
             "conclusion": "success",
-            "run_id": 28850615288,
             "url": "https://github.com/rezahh107/EV4-Responsive-Architect/actions/runs/28850615288",
             "exact_head_evidence": true
           }
@@ -394,24 +352,6 @@
           {"path": "validation/fixtures/prompt04/valid/responsive_stage_payload.valid.json", "kind": "valid", "status": "verified"},
           {"path": "validation/fixtures/prompt04/invalid/responsive_producer_gate_export_silent_fallback.invalid.json", "kind": "invalid", "status": "verified"},
           {"path": "validation/fixtures/prompt04/invalid/responsive_stage_payload_cross_viewport.invalid.json", "kind": "invalid", "status": "verified"}
-        ],
-        "all_paths": [
-          "manifests/ev4-responsive-pipeline-manifest.v1.json",
-          "schemas/ev4-responsive-stage-payload.v1.schema.json",
-          "schemas/ev4-responsive-viewport-source-ledger.v1.schema.json",
-          "registries/breakpoint-profiles.v1.json",
-          "registries/elementor-responsive-capabilities.v1.json",
-          "contracts/project-gate/producer-gate-export.v1.schema.json",
-          "contracts/project-gate/producer-gate-export.v1.lock.json",
-          "contracts/project-gate/common-contract-lock.v1.schema.json",
-          "schemas/project-gate/stage-bundle.v1.schema.json",
-          "validation/project_gate/validate_responsive_producer_adoption.py",
-          ".github/workflows/verify-vendored-common-contract.yml",
-          "validation/fixtures/prompt04/valid/responsive_producer_gate_export.valid.json",
-          "validation/fixtures/prompt04/valid/responsive_stage_payload.valid.json",
-          "validation/fixtures/prompt04/invalid/responsive_producer_gate_export_silent_fallback.invalid.json",
-          "validation/fixtures/prompt04/invalid/responsive_stage_payload_cross_viewport.invalid.json",
-          "docs/45_PROJECT_GATE_PROMPT04_RESPONSIVE_PRODUCER_ADOPTION.md"
         ]
       },
       "hash_verification": {
@@ -424,7 +364,7 @@
             "method": "git show 28a995a603a5a383b8592d6beae7db8943f20acf:<artifact_path>",
             "sha256": null,
             "status": "insufficient_evidence",
-            "notes": ["git_blob_bytes_unavailable", "see_artifacts.all_paths"]
+            "notes": ["git_blob_bytes_unavailable", "all required artifact path hashes must be expanded by evidence repair before Prompt 5"]
           }
         ]
       },
@@ -439,11 +379,53 @@
   },
   "discrepancies": [
     {
-      "code": "hash_method_unavailable",
+      "code": "hash_not_recorded",
       "producer": "project_gate_prompt_0",
       "severity": "blocking",
       "source_path": "contracts/common/producer-gate-export.v1.schema.json",
-      "detail": "Required git show SHA-256 verification unavailable."
+      "detail": "Required git show SHA-256 verification unavailable for Producer Gate Export schema."
+    },
+    {
+      "code": "hash_not_recorded",
+      "producer": "project_gate_prompt_0",
+      "severity": "blocking",
+      "source_path": "schemas/stage-bundle/stage-bundle.v1.schema.json",
+      "detail": "Required git show SHA-256 verification unavailable for Stage Bundle schema."
+    },
+    {
+      "code": "producer_required_artifact_hashes_not_git_show_verified",
+      "producer": "architect",
+      "severity": "blocking",
+      "source_path": "required_artifacts",
+      "detail": "Required artifact hashes for architect were not computed from git blob bytes; see producers.architect.hash_verification.records."
+    },
+    {
+      "code": "producer_required_artifact_hashes_not_git_show_verified",
+      "producer": "ce",
+      "severity": "blocking",
+      "source_path": "required_artifacts",
+      "detail": "Required artifact hashes for ce were not computed from git blob bytes; see producers.ce.hash_verification.records."
+    },
+    {
+      "code": "producer_required_artifact_hashes_not_git_show_verified",
+      "producer": "builder",
+      "severity": "blocking",
+      "source_path": "required_artifacts",
+      "detail": "Required artifact hashes for builder were not computed from git blob bytes; see producers.builder.hash_verification.records."
+    },
+    {
+      "code": "producer_required_artifact_hashes_not_git_show_verified",
+      "producer": "responsive",
+      "severity": "blocking",
+      "source_path": "required_artifacts",
+      "detail": "Required artifact hashes for responsive were not computed from git blob bytes; see producers.responsive.hash_verification.records."
+    },
+    {
+      "code": "ce_stage_bundle_schema_insufficient_evidence",
+      "producer": "ce",
+      "severity": "blocking",
+      "source_path": "producers.ce.artifacts.stage_bundle_schema",
+      "detail": "CE stage_bundle_schema is insufficient_evidence, not not_applicable; common Producer Gate Export requires final_stage_bundle and no contract-backed CE exception was verified."
     },
     {
       "code": "missing_standard_handoff",
@@ -494,6 +476,8 @@
     "exact_head_ci": "verified",
     "git_show_blob_sha256": "insufficient_evidence",
     "ce_standard_handoff": "missing",
+    "ce_stage_bundle_schema": "insufficient_evidence",
+    "discrepancy_ledger": "repaired_for_known_blockers",
     "ready_decision": "blocked"
   },
   "prompt_5_substitution": {
@@ -520,8 +504,13 @@
   },
   "prompt_5_ready": false,
   "blocking_insufficient_evidence": [
-    "project_gate_prompt_0_hashes_not_git_show_verified",
-    "producer_required_artifact_hashes_not_git_show_verified",
+    "project_gate_prompt_0_producer_gate_export_hash_not_git_show_verified",
+    "project_gate_prompt_0_stage_bundle_hash_not_git_show_verified",
+    "architect_required_artifact_hashes_not_git_show_verified",
+    "ce_required_artifact_hashes_not_git_show_verified",
+    "builder_required_artifact_hashes_not_git_show_verified",
+    "responsive_required_artifact_hashes_not_git_show_verified",
+    "ce_stage_bundle_schema_not_verified",
     "ce_standard_handoff_missing_requires_human_acceptance"
   ]
 }
