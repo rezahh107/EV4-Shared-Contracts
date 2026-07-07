@@ -24,6 +24,10 @@ Purpose: reconcile live Producer evidence before Prompt 5 without modifying Prod
 | `builder` | `47` | `verified` | `verified` | `verified` | `stale` | `insufficient_evidence` | `verified_path_unhashed` | `blocked` |
 | `responsive` | `142` | `verified` | `verified` | `verified` | `stale` | `insufficient_evidence` | `verified_path_unhashed` | `blocked` |
 
+## Terminology note
+
+`verified` in metadata columns means observed through GitHub PR/CI evidence. `verified_path_unhashed` means the path was observed, but SHA-256 verification by `git show <commit_sha>:<path> | sha256sum` was not completed. No `verified` or `verified_path_unhashed` artifact status overrides `prompt_5_ready: false` or `blocking_insufficient_evidence`.
+
 ## Handoff discrepancy table
 
 | Producer | Source | Status | Detail |
