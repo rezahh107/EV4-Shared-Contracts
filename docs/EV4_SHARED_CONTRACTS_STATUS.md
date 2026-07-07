@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#43` | `Add explicit producer_emitted_gate_artifact intake, adoption registry, and routing (Prompt 5)` | `codex/implement-prompt-5-integration` | `0db90978d25e3392d42b9a0f6d2eeb954553e095` | `4e33085a97715a882a906c727f034c6d15d9e5fa` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#42` | `Repair Prompt 4.5 join evidence packet` | `codex/repair-prompt-4.5-join-evidence-packet` | `22e0915561dafb6f7857edf76b5fb31027614924` | `c92af08573463d7732d795f67e8376e5796f2975` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#41` | `Add Prompt 4.5 join evidence packet` | `project-gate-prompt-04-5-join-evidence-packet` | `befdc25e9e2c4607a7d9dc12923c451834118bbc` | `bb02dd6c0e4ff5d00324568c9cd432332d5d86b0` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#40` | `feat: Prompt 0 — Add Producer Gate Export validator and harden vendored common-contract verifier` | `codex/complete-pr-#39-for-prompt-0-requirements` | `ff75e319ee382e7c024d088e8794b4b5ece845cc` | `ea19c22c32458068e167b267da8b819e9263cdf7` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
