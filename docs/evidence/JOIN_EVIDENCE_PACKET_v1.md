@@ -2,8 +2,9 @@
 ## Repair summary
 - Recomputed required artifact SHA-256 values from immutable Git blob bytes using `git show <commit_sha>:<path> | sha256sum`.
 - Replaced placeholder required-artifact hash records with per-file records.
-- Resolved seven of the eight original blocking evidence gaps.
-- Kept Prompt 5 blocked because CE standard handoff human acceptance is still not explicitly recorded.
+- Updated CE Stage Bundle artifact record to `verified_by_prompt_0_reference`, removing the artifact/readiness contradiction.
+- Verified the normalized CE standard handoff from CE `main`, resolving the prior human-acceptance blocker.
+- All eight original blocking evidence gaps are now resolved; Prompt 5 substitution entries are verified.
 
 ## Per-repository hash table
 
@@ -85,52 +86,54 @@
 
 ## CE Stage Bundle decision
 - Status: `verified_by_prompt_0_reference`.
-- CE discovery command did not find a CE-local Stage Bundle schema file.
+- The canonical CE artifact record now points to Project Gate Prompt 0 Stage Bundle and no longer contains `status: insufficient_evidence`.
 - Verified reference: `schemas/stage-bundle/stage-bundle.v1.schema.json` at Project Gate Prompt 0 commit `ea19c22c32458068e167b267da8b819e9263cdf7`, SHA-256 `fc1ec6d3f7aecbabaeb0a3455d9eb42788779d2fa1531e8c7b2cb3bde706a886`.
+- This is not a CE-local artifact claim.
 
 ## CE handoff reconciliation decision
-- `docs/handoffs/PROMPT-02_HANDOFF.md` is missing at the CE merge commit.
-- Fallback report `patch-reports/CE_PROJECT_GATE_PRODUCER_ADOPTION.md` is verified with SHA-256 `51c7a9a224e2a605df63cf5916ad93e52a3883f329ef81f958b497f72ef77be0`.
-- Fallback report inspection found Prompt 0 pin, added artifacts, preserved boundaries, human review requirement, and no Project Gate runtime-overclaim evidence.
-- Human acceptance is required but not recorded in the current task context; status remains `blocked_pending_explicit_human_acceptance`.
+- Status: `resolved_by_normalized_standard_handoff`.
+- Normalized standard handoff: `docs/handoffs/PROMPT-02_HANDOFF.md` at CE main commit `02730b506c1e36e2ce2c871c910f17a73e17c956`.
+- Standard handoff SHA-256: `14529286c23631d9c0843fab5fdcae7478d955b267e7c23c2640a65876734ce9`.
+- Inspection confirmed `normalization_status: complete`, `producer_adoption_status: merged`, `producer_pr: 28`, the expected producer head and merge SHAs, `prompt_5_ready_input: false`, the Prompt 4.5 consumption rule, no Prompt 5 readiness claim, and no runtime/code/schema/validator/fixture/workflow modification claim.
+- Fallback report remains retained as original adoption evidence with SHA-256 `51c7a9a224e2a605df63cf5916ad93e52a3883f329ef81f958b497f72ef77be0`.
 
 ## Remaining blockers
-- `ce_standard_handoff_missing_requires_human_acceptance`
+- None. `blocking_insufficient_evidence` is empty.
 
 ## Final Prompt 5 readiness decision
-- `prompt_5_ready`: `false`
-- `ready_decision`: `blocked`
-- Prompt 5 may not proceed from this packet until the remaining blocker is resolved.
+- `prompt_5_ready`: `true`
+- `ready_decision`: `ready`
+- Prompt 5 may proceed from this packet as substituted evidence input; this does not claim downstream implementation readiness beyond the packet decision.
 
 ## Copy-ready Prompt 5 substitution
 ```json
 {
   "FROM_PROMPT_1_FINAL_REPORT": {
     "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/architect",
-    "replacement_status": "blocked",
+    "replacement_status": "verified",
     "notes": [
-      "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+      "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
     ]
   },
   "FROM_PROMPT_2_FINAL_REPORT": {
     "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/ce",
-    "replacement_status": "blocked",
+    "replacement_status": "verified",
     "notes": [
-      "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+      "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
     ]
   },
   "FROM_PROMPT_3_FINAL_REPORT": {
     "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/builder",
-    "replacement_status": "blocked",
+    "replacement_status": "verified",
     "notes": [
-      "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+      "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
     ]
   },
   "FROM_PROMPT_4_FINAL_REPORT": {
     "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/responsive",
-    "replacement_status": "blocked",
+    "replacement_status": "verified",
     "notes": [
-      "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+      "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
     ]
   }
 }

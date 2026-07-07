@@ -2,8 +2,8 @@
 
 ```yaml
 status: evidence_repaired_pending_review
-prompt_5_ready: false
-next_allowed_prompt: Prompt 4.5 evidence repair continuation
+prompt_5_ready: true
+next_allowed_prompt: Prompt 5
 ```
 
 ## Files changed
@@ -23,25 +23,29 @@ git show <commit_sha>:<path> | sha256sum
 
 ## CE Stage Bundle decision
 
-Status: `verified_by_prompt_0_reference`. No CE-local Stage Bundle schema was found by discovery at CE merge commit `189163669cca0caf5adb62c97d78dae580129f15`; Project Gate Prompt 0 Stage Bundle was verified at commit `ea19c22c32458068e167b267da8b819e9263cdf7` with SHA-256 `fc1ec6d3f7aecbabaeb0a3455d9eb42788779d2fa1531e8c7b2cb3bde706a886`.
+Status: `verified_by_prompt_0_reference`. The CE artifact record now references Project Gate Prompt 0 Stage Bundle at commit `ea19c22c32458068e167b267da8b819e9263cdf7` with SHA-256 `fc1ec6d3f7aecbabaeb0a3455d9eb42788779d2fa1531e8c7b2cb3bde706a886` and `local_ce_path: null`; this is not a CE-local artifact claim.
 
 ## CE handoff reconciliation
 
 - Standard CE handoff path: `docs/handoffs/PROMPT-02_HANDOFF.md`
-- Standard handoff status: missing at CE merge commit
-- Fallback source: `patch-reports/CE_PROJECT_GATE_PRODUCER_ADOPTION.md`
-- Fallback SHA-256: `51c7a9a224e2a605df63cf5916ad93e52a3883f329ef81f958b497f72ef77be0`
-- Human acceptance required: true
+- Standard handoff repository: `rezahh107/EV4-Constructability-Engineer-Repo`
+- Standard handoff commit: `02730b506c1e36e2ce2c871c910f17a73e17c956`
+- Standard handoff SHA-256: `14529286c23631d9c0843fab5fdcae7478d955b267e7c23c2640a65876734ce9`
+- Standard handoff status: `verified_post_merge_normalized_handoff`
+- Fallback source retained: `patch-reports/CE_PROJECT_GATE_PRODUCER_ADOPTION.md`
+- Human acceptance required: false
 - Human acceptance recorded: false
-- Decision: `blocked_pending_explicit_human_acceptance`
+- Decision: `resolved_by_normalized_standard_handoff`
 
 ## Remaining blocking_insufficient_evidence
 
-- `ce_standard_handoff_missing_requires_human_acceptance`
+None.
 
 ## Tests run
 
 - `python -m json.tool docs/evidence/JOIN_EVIDENCE_PACKET_v1.json >/tmp/join-evidence-packet.pretty.json`
+- `git diff --check`
+- `git show --check --stat --oneline HEAD`
 
 ## Tests not run
 
@@ -50,4 +54,4 @@ Status: `verified_by_prompt_0_reference`. No CE-local Stage Bundle schema was fo
 
 ## Next allowed prompt
 
-Prompt 4.5 evidence repair continuation.
+Prompt 5.

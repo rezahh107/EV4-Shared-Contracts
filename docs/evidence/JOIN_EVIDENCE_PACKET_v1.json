@@ -349,12 +349,16 @@
           "status": "verified"
         },
         "stage_bundle_schema": {
-          "path": null,
-          "status": "insufficient_evidence",
+          "path": "schemas/stage-bundle/stage-bundle.v1.schema.json",
+          "repository": "rezahh107/EV4-Project-Gate",
+          "commit_sha": "ea19c22c32458068e167b267da8b819e9263cdf7",
+          "sha256": "fc1ec6d3f7aecbabaeb0a3455d9eb42788779d2fa1531e8c7b2cb3bde706a886",
+          "status": "verified_by_prompt_0_reference",
+          "local_ce_path": null,
           "notes": [
-            "common_producer_gate_export_requires_final_stage_bundle",
-            "no_ce_stage_bundle_schema_path_verified",
-            "not_applicable_removed_after_prf_002"
+            "CE merge commit contains no CE-local Stage Bundle schema path.",
+            "CE pins Project Gate Prompt 0 Stage Bundle as the verified reference.",
+            "This is not a CE-local artifact claim."
           ]
         },
         "validator": {
@@ -475,9 +479,9 @@
       "readiness": {
         "merged_commit_verified": true,
         "ci_verified": true,
-        "handoff_usable": false,
+        "handoff_usable": true,
         "artifacts_verified": true,
-        "ready_for_prompt_5": false
+        "ready_for_prompt_5": true
       },
       "ce_stage_bundle_schema": {
         "status": "verified_by_prompt_0_reference",
@@ -485,45 +489,43 @@
         "repository": "rezahh107/EV4-Project-Gate",
         "commit_sha": "ea19c22c32458068e167b267da8b819e9263cdf7",
         "sha256": "fc1ec6d3f7aecbabaeb0a3455d9eb42788779d2fa1531e8c7b2cb3bde706a886",
+        "local_ce_path": null,
         "notes": [
-          "CE merge commit discovery found no CE-local stage-bundle schema path.",
-          "CE adoption artifacts include Project Gate contract paths and Prompt 0 canonical pin; Project Gate Prompt 0 Stage Bundle is used as the verified reference."
+          "CE merge commit contains no CE-local Stage Bundle schema path.",
+          "CE pins Project Gate Prompt 0 Stage Bundle as the verified reference.",
+          "This is not a CE-local artifact claim."
         ]
       },
       "ce_handoff_reconciliation": {
-        "standard_handoff_found": false,
+        "standard_handoff_found": true,
         "standard_handoff_path": "docs/handoffs/PROMPT-02_HANDOFF.md",
-        "standard_handoff_status": "missing_at_ce_merge_commit",
+        "standard_handoff_repository": "rezahh107/EV4-Constructability-Engineer-Repo",
+        "standard_handoff_commit_sha": "02730b506c1e36e2ce2c871c910f17a73e17c956",
+        "standard_handoff_status": "verified_post_merge_normalized_handoff",
+        "standard_handoff_sha256": "14529286c23631d9c0843fab5fdcae7478d955b267e7c23c2640a65876734ce9",
+        "standard_handoff_method": "git show 02730b506c1e36e2ce2c871c910f17a73e17c956:docs/handoffs/PROMPT-02_HANDOFF.md | sha256sum",
+        "standard_handoff_inspection": {
+          "normalization_status_complete": true,
+          "producer_adoption_status_merged": true,
+          "producer_pr_28": true,
+          "producer_pr_head_sha_verified": "50235056f2b6ca72a3372ae68ba2d76f358e15e5",
+          "producer_merge_commit_sha_verified": "189163669cca0caf5adb62c97d78dae580129f15",
+          "prompt_5_ready_input_false": true,
+          "project_gate_prompt_4_5_repair_consumption_rule_present": true,
+          "no_prompt_5_readiness_claim": true,
+          "no_runtime_code_schema_validator_fixture_workflow_modification_claim": true
+        },
         "fallback_source": "patch-reports/CE_PROJECT_GATE_PRODUCER_ADOPTION.md",
         "fallback_hash_verified": true,
         "fallback_sha256": "51c7a9a224e2a605df63cf5916ad93e52a3883f329ef81f958b497f72ef77be0",
-        "fallback_inspection": {
-          "prompt_0_pin": true,
-          "added_artifacts": true,
-          "boundaries_preserved": true,
-          "human_review_requirement": true,
-          "no_project_gate_runtime_overclaim": true,
-          "excerpt_lines": [
-            "This patch adopts the merged Project Gate `producer-gate-export.v1` common contract inside the CE repository without changing CE domain ownership or implementing Project Gate runtime integration.",
-            "## Prompt 0 canonical pin",
-            "    mode: producer_emitted_gate_artifact",
-            "## Added artifacts",
-            "- `validator/project_gate_export.py` — deterministic local validator for CE producer-adoption artifacts.",
-            "- Added optional `schema` property with const `ev4-builder-executable-package@1.0.0` when present.",
-            "## Boundaries preserved",
-            "project_gate_runtime_integration: not_implemented",
-            "## Human review required",
-            "Human review must check exact-byte vendoring, immutable workflow pinning, pipeline order, Stage Payload semantics, Builder package schema identity compatibility, and absence of Project Gate runtime overclaim before merge."
-          ]
-        },
-        "human_acceptance_required": true,
+        "fallback_retained_as_original_adoption_report": true,
         "human_acceptance_recorded": false,
-        "acceptance_source": null,
-        "status": "blocked_pending_explicit_human_acceptance",
+        "human_acceptance_required": false,
+        "status": "resolved_by_normalized_standard_handoff",
         "notes": [
-          "Does not modify CE repository.",
-          "Does not convert fallback report into a CE standard handoff.",
-          "Fallback report is usable evidence for review, but Prompt 5 remains blocked until explicit human acceptance is recorded."
+          "Normalized CE standard handoff is verified from immutable CE main Git blob bytes.",
+          "Fallback report remains retained as the original adoption report.",
+          "Does not modify CE repository."
         ]
       }
     },
@@ -1026,9 +1028,9 @@
     {
       "code": "missing_standard_handoff",
       "producer": "ce",
-      "severity": "blocking",
+      "severity": "resolved",
       "source_path": "docs/handoffs/PROMPT-02_HANDOFF.md",
-      "detail": "Expected standard handoff not found; fallback report is hash verified and inspected, but explicit human acceptance is still required before Prompt 5."
+      "detail": "Resolved by verified post-merge normalized CE standard handoff at docs/handoffs/PROMPT-02_HANDOFF.md."
     },
     {
       "code": "stale_handoff_pending_merge",
@@ -1071,44 +1073,42 @@
     "expected_shas_match": "verified",
     "exact_head_ci": "verified",
     "git_show_blob_sha256": "verified",
-    "ce_standard_handoff": "missing_pending_explicit_human_acceptance",
+    "ce_standard_handoff": "verified_post_merge_normalized_handoff",
     "ce_stage_bundle_schema": "verified_by_prompt_0_reference",
     "discrepancy_ledger": "repaired_for_known_blockers",
-    "ready_decision": "blocked"
+    "ready_decision": "ready"
   },
   "prompt_5_substitution": {
     "FROM_PROMPT_1_FINAL_REPORT": {
       "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/architect",
-      "replacement_status": "blocked",
+      "replacement_status": "verified",
       "notes": [
-        "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+        "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
       ]
     },
     "FROM_PROMPT_2_FINAL_REPORT": {
       "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/ce",
-      "replacement_status": "blocked",
+      "replacement_status": "verified",
       "notes": [
-        "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+        "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
       ]
     },
     "FROM_PROMPT_3_FINAL_REPORT": {
       "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/builder",
-      "replacement_status": "blocked",
+      "replacement_status": "verified",
       "notes": [
-        "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+        "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
       ]
     },
     "FROM_PROMPT_4_FINAL_REPORT": {
       "source": "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json#/producers/responsive",
-      "replacement_status": "blocked",
+      "replacement_status": "verified",
       "notes": [
-        "Do not use as Prompt 5 input until blocking_insufficient_evidence is empty."
+        "Verified by repaired join evidence packet; blocking_insufficient_evidence is empty."
       ]
     }
   },
-  "prompt_5_ready": false,
-  "blocking_insufficient_evidence": [
-    "ce_standard_handoff_missing_requires_human_acceptance"
-  ],
-  "ready_decision": "blocked"
+  "prompt_5_ready": true,
+  "blocking_insufficient_evidence": [],
+  "ready_decision": "ready"
 }

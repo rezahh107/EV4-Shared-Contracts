@@ -258,3 +258,20 @@ $ git cat-file -e 189163669cca0caf5adb62c97d78dae580129f15:docs/handoffs/PROMPT-
 exit=128
 fatal: path 'docs/handoffs/PROMPT-02_HANDOFF.md' exists on disk, but not in '189163669cca0caf5adb62c97d78dae580129f15'
 ```
+
+## PR #42 follow-up: normalized CE standard handoff verification
+
+```text
+$ git fetch ce main --prune
+From https://github.com/rezahh107/EV4-Constructability-Engineer-Repo
+ * branch            main       -> FETCH_HEAD
+ * [new branch]      main       -> ce/main
+
+$ git rev-parse FETCH_HEAD
+02730b506c1e36e2ce2c871c910f17a73e17c956
+
+$ git show 02730b506c1e36e2ce2c871c910f17a73e17c956:docs/handoffs/PROMPT-02_HANDOFF.md | sha256sum
+14529286c23631d9c0843fab5fdcae7478d955b267e7c23c2640a65876734ce9  -
+```
+
+Inspection result: verified `normalization_status: complete`, `producer_adoption_status: merged`, `producer_pr: 28`, `producer_pr_head_sha: 50235056f2b6ca72a3372ae68ba2d76f358e15e5`, `producer_merge_commit_sha: 189163669cca0caf5adb62c97d78dae580129f15`, `prompt_5_ready_input: false`, a Project Gate Prompt 4.5 consumption rule, no Prompt 5 readiness claim, and no runtime/code/schema/validator/fixture/workflow modification claim.
