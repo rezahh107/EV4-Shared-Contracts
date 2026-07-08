@@ -10,7 +10,7 @@ Semantic tokenها در این فایل تعریف می‌شوند:
 src/ev4_transition/presentation/theme_tokens.py
 ```
 
-UI نباید رنگ‌های status، surface، input، button، disabled یا modal را به‌صورت پراکنده و ناسازگار hard-code کند. مقدارهای hex در `theme_tokens.py` متمرکز می‌مانند و CSS/componentها باید از custom propertyهای `--ev4-*` یا Gradio theme variables مشتق‌شده از همان tokenها استفاده کنند.
+UI نباید رنگ‌های status، surface، input، control indicator، button، disabled یا modal را به‌صورت پراکنده و ناسازگار hard-code کند. مقدارهای hex در `theme_tokens.py` متمرکز می‌مانند و CSS/componentها باید از custom propertyهای `--ev4-*` یا Gradio theme variables مشتق‌شده از همان tokenها استفاده کنند.
 
 ## Required token groups
 
@@ -41,6 +41,12 @@ UI نباید رنگ‌های status، surface، input، button، disabled یا 
 - `input.bg`
 - `input.border`
 - `input.text`
+- `control.indicator.bg`
+- `control.indicator.border`
+- `control.indicator.checked.bg`
+- `control.indicator.checked.dot`
+- `control.indicator.hover.bg`
+- `control.indicator.focus.ring`
 - `button.primary.bg`
 - `button.primary.text`
 - `button.secondary.bg`
@@ -95,13 +101,37 @@ Gradio مالک بسیاری از componentها و Settings modal است. بنا
 - custom CSS فقط برای شکاف‌هایی استفاده شود که Gradio theme variables پوشش کافی ندارند.
 - selectorهای global/brittle فقط در محدوده `.gradio-container` مجازند و باید برای readability-critical componentها باشند: modal، upload، accordion، radio، disabled و footer.
 
+## Control indicators
+
+Radio indicatorها نباید فقط به browser default یا `accent-color` وابسته باشند. قرارداد فعلی برای radio از semantic custom propertyهای زیر استفاده می‌کند:
+
+```text
+--ev4-control-indicator-bg
+--ev4-control-indicator-border
+--ev4-control-indicator-checked-bg
+--ev4-control-indicator-checked-dot
+--ev4-control-indicator-hover-bg
+--ev4-control-indicator-focus-ring
+```
+
+رفتار لازم:
+
+- unselected state باید در Light و Dark مرز قابل تشخیص داشته باشد.
+- selected state باید با checked background و dot مستقل واضح باشد.
+- focus-visible باید از ring مستقل و قابل اندازه‌گیری استفاده کند.
+- hover state باید subtle اما قابل تشخیص باشد.
+
 ## Dark mode
 
 Dark mode نباید pure black / pure white inversion باشد. surfaceها باید layered باشند و code background مستقل داشته باشد.
 
+Dark Mode header نباید white/light island بسازد. `.ev4-header` در explicit Dark و fallback System Dark باید از dark raised/overlay surface و foreground tokenهای همان theme استفاده کند؛ نه از card سفید Light Mode.
+
+اصل منتقل‌شده از `rezahh107/EV4-Workbook-Jinja` فقط shell-level theme coherence، layered dark surfaces، focus visibility، visible control indicators و Persian line-height است. Project Gate نباید palette یا identity آموزشی Workbook را کپی کند.
+
 ## Light mode
 
-Light mode باید token-backed باشد و component boundaryهای مهم مثل input border، focus ring و primary button text/background باید contrast قابل اندازه‌گیری داشته باشند.
+Light mode باید token-backed باشد و component boundaryهای مهم مثل input border، focus ring، radio indicator و primary button text/background باید contrast قابل اندازه‌گیری داشته باشند.
 
 ## Focus, disabled, modal and code
 
@@ -119,6 +149,9 @@ Contrast-critical token pairها باید تست شوند:
 - primary/secondary/muted text روی surfaceها
 - primary/secondary button text روی button background
 - input border و focus ring
+- radio border روی radio background
+- radio checked dot روی checked background
+- radio focus ring روی relevant surface
 - disabled text/background
 - status foreground/background
 
@@ -133,5 +166,7 @@ Contrast-critical token pairها باید تست شوند:
 `assert_theme_contract()` و tests مربوط به `theme_tokens.py` حامل regression برای shape قرارداد هستند.
 
 `tests/theme_acceptance/test_theme_contrast.py` حامل regression برای contrast-critical token pairهاست.
+
+`tests/ui/test_operator_panel_css.py` حامل regression برای CSS-level radio indicator styling و dark-header anti-regression selectorهاست.
 
 Browser visual QA همچنان manual evidence لازم دارد و با token tests جایگزین نمی‌شود.
