@@ -34,6 +34,12 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "input.bg": "#ffffff",
         "input.border": "#64748b",
         "input.text": "#0f172a",
+        "control.indicator.bg": "#ffffff",
+        "control.indicator.border": "#475569",
+        "control.indicator.checked.bg": "#2563eb",
+        "control.indicator.checked.dot": "#f8fafc",
+        "control.indicator.hover.bg": "#eff6ff",
+        "control.indicator.focus.ring": "#2563eb",
         "button.primary.bg": "#2563eb",
         "button.primary.text": "#f8fafc",
         "button.primary.hover.bg": "#1d4ed8",
@@ -81,6 +87,12 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "input.bg": "#0f172a",
         "input.border": "#5f718d",
         "input.text": "#f3f6fb",
+        "control.indicator.bg": "#0f172a",
+        "control.indicator.border": "#8bc4ff",
+        "control.indicator.checked.bg": "#8bc4ff",
+        "control.indicator.checked.dot": "#0f172a",
+        "control.indicator.hover.bg": "#19334d",
+        "control.indicator.focus.ring": "#a5d6ff",
         "button.primary.bg": "#2563eb",
         "button.primary.text": "#f8fafc",
         "button.primary.hover.bg": "#a5d6ff",
@@ -132,6 +144,12 @@ REQUIRED_TOKEN_KEYS = (
     "input.bg",
     "input.border",
     "input.text",
+    "control.indicator.bg",
+    "control.indicator.border",
+    "control.indicator.checked.bg",
+    "control.indicator.checked.dot",
+    "control.indicator.hover.bg",
+    "control.indicator.focus.ring",
     "button.primary.bg",
     "button.primary.text",
     "button.primary.hover.bg",
@@ -207,6 +225,12 @@ def _theme_custom_properties(theme: ThemeName) -> str:
       --ev4-input-bg: {tokens["input.bg"]};
       --ev4-input-border: {tokens["input.border"]};
       --ev4-input-text: {tokens["input.text"]};
+      --ev4-control-indicator-bg: {tokens["control.indicator.bg"]};
+      --ev4-control-indicator-border: {tokens["control.indicator.border"]};
+      --ev4-control-indicator-checked-bg: {tokens["control.indicator.checked.bg"]};
+      --ev4-control-indicator-checked-dot: {tokens["control.indicator.checked.dot"]};
+      --ev4-control-indicator-hover-bg: {tokens["control.indicator.hover.bg"]};
+      --ev4-control-indicator-focus-ring: {tokens["control.indicator.focus.ring"]};
       --ev4-button-primary-bg: {tokens["button.primary.bg"]};
       --ev4-button-primary-text: {tokens["button.primary.text"]};
       --ev4-button-primary-hover-bg: {tokens["button.primary.hover.bg"]};
