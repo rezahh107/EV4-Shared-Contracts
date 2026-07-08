@@ -36,8 +36,12 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "input.text": "#0f172a",
         "button.primary.bg": "#2563eb",
         "button.primary.text": "#f8fafc",
+        "button.primary.hover.bg": "#1d4ed8",
+        "button.primary.hover.text": "#f8fafc",
         "button.secondary.bg": "#ffffff",
         "button.secondary.text": "#0f172a",
+        "button.secondary.hover.bg": "#f1f5f9",
+        "button.secondary.hover.text": "#0f172a",
         "disabled.bg": "#e2e8f0",
         "disabled.text": "#475569",
         "code.bg": "#eef2ff",
@@ -79,8 +83,12 @@ THEME_TOKENS: dict[ThemeName, dict[str, Any]] = {
         "input.text": "#f3f6fb",
         "button.primary.bg": "#2563eb",
         "button.primary.text": "#f8fafc",
+        "button.primary.hover.bg": "#a5d6ff",
+        "button.primary.hover.text": "#0f172a",
         "button.secondary.bg": "#202d40",
         "button.secondary.text": "#f3f6fb",
+        "button.secondary.hover.bg": "#2b3a50",
+        "button.secondary.hover.text": "#f3f6fb",
         "disabled.bg": "#1e293b",
         "disabled.text": "#94a3b8",
         "code.bg": "#020617",
@@ -126,8 +134,12 @@ REQUIRED_TOKEN_KEYS = (
     "input.text",
     "button.primary.bg",
     "button.primary.text",
+    "button.primary.hover.bg",
+    "button.primary.hover.text",
     "button.secondary.bg",
     "button.secondary.text",
+    "button.secondary.hover.bg",
+    "button.secondary.hover.text",
     "disabled.bg",
     "disabled.text",
     "code.bg",
@@ -197,8 +209,12 @@ def _theme_custom_properties(theme: ThemeName) -> str:
       --ev4-input-text: {tokens["input.text"]};
       --ev4-button-primary-bg: {tokens["button.primary.bg"]};
       --ev4-button-primary-text: {tokens["button.primary.text"]};
+      --ev4-button-primary-hover-bg: {tokens["button.primary.hover.bg"]};
+      --ev4-button-primary-hover-text: {tokens["button.primary.hover.text"]};
       --ev4-button-secondary-bg: {tokens["button.secondary.bg"]};
       --ev4-button-secondary-text: {tokens["button.secondary.text"]};
+      --ev4-button-secondary-hover-bg: {tokens["button.secondary.hover.bg"]};
+      --ev4-button-secondary-hover-text: {tokens["button.secondary.hover.text"]};
       --ev4-disabled-bg: {tokens["disabled.bg"]};
       --ev4-disabled-text: {tokens["disabled.text"]};
       --ev4-code-bg: {tokens["code.bg"]};
@@ -224,7 +240,7 @@ def css_custom_properties() -> str:
     Resolution model:
     - Light tokens are the safe default.
     - Explicit Gradio/browser light or dark classes win when present.
-    - System dark preference is only a fallback when no explicit class/data-theme is available.
+    - System dark preference is only a low-specificity fallback.
     """
 
     light = _theme_custom_properties("light")
@@ -236,9 +252,9 @@ def css_custom_properties() -> str:
 {light}
     }}
     @media (prefers-color-scheme: dark) {{
-      :root:not([data-theme="light"]) .gradio-container,
-      :root:not([data-theme="light"]) .ev4-app,
-      :root:not([data-theme="light"]) .ev4-shell {{
+      body .gradio-container,
+      body .ev4-app,
+      body .ev4-shell {{
 {dark}
       }}
     }}
