@@ -1,6 +1,6 @@
 # Builder → Responsive Freeze Matrix
 
-Status: documented baseline only. The Builder → Responsive Project Gate transition is not implemented in this PR.
+Status: documented owner-boundary matrix retained for the implemented Builder → Responsive Project Gate orchestration baseline. The public CLI entry is guarded/fail-closed and real non-synthetic handoff evidence remains `insufficient_evidence`.
 
 ## Boundary model
 
@@ -16,8 +16,8 @@ Project Gate coordinates contract identity, version checks, official validators,
 ## Explicit non-claims
 
 ```yaml
-project_gate_builder_to_responsive_transition: not_implemented
-python_transition_module_added: false
+project_gate_builder_to_responsive_transition: implemented_orchestration_baseline
+python_transition_module_added: true
 builder_runtime_behavior_changed: false
 responsive_repair_behavior_changed: false
 real_elementor_validation_claimed: false

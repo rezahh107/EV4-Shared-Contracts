@@ -1,6 +1,6 @@
 # EV4 Transition Boundary Map
 
-Status: Closure audit after `PROMPT-06`. Architect→CE, CE→Builder, Builder→Responsive, and Final Evidence Gate orchestration baselines are implemented. Only Architect→CE is public CLI-exposed. Prompt-04, Prompt-05, and Prompt-06 have exact-head PR CI evidence, but real non-synthetic Builder/Responsive/final evidence remains unavailable.
+Status: Closure audit after `PROMPT-06`. Architect→CE, CE→Builder, Builder→Responsive, and Final Evidence Gate orchestration baselines are implemented. Architect→CE is functionally public CLI-exposed; CE→Builder, Builder→Responsive, and Final Evidence Gate are guarded fail-closed public CLI entries. Prompt-04, Prompt-05, and Prompt-06 have exact-head PR CI evidence, but real non-synthetic Builder/Responsive/final evidence remains unavailable.
 
 ## Status vocabulary
 
@@ -44,7 +44,7 @@ Forbidden Project Gate behavior includes creating CE constructability decisions,
 ```yaml
 transition_id: ev4-ce-to-builder-transition@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 owner_fixture_integration: verified
 real_non_synthetic_handoff: insufficient_evidence
 source_repository: rezahh107/EV4-Constructability-Engineer-Repo
@@ -76,7 +76,7 @@ Evidence interpretation: PR #20 final head `42bfa484481c585f589d86c40424660c70b0
 ```yaml
 transition_id: ev4-builder-to-responsive-transition@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 producer_repository: rezahh107/EV4-Builder-Assistant-Repo
 producer_commit: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
 consumer_repository: rezahh107/EV4-Responsive-Architect
@@ -97,7 +97,7 @@ Evidence interpretation: PR #23 exact head `cf69f83682e65154678a85d05d9e2f3d31bd
 ```yaml
 gate_id: ev4-final-evidence-gate@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 prior_lock_chain: pinned_to_immutable_project_gate_commit
 official_output_validator: validation/e2e/run_responsive_tree_architecture_refactor_check.py
 verification_state: verified_by_exact_head_ci

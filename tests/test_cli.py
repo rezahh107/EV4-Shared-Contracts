@@ -115,23 +115,42 @@ def test_implementation_status_matches_all_capability_truth():
     assert implementation["repository"]["current_main_head_ci"]["status"] == "insufficient_evidence"
 
 
-def test_active_docs_do_not_restore_flat_ce_to_builder_not_implemented_claim():
+def test_active_docs_do_not_restore_flat_transition_not_implemented_claims():
     active_paths = [
         "README.md",
         "AGENTS.md",
         "docs/VALIDATION_STRATEGY.md",
         "docs/COMPATIBILITY_MAP.md",
+        "docs/ROLE_BOUNDARY_MAP.md",
+        "docs/CONTRACT_INVENTORY.md",
+        "docs/ARCHITECTURE.md",
+        "docs/TRANSITION_BOUNDARY_MAP.md",
+        "docs/BUILDER_TO_RESPONSIVE_FREEZE_MATRIX.md",
     ]
     forbidden = [
         "The CE → Builder transition is documented as a freeze baseline only. It is not implemented in Project Gate yet.",
         "Do not describe CE → Builder, Builder → Responsive",
         "implemented: false\nfreeze_matrix: docs/CE_TO_BUILDER_FREEZE_MATRIX.md",
+        "Only Architect→CE has public CLI exposure",
+        "Only Architect→CE is public CLI-exposed",
+        "cli_exposure: not_implemented",
+        "public CLI exposure not implemented",
+        "public CLI exposure is not implemented",
+        "Project Gate transition is not implemented",
+        "project_gate_builder_to_responsive_transition: not_implemented",
+        "python_transition_module_added: false",
+        "orchestration_baseline: not_implemented",
+        "Producer adoption, Project Gate runtime integration, and downstream Producer CI enforcement remain pending/not implemented",
+        "The canonical Producer pin is pending merge for PR #39",
+        "UI/upload-download application",
+        "not exposed as a general public CLI transition",
+        "does not expose CE→Builder as a public CLI command",
     ]
     for relative in active_paths:
         text = (ROOT / relative).read_text(encoding="utf-8")
         for phrase in forbidden:
             assert phrase not in text
-        assert "orchestration_baseline" in text or relative == "README.md"
+        assert "orchestration_baseline" in text or relative in {"README.md", "docs/CONTRACT_INVENTORY.md", "docs/BUILDER_TO_RESPONSIVE_FREEZE_MATRIX.md"}
 
 
 def test_capability_truth_gate_passes_repository():

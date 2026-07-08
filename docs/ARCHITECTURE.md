@@ -34,21 +34,22 @@ architect_to_ce:
   real_non_synthetic_handoff: insufficient_evidence
 ce_to_builder:
   orchestration_baseline: implemented
-  cli_exposure: not_implemented
+  cli_exposure: guarded
   owner_fixture_integration: verified
   real_non_synthetic_handoff: insufficient_evidence
 builder_to_responsive:
   orchestration_baseline: implemented
-  cli_exposure: not_implemented
+  cli_exposure: guarded
   official_responsive_validator_integration: implemented
   real_non_synthetic_handoff: insufficient_evidence
 final_evidence_gate:
   orchestration_baseline: implemented
-  cli_exposure: not_implemented
+  cli_exposure: guarded
   official_responsive_validator_integration: implemented
   real_non_synthetic_evidence: insufficient_evidence
 user_interface:
-  status: not_implemented
+  status: implemented_initial_operator_panel
+  browser_accessibility_evidence: insufficient_evidence
 ```
 
 ## Deterministic foundation
@@ -107,7 +108,7 @@ CE Stage Evidence Bundle or Builder Executable Package
 
 Official tools execute only through `src/ev4_transition/runners/`. Project Gate does not implement their specialist rules.
 
-Owner-fixture integration is verified by PR #20 workflow run `28744810186` on head `42bfa484481c585f589d86c40424660c70b038a0`. This is not real non-synthetic handoff evidence. CE→Builder is not exposed as a general public CLI transition.
+Owner-fixture integration is verified by PR #20 workflow run `28744810186` on head `42bfa484481c585f589d86c40424660c70b038a0`. This is not real non-synthetic handoff evidence. CE→Builder is exposed only as a guarded fail-closed public CLI entry, not as a general functional handoff workflow.
 
 ## Builder → Responsive
 
@@ -128,7 +129,7 @@ Builder evidence references and Responsive input packet
 
 Exact-head Prompt-05 evidence is recorded in `docs/handoffs/PROMPT-05_HANDOFF.md`. The baseline proves pinned owner-contract and official-validator integration, not real non-synthetic Builder execution, Responsive correctness, frontend correctness, accessibility completion, export validation, or production readiness.
 
-Builder→Responsive is not exposed as a public CLI transition.
+Builder→Responsive is exposed only as a guarded fail-closed public CLI entry, not as a general functional handoff workflow.
 
 ## Final evidence gate
 
@@ -149,7 +150,7 @@ Final evidence packet
 
 The final gate must not emit final readiness without explicit owning-repository evidence for Responsive, frontend, export, accessibility, and production-readiness concerns. Real non-synthetic final evidence remains `insufficient_evidence`.
 
-Final Evidence Gate is not exposed as a public CLI transition.
+Final Evidence Gate is exposed only as a guarded fail-closed public CLI entry, not as a production-readiness or final-correctness workflow.
 
 ## Persian reports and output writing
 
