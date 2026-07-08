@@ -296,7 +296,7 @@ def operator_panel_css() -> str:
         .gradio-container input[type="radio"]:checked {
           border-color: var(--ev4-control-indicator-checked-bg) !important;
           background:
-            radial-gradient(circle, var(--ev4-control-indicator-checked-dot) 0 34%, transparent 36%),
+            radial-gradient(circle, var(--ev4-control-indicator-checked-dot) 34%, transparent 36%),
             var(--ev4-control-indicator-checked-bg) !important;
         }
         .gradio-container input[type="radio"]:focus-visible {
