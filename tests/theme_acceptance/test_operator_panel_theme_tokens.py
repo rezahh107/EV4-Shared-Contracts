@@ -33,8 +33,12 @@ REQUIRED_OPERATOR_PANEL_TOKENS = {
     "input.text",
     "button.primary.bg",
     "button.primary.text",
+    "button.primary.hover.bg",
+    "button.primary.hover.text",
     "button.secondary.bg",
     "button.secondary.text",
+    "button.secondary.hover.bg",
+    "button.secondary.hover.text",
     "disabled.bg",
     "disabled.text",
     "code.bg",
@@ -68,8 +72,12 @@ def test_operator_panel_css_exports_extended_custom_properties():
         "--ev4-input-text",
         "--ev4-button-primary-bg",
         "--ev4-button-primary-text",
+        "--ev4-button-primary-hover-bg",
+        "--ev4-button-primary-hover-text",
         "--ev4-button-secondary-bg",
         "--ev4-button-secondary-text",
+        "--ev4-button-secondary-hover-bg",
+        "--ev4-button-secondary-hover-text",
         "--ev4-disabled-bg",
         "--ev4-disabled-text",
         "--ev4-code-bg",
@@ -87,3 +95,12 @@ def test_operator_panel_css_has_explicit_theme_resolution_selectors():
     assert ':root[data-theme="dark"]' in css
     assert "body.light .gradio-container" in css
     assert "body.dark .gradio-container" in css
+
+
+def test_explicit_light_selectors_can_win_over_system_dark_fallback():
+    css = css_custom_properties()
+
+    assert ':root:not([data-theme="light"]) .gradio-container' not in css
+    assert "body .gradio-container" in css
+    assert css.index(':root[data-theme="light"] .gradio-container') > css.index("@media (prefers-color-scheme: dark)")
+    assert css.index("body.light .gradio-container") > css.index("@media (prefers-color-scheme: dark)")
