@@ -32,6 +32,11 @@ def test_final_css_exports_focus_code_status_and_component_custom_properties():
     assert "--ev4-focus-ring" in css
     assert "--ev4-code-bg" in css
     assert "--ev4-input-border" in css
+    assert "--ev4-control-indicator-bg" in css
+    assert "--ev4-control-indicator-border" in css
+    assert "--ev4-control-indicator-checked-bg" in css
+    assert "--ev4-control-indicator-checked-dot" in css
+    assert "--ev4-control-indicator-focus-ring" in css
     assert "--ev4-button-primary-text" in css
     assert "--ev4-button-primary-hover-text" in css
     assert "--ev4-button-secondary-hover-text" in css

@@ -54,9 +54,15 @@ UI_PAIRS = {
     "light.input_border_on_input": ("light", "input.border", "input.bg"),
     "light.focus_ring_on_raised": ("light", "focus.ring", "surface.raised"),
     "light.strong_border_on_raised": ("light", "border.strong", "surface.raised"),
+    "light.radio_border_on_radio_bg": ("light", "control.indicator.border", "control.indicator.bg"),
+    "light.radio_checked_dot_on_checked_bg": ("light", "control.indicator.checked.dot", "control.indicator.checked.bg"),
+    "light.radio_focus_ring_on_raised": ("light", "control.indicator.focus.ring", "surface.raised"),
     "dark.input_border_on_input": ("dark", "input.border", "input.bg"),
     "dark.focus_ring_on_raised": ("dark", "focus.ring", "surface.raised"),
     "dark.strong_border_on_raised": ("dark", "border.strong", "surface.raised"),
+    "dark.radio_border_on_radio_bg": ("dark", "control.indicator.border", "control.indicator.bg"),
+    "dark.radio_checked_dot_on_checked_bg": ("dark", "control.indicator.checked.dot", "control.indicator.checked.bg"),
+    "dark.radio_focus_ring_on_raised": ("dark", "control.indicator.focus.ring", "surface.raised"),
 }
 
 STATUS_PAIRS = {

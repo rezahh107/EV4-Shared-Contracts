@@ -12,19 +12,23 @@
 
 - setup: در Settings یا مرورگر، Light Mode را انتخاب کن و صفحه را refresh کن.
 - expected result: header، radio labelها، primary button، secondary buttons، upload area، textarea، accordion headerها، footer و Settings modal خوانا باشند.
-- failure sign: متن خاکستری کم‌رنگ روی سفید/خاکستری، مرز input نامشخص، button text کم‌کنتراست، یا accordion label کم‌رنگ.
+- expected control result: radio indicatorهای selected و unselected در Light Mode واضح باشند؛ دایره خالی border کافی داشته باشد و selected state با dot داخلی مشخص شود.
+- failure sign: متن خاکستری کم‌رنگ روی سفید/خاکستری، مرز input نامشخص، button text کم‌کنتراست، radio circle کم‌رنگ، یا accordion label کم‌رنگ.
 
 ## 3. Dark mode readability
 
 - setup: در Settings یا مرورگر، Dark Mode را انتخاب کن و صفحه را refresh کن.
 - expected result: surfaceها near-black/layered باشند، متن اصلی و ثانویه خوانا باشد، primary button foreground/background واضح باشد، focus ring و code background دیده شود.
-- failure sign: pure black/white inversion، dark text on dark background، gray-on-gray controls، یا statusهای color-only.
+- expected header result: header دیگر white/light island نباشد و با dark raised/overlay surface هماهنگ شود.
+- expected control result: radio indicatorها در Dark Mode از gray-on-gray خارج شوند؛ selected/unselected/focus states واضح باشند.
+- failure sign: pure black/white inversion، header سفید در Dark Mode، dark text on dark background، gray-on-gray controls، یا statusهای color-only.
 
 ## 4. System mode behavior
 
 - setup: System Mode را انتخاب کن، OS/browser را بین Light و Dark تغییر بده، سپس refresh کن.
 - expected result: Gradio theme و EV4 custom tokens با هم تغییر کنند و mixed-theme دیده نشود.
-- failure sign: بعضی بخش‌ها Light و بعضی بخش‌ها Dark بمانند، مخصوصاً transition radio group، JSON textarea یا Settings modal.
+- expected fallback result: اگر system dark فعال است و explicit Light انتخاب نشده، header dark layered باشد؛ اگر explicit Light انتخاب شده، Light Mode نباید به dark island تبدیل شود.
+- failure sign: بعضی بخش‌ها Light و بعضی بخش‌ها Dark بمانند، مخصوصاً header، transition radio group، JSON textarea یا Settings modal.
 
 ## 5. Settings modal
 
@@ -48,7 +52,8 @@
 
 - setup: روی upload area، JSON textarea، radio labelها و accordionها hover/focus کن.
 - expected result: default، hover، focus، selected و collapsed states در هر دو theme قابل تشخیص باشند.
-- failure sign: radio label کم‌کنتراست، upload boundary نامشخص، textarea mixed-theme، یا accordion collapsed label ناخوانا.
+- expected radio result: radioها نباید tiny/default browser-only به‌نظر برسند؛ circle size، border، checked dot و focus ring باید آشکار باشد.
+- failure sign: radio label یا circle کم‌کنتراست، upload boundary نامشخص، textarea mixed-theme، یا accordion collapsed label ناخوانا.
 
 ## 9. Disabled states
 
@@ -60,6 +65,7 @@
 
 - setup: با keyboard بین controls حرکت کن.
 - expected result: focus ring واضح باشد و fieldهای LTR/RTL رفتار قابل پیش‌بینی داشته باشند.
+- expected radio result: روی radioها focus-visible ring مستقل دیده شود و فقط تغییر رنگ browser default نباشد.
 - failure sign: focus نامرئی، tab order گیج‌کننده، یا ورود path/JSON با جهت اشتباه.
 
 ## 11. Validate bundle flow
@@ -104,7 +110,13 @@
 - expected result: هشدار محدوده درباره نبود production/frontend/Elementor/Responsive readiness حفظ شده باشد.
 - failure sign: متن‌هایی مثل production-ready، frontend correct، real Elementor validated، CE approved یا Builder authorized دیده شود.
 
-## 18. Evidence recording
+## 18. Workbook-inspired polish boundary
 
-- after QA: screenshotهای Light، Dark و Settings modal را کنار نام branch/head SHA نگه دار.
+- setup: Dark Mode و radio controls را با اصل‌های `EV4-Workbook-Jinja` مقایسه کن، نه با ظاهر کامل آن.
+- expected result: shell-level dark coherence، layered surfaces، visible controls و readable Persian line-height دیده شود؛ اما Project Gate همچنان technical operator dashboard بماند.
+- failure sign: کپی‌برداری palette یا identity آموزشی Workbook، استفاده افراطی از gold/teal، یا تبدیل dashboard به workbook UI.
+
+## 19. Evidence recording
+
+- after QA: screenshotهای Light، Dark، System، Settings modal، radio selected/unselected/focus و header Dark Mode را کنار نام branch/head SHA نگه دار.
 - browser visual validation تا وقتی screenshot/manual evidence ثبت نشده، `insufficient_evidence` باقی می‌ماند.
