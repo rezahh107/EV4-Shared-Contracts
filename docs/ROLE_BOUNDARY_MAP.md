@@ -1,6 +1,6 @@
 # EV4 Role Boundary Map
 
-Status: Architect→CE, CE→Builder, Builder→Responsive, and Final Evidence Gate orchestration baselines are implemented. Only Architect→CE has public CLI exposure. Real non-synthetic EV4 handoff/evidence remains `insufficient_evidence` for transition readiness beyond the synthetic or pinned-owner integration proofs.
+Status: Architect→CE, CE→Builder, Builder→Responsive, and Final Evidence Gate orchestration baselines are implemented at their documented scopes. Architect→CE is functionally public CLI-exposed; CE→Builder, Builder→Responsive, and Final Evidence Gate have guarded fail-closed public CLI entries only. Real non-synthetic EV4 handoff/evidence remains `insufficient_evidence` for transition readiness beyond the synthetic or pinned-owner integration proofs.
 
 ## Authority rule
 
@@ -79,7 +79,7 @@ runner_boundary:
 ```yaml
 transition_id: ev4-ce-to-builder-transition@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 owner_fixture_integration: verified
 real_non_synthetic_handoff: insufficient_evidence
 ```
@@ -91,7 +91,7 @@ Project Gate may verify the CE/Builder lock, run official tools, validate the Bu
 ```yaml
 transition_id: ev4-builder-to-responsive-transition@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 official_responsive_validator_integration: implemented
 real_non_synthetic_handoff: insufficient_evidence
 ```
@@ -103,7 +103,7 @@ Project Gate may verify the Builder/Responsive lock, preserve Builder evidence r
 ```yaml
 gate_id: ev4-final-evidence-gate@1.0.0
 orchestration_baseline: implemented
-cli_exposure: not_implemented
+cli_exposure: guarded
 official_responsive_validator_integration: implemented
 real_non_synthetic_evidence: insufficient_evidence
 ```
@@ -131,13 +131,13 @@ implemented:
   - static runner-boundary scanner
   - Persian report rendering and atomic report writing
 not_implemented:
-  - CE-to-Builder public CLI exposure
-  - Builder-to-Responsive public CLI exposure
-  - Final Evidence Gate public CLI exposure
+  - CE-to-Builder functional public CLI exposure beyond guarded fail-closed execution
+  - Builder-to-Responsive functional public CLI exposure beyond guarded fail-closed execution
+  - Final Evidence Gate functional public CLI exposure beyond guarded fail-closed execution
   - real non-synthetic CE-to-Builder handoff verification
   - real non-synthetic Builder execution evidence verification
   - real non-synthetic Responsive input/output evidence verification
-  - UI/upload-download application
+  - browser accessibility evidence for the initial local operator panel
   - real Elementor artifact validation
 ```
 
