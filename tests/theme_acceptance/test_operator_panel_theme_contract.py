@@ -33,6 +33,8 @@ def test_final_css_exports_focus_code_status_and_component_custom_properties():
     assert "--ev4-code-bg" in css
     assert "--ev4-input-border" in css
     assert "--ev4-button-primary-text" in css
+    assert "--ev4-button-primary-hover-text" in css
+    assert "--ev4-button-secondary-hover-text" in css
     assert "--ev4-disabled-text" in css
     assert "--ev4-surface-dialog" in css
     assert "--ev4-status-accepted-fg" in css
