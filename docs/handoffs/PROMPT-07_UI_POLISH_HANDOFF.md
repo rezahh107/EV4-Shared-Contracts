@@ -18,20 +18,28 @@ project-gate-prompt-07-ui-polish
 b56e8048a71f075e568d4f77d36f737f40c002ba
 ```
 
-Base evidence: latest inspected `main` commit from GitHub commit search: `Add LLM implementation prompt plan`.
+Base evidence: GitHub PR metadata for PR `#46` recorded base `main` at `b56e8048a71f075e568d4f77d36f737f40c002ba`.
 
 ## Head commit
 
 ```text
-79d7a9aae56d1985713d87bf66f51f357cda11e8
+3ffb9ec517801adc217a0b322afa4172489ed36f
 ```
 
-Note: this is the implementation/docs head immediately before this handoff file was added. The GitHub commit that adds this handoff becomes the branch head after write; the final exact PR head must be checked from PR metadata before merge.
+Head evidence: GitHub PR metadata for PR `#46` recorded head `project-gate-prompt-07-ui-polish` at `3ffb9ec517801adc217a0b322afa4172489ed36f` when the PR was opened.
+
+Note: this handoff metadata update creates a newer branch head. Re-check PR metadata before merge and treat the latest PR head as authoritative.
 
 ## PR number
 
 ```text
-pending_pr_creation
+46
+```
+
+PR URL:
+
+```text
+https://github.com/rezahh107/EV4-Project-Gate/pull/46
 ```
 
 ## Files changed
@@ -61,6 +69,7 @@ df6c9852099dfce6f3d85314d4b18220723aeab5 Assert final theme contract exports con
 8a821ef7b413089d14a06d470c81e6cd424b0841 Document control indicator and dark header theme contract
 9ebdc6ab56e063888e97e06699f88a53eb18c159 Document operator panel UI polish requirements
 79d7a9aae56d1985713d87bf66f51f357cda11e8 Update manual QA checklist for UI polish
+3ffb9ec517801adc217a0b322afa4172489ed36f Add Prompt 07 UI polish handoff
 ```
 
 ## Visual issues fixed
@@ -150,4 +159,4 @@ remaining_insufficient_evidence:
 
 ## Next allowed action
 
-Open PR from `project-gate-prompt-07-ui-polish` to `main`, then check GitHub Actions on the exact PR head. After CI, run manual browser QA for Light, Dark, System, Settings modal, radio selected/unselected/focus states, result.json preview, upload area, and accordion headers.
+Check GitHub Actions on the latest exact PR head. After CI, run manual browser QA for Light, Dark, System, Settings modal, radio selected/unselected/focus states, result.json preview, upload area, and accordion headers.
