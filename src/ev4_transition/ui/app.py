@@ -108,32 +108,32 @@ def operator_gradio_theme(gr: Any) -> Any:
         input_placeholder_color_dark=dark["text.muted"],
         button_primary_background_fill=light["button.primary.bg"],
         button_primary_background_fill_dark=dark["button.primary.bg"],
-        button_primary_background_fill_hover=light["accent.hover"],
-        button_primary_background_fill_hover_dark=dark["accent.active"],
+        button_primary_background_fill_hover=light["button.primary.hover.bg"],
+        button_primary_background_fill_hover_dark=dark["button.primary.hover.bg"],
         button_primary_border_color=light["button.primary.bg"],
         button_primary_border_color_dark=dark["button.primary.bg"],
-        button_primary_border_color_hover=light["accent.hover"],
-        button_primary_border_color_hover_dark=dark["accent.active"],
+        button_primary_border_color_hover=light["button.primary.hover.bg"],
+        button_primary_border_color_hover_dark=dark["button.primary.hover.bg"],
         button_primary_text_color=light["button.primary.text"],
         button_primary_text_color_dark=dark["button.primary.text"],
-        button_primary_text_color_hover=light["button.primary.text"],
-        button_primary_text_color_hover_dark=dark["button.primary.text"],
+        button_primary_text_color_hover=light["button.primary.hover.text"],
+        button_primary_text_color_hover_dark=dark["button.primary.hover.text"],
         button_secondary_background_fill=light["button.secondary.bg"],
         button_secondary_background_fill_dark=dark["button.secondary.bg"],
-        button_secondary_background_fill_hover=light["surface.overlay"],
-        button_secondary_background_fill_hover_dark=dark["surface.overlay"],
+        button_secondary_background_fill_hover=light["button.secondary.hover.bg"],
+        button_secondary_background_fill_hover_dark=dark["button.secondary.hover.bg"],
         button_secondary_border_color=light["border.default"],
         button_secondary_border_color_dark=dark["border.default"],
         button_secondary_border_color_hover=light["border.strong"],
         button_secondary_border_color_hover_dark=dark["border.strong"],
         button_secondary_text_color=light["button.secondary.text"],
         button_secondary_text_color_dark=dark["button.secondary.text"],
-        button_secondary_text_color_hover=light["button.secondary.text"],
-        button_secondary_text_color_hover_dark=dark["button.secondary.text"],
+        button_secondary_text_color_hover=light["button.secondary.hover.text"],
+        button_secondary_text_color_hover_dark=dark["button.secondary.hover.text"],
         checkbox_label_background_fill=light["button.secondary.bg"],
         checkbox_label_background_fill_dark=dark["button.secondary.bg"],
-        checkbox_label_background_fill_hover=light["surface.overlay"],
-        checkbox_label_background_fill_hover_dark=dark["surface.overlay"],
+        checkbox_label_background_fill_hover=light["button.secondary.hover.bg"],
+        checkbox_label_background_fill_hover_dark=dark["button.secondary.hover.bg"],
         checkbox_label_background_fill_selected=light["info.bg"],
         checkbox_label_background_fill_selected_dark=dark["info.bg"],
         checkbox_label_border_color=light["border.default"],
@@ -327,12 +327,19 @@ def operator_panel_css() -> str:
         .gradio-container button.primary,
         .gradio-container button[variant="primary"] { background: var(--ev4-button-primary-bg) !important; border-color: var(--ev4-button-primary-bg) !important; color: var(--ev4-button-primary-text) !important; font-weight: 700; }
         .gradio-container button.primary:hover,
-        .gradio-container button[variant="primary"]:hover { background: var(--ev4-accent-hover) !important; border-color: var(--ev4-accent-hover) !important; color: var(--ev4-button-primary-text) !important; }
+        .gradio-container button[variant="primary"]:hover { background: var(--ev4-button-primary-hover-bg) !important; border-color: var(--ev4-button-primary-hover-bg) !important; color: var(--ev4-button-primary-hover-text) !important; }
         .gradio-container button:not(.primary):not([variant="primary"]) { background: var(--ev4-button-secondary-bg) !important; border-color: var(--ev4-border-default) !important; color: var(--ev4-button-secondary-text) !important; }
+        .gradio-container button:not(.primary):not([variant="primary"]):hover { background: var(--ev4-button-secondary-hover-bg) !important; border-color: var(--ev4-border-strong) !important; color: var(--ev4-button-secondary-hover-text) !important; }
         .gradio-container footer,
         .gradio-container footer * { color: var(--ev4-text-muted) !important; opacity: 1 !important; }
         """
     )
+
+
+def operator_run_outputs(output: Any) -> tuple[Any, Any, Any, str, Any]:
+    """Return Gradio callback outputs without replacing JSON preview text with a dict."""
+
+    return output.status_markdown, output.diagnostics_rows, output.capability_rows, output.json_preview, output.download_paths
 
 
 def build_demo():
@@ -409,7 +416,7 @@ def build_demo():
                 responsive_repo_path=responsive,
                 acquisition_mode=selected_acquisition_mode,
             )
-            return output.status_markdown, output.diagnostics_rows, output.capability_rows, output.result, output.download_paths
+            return operator_run_outputs(output)
 
         preflight_button.click(lambda: "⏳ در حال بررسی آماده‌سازی…", outputs=[preflight_summary], queue=False).then(
             _preflight,
