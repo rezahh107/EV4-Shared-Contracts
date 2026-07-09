@@ -194,7 +194,15 @@
                 "type": "string",
                 "minLength": 1
               }
-            }
+            },
+            "required": [
+              "sequence_CI_step",
+              "test_command",
+              "positive_fixture",
+              "negative_fixture",
+              "validator_rule",
+              "validator_diagnostic"
+            ]
           },
           "status": {
             "type": "object",
@@ -233,7 +241,64 @@
             "type": "string",
             "minLength": 1
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "properties": {
+                    "enforcement_status": {
+                      "const": "sequence_ci_enforced"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "carriers": {
+                  "required": [
+                    "sequence_CI_step",
+                    "test_command",
+                    "positive_fixture",
+                    "negative_fixture",
+                    "validator_rule",
+                    "validator_diagnostic"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "properties": {
+                    "enforcement_status": {
+                      "const": "downstream_contract_enforced"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "carriers": {
+                  "required": [
+                    "sequence_CI_step",
+                    "test_command",
+                    "positive_fixture",
+                    "negative_fixture",
+                    "validator_rule",
+                    "validator_diagnostic",
+                    "downstream_contract"
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "routes": false

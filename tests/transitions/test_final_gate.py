@@ -193,3 +193,38 @@ def test_final_gate_preserves_kernel_decision_lineage_on_accepted_result(tmp_pat
     assert result["status"] == "accepted"
     assert result["accepted_requires"]["kernel_decision_lineage_valid"] is True
     assert result["output"]["decision_lineage"] == _output()["decision_lineage"]
+
+
+def test_wrapped_final_gate_rejects_top_level_lineage_when_output_lacks_lineage(tmp_path: Path):
+    pg, responsive, source, lock = _repos(tmp_path)
+    nested = _output()
+    top_level_lineage = nested.pop("decision_lineage")
+    packet = {"decision_lineage": top_level_lineage, "responsive_output": nested}
+    result = run_final_gate(packet, source, _config(tmp_path, lock, pg, responsive))
+    assert result["status"] == "invalid"
+    assert result["accepted_requires"]["kernel_decision_lineage_valid"] is False
+    assert "PG.FINAL.DECISION_LINEAGE_MISSING" in _codes(result)
+    assert result["output"] is None
+    lineage_diagnostic = next(item for item in result["diagnostics"] if item["code"] == "PG.FINAL.DECISION_LINEAGE_MISSING")
+    assert lineage_diagnostic["path"] == "$.responsive_output.decision_lineage"
+
+
+def test_wrapped_final_gate_rejects_top_level_nested_lineage_drift(tmp_path: Path):
+    pg, responsive, source, lock = _repos(tmp_path)
+    nested = _output()
+    top_level_lineage = dict(nested["decision_lineage"])
+    top_level_lineage["selected_option"] = "different_option"
+    packet = {"decision_lineage": top_level_lineage, "responsive_output": nested}
+    result = run_final_gate(packet, source, _config(tmp_path, lock, pg, responsive))
+    assert result["status"] == "invalid"
+    assert "PG.FINAL.DECISION_LINEAGE_DRIFT" in _codes(result)
+    assert result["output"] is None
+
+
+def test_flat_final_gate_missing_lineage_reports_flat_path(tmp_path: Path):
+    pg, responsive, source, lock = _repos(tmp_path)
+    packet = _output()
+    packet.pop("decision_lineage")
+    result = run_final_gate(packet, source, _config(tmp_path, lock, pg, responsive))
+    lineage_diagnostic = next(item for item in result["diagnostics"] if item["code"] == "PG.FINAL.DECISION_LINEAGE_MISSING")
+    assert lineage_diagnostic["path"] == "$.decision_lineage"

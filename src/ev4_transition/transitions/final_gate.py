@@ -172,7 +172,7 @@ def run_final_gate(final_input: Any, contract_source: ContractSource, config: Fi
     if _contains_key_or_value(final_input, "ci_success_as_frontend_evidence"):
         diagnostics.append(diagnostic("PG.FINAL.CI_FRONTEND_CORRECTNESS_CLAIM", "error", "CI success is not frontend correctness evidence.", "$"))
 
-    lineage_diags = _validate_decision_lineage(final_input)
+    lineage_diags = _validate_output_decision_lineage(final_input, output)
     diagnostics.extend(lineage_diags)
     accepted_requires["kernel_decision_lineage_valid"] = not lineage_diags
 
@@ -193,13 +193,20 @@ def run_final_gate(final_input: Any, contract_source: ContractSource, config: Fi
     return _result(final_input, output, diagnostics, accepted_requires, config)
 
 
-def _validate_decision_lineage(final_input: dict[str, Any]) -> list[Diagnostic]:
-    lineage = final_input.get("decision_lineage")
-    if lineage is None and isinstance(final_input.get("responsive_output"), dict):
-        lineage = final_input["responsive_output"].get("decision_lineage")
-    path = "$.decision_lineage" if "decision_lineage" in final_input else "$.responsive_output.decision_lineage"
+def _validate_output_decision_lineage(final_input: dict[str, Any], output: dict[str, Any]) -> list[Diagnostic]:
+    output_path = "$.responsive_output" if isinstance(final_input.get("responsive_output"), dict) else "$"
+    diagnostics = _validate_decision_lineage_at(output, f"{output_path}.decision_lineage")
+
+    top_level_lineage = final_input.get("decision_lineage")
+    if isinstance(final_input.get("responsive_output"), dict) and top_level_lineage is not None and top_level_lineage != output.get("decision_lineage"):
+        diagnostics.append(diagnostic("PG.FINAL.DECISION_LINEAGE_DRIFT", "error", "Top-level decision lineage must exactly match responsive_output decision lineage when both are supplied.", "$.decision_lineage"))
+    return sort_diagnostics(diagnostics)
+
+
+def _validate_decision_lineage_at(container: dict[str, Any], path: str) -> list[Diagnostic]:
+    lineage = container.get("decision_lineage")
     if not isinstance(lineage, dict):
-        return [diagnostic("PG.FINAL.DECISION_LINEAGE_MISSING", "error", "Kernel decision lineage is required for final gate intake and gate decisions.", path)]
+        return [diagnostic("PG.FINAL.DECISION_LINEAGE_MISSING", "error", "Kernel decision lineage is required on the accepted final gate output.", path)]
 
     diagnostics: list[Diagnostic] = []
     missing = [field for field in REQUIRED_DECISION_LINEAGE_FIELDS if field not in lineage]
