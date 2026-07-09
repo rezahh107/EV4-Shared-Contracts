@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#47` | `docs: adopt EV4 consumer decision trigger architecture v0.4.1` | `adopt-ev4-consumer-decision-trigger-architecture-v0-4-1` | `ecdf2d33de15a301e3c442837d8b1ba71fdfec4e` | `c94f2fef6d2652573888694d13c2e40ac04e83b8` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#46` | `Polish operator panel radio indicators and dark header` | `project-gate-prompt-07-ui-polish` | `8d85d10167a80a26c53cf01e428312282bb1bad0` | `cad4c5d571cc75059d327b36e67946bfb15ca96f` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#45` | `Fix operator panel theme readability and contrast system` | `project-gate-prompt-06-theme-readability` | `757a1ca9eecb64ce2eaef27aee743b6003be75e6` | `f4d17765adfdad6bf8383f1f431d0ebc91e9dc4b` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#44` | `Docs and tests: mark CE→Builder/Builder→Responsive/Final Gate CLI as guarded and update orchestration status` | `codex-aj4m3l` | `c4a30f9f10c888c70da8dd8549d3860c4f2e6bde` | `6ce830d7e8d566fd57d955a75326173993291fd4` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
