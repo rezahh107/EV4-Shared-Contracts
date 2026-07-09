@@ -64,4 +64,10 @@ The receipt helper is reusable from `ev4_transition.reports` and is included in:
 
 ## Safety rule
 
-If required trace fields are missing or invalid, Project Gate emits a warning receipt instead of a success receipt, even when the underlying status field says `accepted`.
+Receipt status is derived from the existing machine-readable result and trace only:
+
+- `accepted` with complete trace emits a success receipt.
+- `accepted` with missing or invalid trace emits a warning receipt instead of a success receipt.
+- every non-accepted status emits a blocked receipt, while preserving trace completeness metadata.
+
+Project Gate must not use the receipt to upgrade a result, repair missing lineage, or convert text into gate-pass evidence.
