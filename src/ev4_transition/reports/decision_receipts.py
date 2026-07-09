@@ -67,15 +67,15 @@ def build_kernel_decision_receipt(result: dict[str, Any] | Any) -> KernelDecisio
     trace_complete = trace is not None and not missing
     gate_status = str(result.get("status", "invalid")) if isinstance(result, dict) else "invalid"
 
-    if trace_complete and gate_status == "accepted":
-        return KernelDecisionReceipt(
-            status="success",
-            message_fa=SUCCESS_RECEIPT_FA,
-            trace_complete=True,
-            missing_trace_fields=[],
-            machine_trace_source=trace_source,
-        )
-    if not trace_complete:
+    if gate_status == "accepted":
+        if trace_complete:
+            return KernelDecisionReceipt(
+                status="success",
+                message_fa=SUCCESS_RECEIPT_FA,
+                trace_complete=True,
+                missing_trace_fields=[],
+                machine_trace_source=trace_source,
+            )
         return KernelDecisionReceipt(
             status="warning",
             message_fa=WARNING_RECEIPT_FA,
@@ -83,11 +83,12 @@ def build_kernel_decision_receipt(result: dict[str, Any] | Any) -> KernelDecisio
             missing_trace_fields=missing,
             machine_trace_source=trace_source,
         )
+
     return KernelDecisionReceipt(
         status="blocked",
         message_fa=BLOCKED_RECEIPT_FA,
-        trace_complete=True,
-        missing_trace_fields=[],
+        trace_complete=trace_complete,
+        missing_trace_fields=[] if trace_complete else missing,
         machine_trace_source=trace_source,
     )
 
