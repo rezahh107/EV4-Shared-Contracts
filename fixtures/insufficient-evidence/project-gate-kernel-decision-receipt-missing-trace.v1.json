@@ -1,0 +1,8 @@
+{
+  "schema_version": "project-gate-report-fixture.v1",
+  "status": "accepted",
+  "diagnostics": [],
+  "output": {
+    "package_id": "untraced-project-gate-fixture"
+  }
+}
