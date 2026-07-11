@@ -1,6 +1,7 @@
 name: KROAD-011 Bootstrap Hashes
 
 on:
+  pull_request:
   push:
     branches:
       - feature/kroad-011-project-gate-intake
@@ -29,4 +30,12 @@ jobs:
             kernel/decision-governance/resolver-rule-registry.v0.json \
             kernel/decision-governance/resolver-rules/layout-structure.v0.json \
             kernel/resolver-mvp/resolve-high-risk-p0.mjs \
-            kernel/validator/validate-l2-decision-correctness.mjs
+            kernel/validator/validate-l2-decision-correctness.mjs \
+            | tee kroad-011-semantic-hashes.txt
+
+      - name: Upload semantic dependency hashes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: kroad-011-semantic-hashes
+          path: kroad-011-semantic-hashes.txt
+          if-no-files-found: error
