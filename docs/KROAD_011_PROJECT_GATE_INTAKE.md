@@ -1,6 +1,6 @@
 # KROAD-011 — Project Gate Intake
 
-Status: implementation complete on the feature branch; exact-head pull-request CI and semantic-lock artifact confirmation remain pending.
+Status: implementation and focused trust-boundary repair are complete on PR #51; exact-head CI evidence determines review readiness.
 
 ## Ownership boundary
 
@@ -19,7 +19,7 @@ Status: implementation complete on the feature branch; exact-head pull-request C
 - the six-file immutable semantic lock and its verification;
 - packet binding, anti-substitution, unsupported-claim rejection and deterministic status mapping;
 - official pinned Kernel bridge/runner execution;
-- the Final Gate requirement for an accepted intake result;
+- Final Gate orchestration that reruns KROAD-011 from the raw intake;
 - presentation-only decision receipt behavior.
 
 Project Gate does not copy a Kernel schema as competing canonical truth and does not implement Resolver or L2 logic.
@@ -44,7 +44,19 @@ semantic_dependencies:
 
 The intake embeds every L2 input per packet: Decision Record, Resolver input and Audit Context. Project Gate rejects duplicate packet/decision IDs, wrapper drift, rule/version drift, evidence-ref mismatch, missing required references, provenance drift, claim-source drift, cross-packet substitution, unsupported claims and authored Kernel/Project Gate derived fields.
 
-Authored L2 status, Resolver output and derived counts are never trusted. The pinned Kernel audit is rerun and Kernel diagnostics are preserved unchanged under `upstream_diagnostics`.
+Authored L2 status, Resolver output, derived counts and evidence projection arrays are never trusted. The pinned Kernel audit is rerun and Kernel diagnostics are preserved unchanged under `upstream_diagnostics`.
+
+## Evidence projection derivation
+
+`source_evidence_refs` and `runtime_evidence_refs` are derived only from validated `decision_record.evidence_refs`:
+
+- `source_type == project_export` is projected only to `source_evidence_refs`;
+- `source_type == runtime_browser` is projected only to `runtime_evidence_refs`;
+- other source types, including `manual_note` and `kernel_fixture`, are not projected.
+
+Each projection preserves `evidence_id`, `source_type` and `ref` as `reference`. `audit_context.source_evidence_refs` and `audit_context.runtime_evidence_refs` are forbidden authored fields.
+
+A carried `runtime_browser` reference is not evidence that Project Gate performed runtime or browser validation. It does not establish KROAD-013 completion, release readiness or production readiness.
 
 ## Status mapping
 
@@ -62,19 +74,28 @@ unsupported assertion                         → invalid
 
 Overall precedence is fail-closed: `invalid`, then `insufficient_evidence`, then `repair_needed`, then `accepted` only when every packet is accepted.
 
-## Final Gate and receipt compatibility
+## Final Gate trust boundary
 
-A complete legacy seven-field `decision_lineage` trace is now a compatibility projection only. It cannot authenticate Final Gate acceptance and cannot create a success receipt.
+Final Gate accepts the raw `kernel_decision_intake` Stage Evidence Bundle, not a precomputed result as authority. During the current operation it reruns KROAD-011 with:
 
-Final Gate acceptance requires a schema-valid `kernel-decision-intake-result.v1` with:
+- the approved Kernel checkout;
+- the committed Project Gate semantic lock;
+- Project Gate-owned schemas;
+- the official pinned Kernel bridge.
 
-- the approved pin;
-- all acceptance requirements true;
-- actual L2 execution for every packet;
-- every packet status `accepted`;
-- no rejected or unresolved derived counts.
+The result returned by that internal execution is the only intake result used for Final Gate authority. A supplied `kernel_decision_intake_result` is non-authoritative projection/cache data only. When supplied, it must exactly match the recomputed result; otherwise Final Gate fails closed.
 
-Decision receipts remain presentation-only. They do not create lineage, evidence, Kernel acceptance, downstream enforcement, release readiness or production readiness.
+An authored producer string, accepted status, boolean, execution record, unsigned hash or self-declared trust flag cannot authenticate Final Gate acceptance.
+
+A complete legacy seven-field `decision_lineage` trace remains a compatibility projection only. It cannot authenticate Final Gate acceptance.
+
+## Decision receipt trust boundary
+
+Decision receipts remain presentation-only. A success receipt is available only while consuming the in-process authoritative Final Gate result created by the current Final Gate execution. The receipt does not search arbitrary nested input objects for an intake result and does not independently upgrade authored JSON to authority.
+
+Serialization intentionally removes the in-process authority capability. A persisted or externally authored JSON object must be rerun through Final Gate before it can produce a success receipt.
+
+Receipts do not create lineage, evidence, Kernel acceptance, downstream enforcement, release readiness or production readiness.
 
 ## Governance classification
 
@@ -96,7 +117,7 @@ npm run status
 npm run validate
 ```
 
-KROAD-011 checks:
+Focused checks:
 
 ```bash
 uv run pytest tests/kernel_decision_intake
