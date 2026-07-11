@@ -1,0 +1,25 @@
+{
+  "schema_version": "stage-evidence-bundle.v1",
+  "bundle_id": "synthetic-kroad-011",
+  "stage": "architect",
+  "payload_schema": {"id":"ev4-project-gate-kernel-decision-intake@1.0.0","version":"1.0.0","owner_repository":"rezahh107/EV4-Project-Gate"},
+  "produced_by": {"repository":"rezahh107/source"},
+  "evidence_status": "complete",
+  "payload": {
+    "schema_id": "ev4-project-gate-kernel-decision-intake@1.0.0",
+    "data": {
+      "kernel_pin": {"repository":"rezahh107/EV4-Decision-Kernel","accepted_commit":"76a82e28543ff8f0babca11b7d7dccac96b92894"},
+      "decision_packets": [{
+        "packet_id":"P1","decision_id":"D1","decision_family_id":"layout_structure",
+        "decision_record":{"record_type":"decision_record_v2","schema_version":"2.0.0","decision_id":"D1","decision_family_id":"layout_structure","resolver_status":"auto_resolved","evidence_tier":"project_export","rule_id":"resolver.rule.layout_structure.mvp.v0","rule_version":"0.1.0","decision_type":"resolver_derived","trigger_source":"initial_decision","provisional_status":{"is_provisional":false,"reason":"synthetic fixture only","missing_evidence":[],"blocks_final_release":false},"reopen_count":0,"max_reopen_count":3,"previous_decision_ref":null,"requires_reaudit":false,"selected_option":{"option_id":"flexbox","label":"Flexbox"},"allowed_options":[{"option_id":"flexbox","label":"Flexbox"}],"rejected_options":[],"forbidden_options":[],"evidence_refs":[{"evidence_id":"EV1","evidence_tier":"project_export","source_type":"synthetic_fixture","ref":"fixtures/kernel-decision-intake/complete-layout-structure.synthetic.json","limitations":["synthetic fixture only","not runtime evidence"]}],"forbidden_overclaims":["fixture does not prove Builder execution","fixture does not prove production readiness"],"downstream_owner":"architect"},
+        "resolver_input":{"decision_id":"D1","decision_family_id":"layout_structure","evidence_refs":[{"evidence_id":"EV1","evidence_tier":"project_export","source_type":"synthetic_fixture","ref":"fixtures/kernel-decision-intake/complete-layout-structure.synthetic.json","limitations":["synthetic fixture only","not runtime evidence"]}],"context":{"required_evidence_refs":["EV1"],"layout_intent":"single_axis","axis":"row","child_topology":"linear","two_axis_required":false,"simple_wrapper_only":false,"grid_availability_proven":false}},
+        "audit_context":{"decision_id":"D1","decision_family_id":"layout_structure","provenance_ref":"PROV1","source_evidence_refs":["EV1"],"runtime_evidence_refs":[],"claims":[]},
+        "asserted_claims":[{"claim":"decision_record_authored","source":{"repository":"rezahh107/source","commit":"1111111111111111111111111111111111111111","path":"fixture.json"},"provenance_ref":"PROV1"}],
+        "provenance":{"provenance_id":"PROV1","source_repository":"rezahh107/source","source_commit":"1111111111111111111111111111111111111111","source_path":"fixture.json","produced_by":"synthetic-test"}
+      }]
+    }
+  },
+  "evidence": [],
+  "provenance": {"source":"synthetic-fixture","created_by":"ev4-project-gate-tests"},
+  "synthetic": true
+}
