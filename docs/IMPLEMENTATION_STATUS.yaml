@@ -1,5 +1,5 @@
 schema_version: ev4-project-gate-implementation-status.v1
-updated_at: 2026-07-06
+updated_at: 2026-07-11
 status_authority: active_capability_truth
 capability_truth_source: src/ev4_transition/data/capability-status.v1.json
 historical_merge_ledger: docs/EV4_SHARED_CONTRACTS_STATUS.md
@@ -7,22 +7,23 @@ closure_audit: docs/CLOSURE_AUDIT.md
 release_readiness_classification: implementation_ready_with_known_gaps
 release_readiness_reason: >-
   Project Gate orchestration baselines, deterministic core, runner boundary, behavioral coverage validation,
-  Builder→Responsive/Final Gate baselines, Persian report UX, typography/reporting hardening, closure audit docs,
-  and the initial local operator UI shell are implemented at their documented scopes. Real non-synthetic CE→Builder,
-  Builder execution, Responsive input/output, frontend/export/accessibility correctness, downstream owner rejection
-  evidence, and production readiness remain insufficient_evidence.
+  KROAD-011 Kernel decision intake/result orchestration, Final Gate intake enforcement, receipt hardening,
+  Builder→Responsive/Final Gate baselines, Persian report UX, closure audit docs, and the initial local operator
+  UI shell are implemented at their documented scopes. Real non-synthetic handoff, Builder execution,
+  runtime/browser validity, downstream producer integration, ecosystem readiness, release readiness, and
+  production readiness remain insufficient_evidence.
 
 repository:
   name: rezahh107/EV4-Project-Gate
   default_branch: main
-  current_main_head: not_observed_by_connector_during_prompt_07
+  current_main_head: c228a2980a6979a0386010a5bc6ac81c9cc68b3c
   current_main_head_ci:
     status: insufficient_evidence
-    reason: GitHub connector confirmed repository and PR/workflow evidence, but did not expose an exact current main ref SHA for closure-branch validation.
-  current_main_ref_sha: not_observed_by_connector_during_prompt_07
+    reason: Exact current main was observed during KROAD-011 precheck, but no new exact-head validation claim is made by this unmerged branch.
+  current_main_ref_sha: c228a2980a6979a0386010a5bc6ac81c9cc68b3c
   current_main_ref_ci:
     status: insufficient_evidence
-    reason: Alias for the Prompt-07 current main ref observation; retained separately from the historical current_main_head_ci compatibility key.
+    reason: KROAD-011 branch validation remains pending until the pull-request checks complete.
   foundation_main_head: 4233d2ff22310f86305b2e67055c8e4eeb03d6df
   foundation_main_head_ci:
     status: insufficient_evidence
@@ -131,6 +132,45 @@ capabilities:
     downstream_producer_ci_enforcement: implemented_immutable_sha_workflow
     real_non_synthetic_handoff: insufficient_evidence
 
+kroad_011:
+  roadmap_item: KROAD-011
+  scope: Project Gate Intake
+  exposure: internal_guarded_orchestration
+  intake_contract: ev4-project-gate-kernel-decision-intake@1.0.0
+  result_contract: kernel-decision-intake-result.v1
+  kernel:
+    repository: rezahh107/EV4-Decision-Kernel
+    accepted_commit: 76a82e28543ff8f0babca11b7d7dccac96b92894
+    semantic_dependency_count: 6
+    canonical_authority_retained_by_kernel: true
+  implementation:
+    stage_bundle_extension: implemented
+    semantic_lock_computation_and_verification: implemented
+    packet_binding_and_substitution_rejection: implemented
+    authored_l2_and_count_rejection: implemented
+    explicit_asserted_claim_carrier: implemented
+    recursive_forbidden_claim_defense: implemented
+    official_kernel_l2_bridge_and_runner: implemented
+    deterministic_status_mapping: implemented
+    result_schema_validation_before_return: implemented
+    final_gate_accepted_intake_requirement: implemented
+    decision_receipt_authority_hardening: implemented
+  governance:
+    enforcement_status: sequence_ci_enforced
+    downstream_contract_enforced: false
+    reason: no inspected downstream producer rejection evidence
+  verification:
+    state: ci_pending
+    fixture_scope: synthetic_and_adversarial_only
+  non_claims:
+    - real_non_synthetic_handoff
+    - builder_execution
+    - runtime_or_browser_validity
+    - downstream_producer_integration
+    - ecosystem_readiness
+    - release_readiness
+    - production_readiness
+
 verification:
   ce_to_builder_owner_fixture_integration:
     state: verified
@@ -164,7 +204,8 @@ verification:
     scope_limit: not_real_non_synthetic_handoff_or_release_readiness
 
 remaining_insufficient_evidence:
-  - current_main_ref_exact_sha_and_ci_after_prompt_07
+  - KROAD-011 exact-head pull-request CI
+  - KROAD-011 real non-synthetic intake handoff
   - real_non_synthetic_CE_to_Builder_transition_evidence
   - real_Builder_execution_evidence_bundle
   - real_Responsive_input_and_output_evidence_bundle
