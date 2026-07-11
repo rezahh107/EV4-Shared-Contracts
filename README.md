@@ -136,7 +136,7 @@ uv run ev4-transition transition architect-to-ce path/to/architect-stage-bundle.
 # Guarded fail-closed entries; these require local owner checkouts and real evidence.
 uv run ev4-transition transition ce-to-builder path/to/ce-stage-bundle.json   --ce-repo ../EV4-Constructability-Engineer-Repo   --builder-repo ../EV4-Builder-Assistant-Repo   --format json
 uv run ev4-transition transition builder-to-responsive path/to/builder-stage-bundle.json   --builder-repo ../EV4-Builder-Assistant-Repo   --responsive-repo ../EV4-Responsive-Architect   --format json
-uv run ev4-transition transition final-evidence-gate path/to/final-evidence.json   --project-gate-repo .   --responsive-repo ../EV4-Responsive-Architect   --format json
+uv run ev4-transition transition final-evidence-gate path/to/final-evidence.json   --project-gate-repo .   --responsive-repo ../EV4-Responsive-Architect   --kernel-repo ../EV4-Decision-Kernel   --format json
 ```
 
 Exit codes:
