@@ -122,7 +122,9 @@ jobs:
 
       - name: Run complete Project Gate pytest suite
         working-directory: EV4-Project-Gate
-        run: uv run pytest
+        run: |
+          set -o pipefail
+          uv run pytest --tb=short 2>&1 | tee kroad-011-pytest.log
 
       - name: Verify capability truth
         working-directory: EV4-Project-Gate
@@ -156,6 +158,7 @@ jobs:
           path: |
             EV4-Project-Gate/kernel-decision-intake-lock-computed.json
             EV4-Project-Gate/kernel-bridge-output.json
+            EV4-Project-Gate/kroad-011-pytest.log
           if-no-files-found: error
 
       - name: Record exact tested head
