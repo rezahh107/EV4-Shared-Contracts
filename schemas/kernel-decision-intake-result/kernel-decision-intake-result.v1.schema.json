@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ev4.local/schemas/kernel-decision-intake-result/kernel-decision-intake-result.v1.schema.json",
+  "title": "EV4 Project Gate Kernel Decision Intake Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "result_type", "status", "kernel_pin", "accepted_requires", "diagnostics", "upstream_diagnostics", "packet_results", "derived_counts", "decision_record_refs", "source_evidence_refs", "runtime_evidence_refs", "hashes", "provenance"],
+  "properties": {
+    "schema_version": {"const": "kernel-decision-intake-result.v1"},
+    "result_type": {"const": "kernel_decision_intake"},
+    "status": {"enum": ["accepted", "repair_needed", "insufficient_evidence", "invalid"]},
+    "kernel_pin": {"type": "object", "additionalProperties": false, "required": ["repository", "accepted_commit", "semantic_lock_id"], "properties": {"repository": {"type":"string"}, "accepted_commit": {"type":"string","pattern":"^[a-f0-9]{40}$"}, "semantic_lock_id": {"type":"string"}}},
+    "accepted_requires": {"type": "object", "additionalProperties": false, "required": ["stage_bundle_valid", "intake_schema_valid", "semantic_lock_verified", "kernel_l2_executed", "packet_binding_valid", "no_unsupported_claims", "result_schema_valid"], "properties": {"stage_bundle_valid":{"type":"boolean"},"intake_schema_valid":{"type":"boolean"},"semantic_lock_verified":{"type":"boolean"},"kernel_l2_executed":{"type":"boolean"},"packet_binding_valid":{"type":"boolean"},"no_unsupported_claims":{"type":"boolean"},"result_schema_valid":{"type":"boolean"}}},
+    "diagnostics": {"type": "array", "items": {"type": "object"}},
+    "upstream_diagnostics": {"type": "array", "items": {"type": "object"}},
+    "packet_results": {"type": "array", "items": {"$ref": "#/$defs/packetResult"}},
+    "derived_counts": {"type": "object", "additionalProperties": false, "required": ["provisional_count", "human_override_count", "unresolved_decision_count", "accepted_decision_count", "rejected_decision_count"], "properties": {"provisional_count":{"type":"integer","minimum":0},"human_override_count":{"type":"integer","minimum":0},"unresolved_decision_count":{"type":"integer","minimum":0},"accepted_decision_count":{"type":"integer","minimum":0},"rejected_decision_count":{"type":"integer","minimum":0}}},
+    "decision_record_refs": {"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "source_evidence_refs": {"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "runtime_evidence_refs": {"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "hashes": {"type":"object","additionalProperties":false,"required":["source_bundle_hash","semantic_lock_hash"],"properties":{"source_bundle_hash":{"$ref":"#/$defs/hash"},"semantic_lock_hash":{"$ref":"#/$defs/hash"}}},
+    "provenance": {"type":"object","additionalProperties":false,"required":["source_bundle_provenance","project_gate_derivation"],"properties":{"source_bundle_provenance":{},"project_gate_derivation":{"const":"ev4-project-gate-kroad-011.v1"}}}
+  },
+  "$defs": {
+    "hash": {"type":"object","additionalProperties":false,"required":["algorithm","canonicalization","scope","value"],"properties":{"algorithm":{"const":"sha256"},"canonicalization":{"type":"string"},"scope":{"type":"string"},"value":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},
+    "packetResult": {"type":"object","additionalProperties":false,"required":["packet_id","decision_id","decision_family_id","status","l2_audit_status","human_override_observed","diagnostics","upstream_diagnostics","decision_record_ref","source_evidence_refs","runtime_evidence_refs","hashes","provenance"],"properties":{"packet_id":{"type":"string"},"decision_id":{"type":"string"},"decision_family_id":{"type":"string"},"status":{"enum":["accepted","repair_needed","insufficient_evidence","invalid"]},"l2_audit_status":{"enum":["pass","fail","unsupported","not_executed"]},"human_override_observed":{"type":"boolean"},"diagnostics":{"type":"array","items":{"type":"object"}},"upstream_diagnostics":{"type":"array","items":{"type":"object"}},"decision_record_ref":{"type":"string"},"source_evidence_refs":{"type":"array","items":{"type":"string"}},"runtime_evidence_refs":{"type":"array","items":{"type":"string"}},"hashes":{"type":"object"},"provenance":{"type":"object"}}}
+  }
+}
