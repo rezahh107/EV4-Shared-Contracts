@@ -14,6 +14,7 @@ from .kernel_decision_lock import verify_kernel_semantic_lock
 from .kernel_decision_binding import binding_diagnostics, scan_authored_fields, scan_forbidden_claims
 
 PacketStatus = Literal["accepted", "repair_needed", "insufficient_evidence", "invalid"]
+PROJECTED_SOURCE_TYPES = frozenset({"project_export", "runtime_browser"})
 
 
 @dataclass(frozen=True)
@@ -180,7 +181,42 @@ def _packet_result(packet: Any, index: int, execution: KernelAuditExecution, pac
     audit_context = safe.get("audit_context") if isinstance(safe.get("audit_context"), dict) else {}
     packet_id = str(safe.get("packet_id", f"packet-{index}"))
     decision_id = str(safe.get("decision_id", record.get("decision_id", "unknown")))
-    return {"packet_id": packet_id, "decision_id": decision_id, "decision_family_id": str(safe.get("decision_family_id", record.get("decision_family_id", "unknown"))), "status": status, "l2_executed": l2_executed, "human_override_observed": human_override, "project_gate_diagnostics": [item.to_dict() for item in sort_diagnostics(project_gate)], "upstream_diagnostics": upstream, "resolver_output": resolver_output, "decision_record_ref": {"packet_id": packet_id, "decision_id": decision_id, "sha256": _safe_hash(record)}, "source_evidence_refs": sorted(item for item in audit_context.get("source_evidence_refs", []) if isinstance(item, str)), "runtime_evidence_refs": sorted(item for item in audit_context.get("runtime_evidence_refs", []) if isinstance(item, str)), "hashes": {key: _hash(key.replace("_hash", ""), value) for key, value in {"packet_hash": safe, "decision_record_hash": record, "resolver_input_hash": resolver, "audit_context_hash": audit_context}.items()}, "provenance": safe.get("provenance") if isinstance(safe.get("provenance"), dict) else {}, "execution_record": execution.execution_record}
+    source_refs, runtime_refs = _derive_evidence_projections(record)
+    return {
+        "packet_id": packet_id,
+        "decision_id": decision_id,
+        "decision_family_id": str(safe.get("decision_family_id", record.get("decision_family_id", "unknown"))),
+        "status": status,
+        "l2_executed": l2_executed,
+        "human_override_observed": human_override,
+        "project_gate_diagnostics": [item.to_dict() for item in sort_diagnostics(project_gate)],
+        "upstream_diagnostics": upstream,
+        "resolver_output": resolver_output,
+        "decision_record_ref": {"packet_id": packet_id, "decision_id": decision_id, "sha256": _safe_hash(record)},
+        "source_evidence_refs": source_refs,
+        "runtime_evidence_refs": runtime_refs,
+        "hashes": {key: _hash(key.replace("_hash", ""), value) for key, value in {"packet_hash": safe, "decision_record_hash": record, "resolver_input_hash": resolver, "audit_context_hash": audit_context}.items()},
+        "provenance": safe.get("provenance") if isinstance(safe.get("provenance"), dict) else {},
+        "execution_record": execution.execution_record,
+    }
+
+
+def _derive_evidence_projections(record: dict[str, Any]) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    source_refs: list[dict[str, str]] = []
+    runtime_refs: list[dict[str, str]] = []
+    refs = record.get("evidence_refs") if isinstance(record.get("evidence_refs"), list) else []
+    for item in refs:
+        if not isinstance(item, dict):
+            continue
+        evidence_id, source_type, reference = item.get("evidence_id"), item.get("source_type"), item.get("ref")
+        if not all(isinstance(value, str) and value for value in (evidence_id, source_type, reference)):
+            continue
+        if source_type not in PROJECTED_SOURCE_TYPES:
+            continue
+        projection = {"evidence_id": evidence_id, "source_type": source_type, "reference": reference}
+        (source_refs if source_type == "project_export" else runtime_refs).append(projection)
+    key = lambda item: (item["evidence_id"], item["reference"])
+    return sorted(source_refs, key=key), sorted(runtime_refs, key=key)
 
 
 def _overall_status(packet_results: list[dict[str, Any]], diagnostics: list[Diagnostic]) -> PacketStatus:
@@ -195,8 +231,31 @@ def _overall_status(packet_results: list[dict[str, Any]], diagnostics: list[Diag
 
 def _build_result(bundle: Any, data: dict[str, Any] | None, lock: dict[str, Any], packet_results: list[dict[str, Any]], diagnostics: list[Diagnostic], accepted_requires: dict[str, bool], status: PacketStatus) -> dict[str, Any]:
     packets = data.get("decision_packets", []) if isinstance(data, dict) and isinstance(data.get("decision_packets"), list) else []
-    counts = {"provisional_count": sum(1 for packet in packets if isinstance(_decision_record(packet).get("provisional_status"), dict) and _decision_record(packet)["provisional_status"].get("is_provisional") is True), "human_override_count": sum(1 for item in packet_results if item["human_override_observed"]), "unresolved_decision_count": sum(1 for item in packet_results if item["status"] == "insufficient_evidence" or isinstance(item.get("resolver_output"), dict) and item["resolver_output"].get("resolver_status") == "unresolvable"), "accepted_decision_count": sum(1 for item in packet_results if item["status"] == "accepted"), "rejected_decision_count": sum(1 for item in packet_results if item["status"] == "invalid")}
-    return {"schema_version": KERNEL_INTAKE_RESULT_SCHEMA_ID, "result_type": "kernel_decision_intake", "status": status, "kernel_pin": {"repository": KERNEL_REPOSITORY, "accepted_commit": KERNEL_ACCEPTED_COMMIT, "semantic_lock_sha256": _safe_hash(lock)}, "accepted_requires": dict(accepted_requires), "diagnostics": [item.to_dict() for item in sort_diagnostics(diagnostics)], "upstream_diagnostics": [{"packet_id": item["packet_id"], "diagnostics": item["upstream_diagnostics"]} for item in packet_results], "packet_results": packet_results, "derived_counts": counts, "decision_record_refs": [item["decision_record_ref"] for item in packet_results], "source_evidence_refs": sorted(({"packet_id": item["packet_id"], "reference": reference} for item in packet_results for reference in item["source_evidence_refs"]), key=lambda item: (item["packet_id"], item["reference"])), "runtime_evidence_refs": sorted(({"packet_id": item["packet_id"], "reference": reference} for item in packet_results for reference in item["runtime_evidence_refs"]), key=lambda item: (item["packet_id"], item["reference"])), "hashes": {"source_input_hash": _hash("source_input", bundle), "semantic_lock_hash": _hash("semantic_lock", lock)}, "provenance": {"source_bundle_id": str(bundle.get("bundle_id", "unknown")) if isinstance(bundle, dict) else "unknown", "source_bundle_provenance": bundle.get("provenance", {}) if isinstance(bundle, dict) and isinstance(bundle.get("provenance"), dict) else {}, "result_producer": "rezahh107/EV4-Project-Gate"}}
+    counts = {
+        "provisional_count": sum(1 for packet in packets if isinstance(_decision_record(packet).get("provisional_status"), dict) and _decision_record(packet)["provisional_status"].get("is_provisional") is True),
+        "human_override_count": sum(1 for item in packet_results if item["human_override_observed"]),
+        "unresolved_decision_count": sum(1 for item in packet_results if item["status"] == "insufficient_evidence" or isinstance(item.get("resolver_output"), dict) and item["resolver_output"].get("resolver_status") == "unresolvable"),
+        "accepted_decision_count": sum(1 for item in packet_results if item["status"] == "accepted"),
+        "rejected_decision_count": sum(1 for item in packet_results if item["status"] == "invalid"),
+    }
+    source_refs = sorted(({"packet_id": item["packet_id"], **reference} for item in packet_results for reference in item["source_evidence_refs"]), key=lambda item: (item["packet_id"], item["evidence_id"], item["reference"]))
+    runtime_refs = sorted(({"packet_id": item["packet_id"], **reference} for item in packet_results for reference in item["runtime_evidence_refs"]), key=lambda item: (item["packet_id"], item["evidence_id"], item["reference"]))
+    return {
+        "schema_version": KERNEL_INTAKE_RESULT_SCHEMA_ID,
+        "result_type": "kernel_decision_intake",
+        "status": status,
+        "kernel_pin": {"repository": KERNEL_REPOSITORY, "accepted_commit": KERNEL_ACCEPTED_COMMIT, "semantic_lock_sha256": _safe_hash(lock)},
+        "accepted_requires": dict(accepted_requires),
+        "diagnostics": [item.to_dict() for item in sort_diagnostics(diagnostics)],
+        "upstream_diagnostics": [{"packet_id": item["packet_id"], "diagnostics": item["upstream_diagnostics"]} for item in packet_results],
+        "packet_results": packet_results,
+        "derived_counts": counts,
+        "decision_record_refs": [item["decision_record_ref"] for item in packet_results],
+        "source_evidence_refs": source_refs,
+        "runtime_evidence_refs": runtime_refs,
+        "hashes": {"source_input_hash": _hash("source_input", bundle), "semantic_lock_hash": _hash("semantic_lock", lock)},
+        "provenance": {"source_bundle_id": str(bundle.get("bundle_id", "unknown")) if isinstance(bundle, dict) else "unknown", "source_bundle_provenance": bundle.get("provenance", {}) if isinstance(bundle, dict) and isinstance(bundle.get("provenance"), dict) else {}, "result_producer": "rezahh107/EV4-Project-Gate"},
+    }
 
 
 def _finalize(result: dict[str, Any], schema: dict[str, Any] | None, bundle: Any, data: dict[str, Any] | None, lock: dict[str, Any], packet_results: list[dict[str, Any]], diagnostics: list[Diagnostic], accepted_requires: dict[str, bool]) -> dict[str, Any]:
