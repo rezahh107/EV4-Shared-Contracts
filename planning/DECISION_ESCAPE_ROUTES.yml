@@ -3,7 +3,7 @@ consumer_repo: EV4-Project-Gate
 consumer_repo_evidence_state: expected_unverified
 
 last_updated:
-  date: "2026-07-09"
+  date: "2026-07-11"
   pr: null
   commit: null
 
@@ -22,16 +22,15 @@ records:
     risk: Critical
     session_scope: cross_turn
     mapping_status: mapped
-    added_reason: "Wave 4 inspection found a real Project Gate final-gate intake and gate-decision surface without a recorded cross-turn Kernel decision lineage escape route."
+    added_reason: "Wave 4 inspection found a real Project Gate final-gate intake and gate-decision surface without an authoritative cross-turn Kernel decision intake gate."
     carriers:
-      sequence_CI_step: ".github/workflows/validate.yml#python-core/Wave 4 Project Gate decision lineage sequence tests"
-      test_command: "uv run pytest tests/transitions/test_final_gate.py tests/planning/test_decision_escape_routes_schema.py"
-      positive_fixture: "fixtures/valid/final-gate-decision-lineage.v1.json"
-      negative_fixture: "fixtures/invalid/final-gate-missing-decision-lineage.v1.json"
-      validator_rule: "src/ev4_transition/transitions/final_gate.py::_validate_decision_lineage"
-      validator_diagnostic: "PG.FINAL.DECISION_LINEAGE_MISSING"
-      downstream_contract: "contracts/locks/final-gate.v1.lock.json"
+      sequence_CI_step: ".github/workflows/kroad-011.yml#kroad-011"
+      test_command: "uv run pytest tests/kernel_decision_intake tests/transitions/test_final_gate.py tests/reports/test_decision_receipts.py tests/planning/test_decision_escape_routes_schema.py"
+      positive_fixture: "fixtures/kernel-decision-intake/complete-layout-structure.synthetic.json"
+      negative_fixture: "fixtures/kernel-decision-intake/cases.synthetic.json"
+      validator_rule: "src/ev4_transition/transitions/final_gate.py::_validate_kernel_decision_intake_result"
+      validator_diagnostic: "PG.FINAL.KERNEL_INTAKE_REQUIRED"
     status:
-      enforcement_status: downstream_contract_enforced
+      enforcement_status: sequence_ci_enforced
       evidence_state: validated
-    notes: "Final gate intake now requires Kernel decision lineage fields, rejects missing or incomplete lineage, preserves valid lineage on accepted output, and CI runs the sequence tests against the pinned final-gate transition contract. Release readiness is not authored or claimed."
+    notes: "KROAD-011 makes an accepted, pinned, hash-verified, actually executed Kernel decision intake result mandatory for Final Gate and hardens receipts against lineage-only success. This is sequence-level Project Gate enforcement only. No inspected downstream producer rejection evidence proves downstream_contract_enforced, runtime enforcement, Builder execution, release readiness, or production readiness."
