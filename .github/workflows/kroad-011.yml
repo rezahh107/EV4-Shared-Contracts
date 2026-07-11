@@ -5,16 +5,20 @@ on:
     paths:
       - ".github/workflows/kroad-011.yml"
       - ".github/workflows/validate.yml"
+      - "README.md"
       - "contracts/locks/kernel-decision-intake.v1.lock.json"
       - "fixtures/kernel-decision-intake/**"
       - "schemas/kernel-decision-intake/**"
       - "schemas/kernel-decision-intake-result/**"
       - "scripts/compute-kernel-decision-intake-lock.py"
       - "scripts/kernel-decision-intake-bridge.mjs"
+      - "src/ev4_transition/cli.py"
       - "src/ev4_transition/kernel_decision_*.py"
       - "src/ev4_transition/runners/kernel_decision.py"
       - "src/ev4_transition/transitions/final_gate.py"
       - "src/ev4_transition/reports/decision_receipts.py"
+      - "tests/test_cli.py"
+      - "tests/test_cli_final_gate_kernel_repo.py"
       - "tests/kernel_decision_intake/**"
       - "tests/transitions/test_final_gate.py"
       - "tests/reports/test_decision_receipts.py"
@@ -119,6 +123,16 @@ jobs:
           if (result.execution_status !== 'completed') throw new Error('bridge execution did not complete');
           if (result.kernel_audit?.audit_status !== 'pass') throw new Error(`unexpected L2 status: ${result.kernel_audit?.audit_status}`);
           NODE
+
+      - name: Run focused Final Gate CLI and KROAD tests
+        working-directory: EV4-Project-Gate
+        run: >-
+          uv run pytest
+          tests/test_cli.py
+          tests/test_cli_final_gate_kernel_repo.py
+          tests/kernel_decision_intake
+          tests/transitions/test_final_gate.py
+          tests/reports/test_decision_receipts.py
 
       - name: Run complete Project Gate pytest suite
         working-directory: EV4-Project-Gate
