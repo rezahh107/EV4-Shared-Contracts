@@ -44,6 +44,7 @@ jobs:
         with:
           repository: rezahh107/EV4-Decision-Kernel
           ref: 76a82e28543ff8f0babca11b7d7dccac96b92894
+          fetch-depth: 0
           path: EV4-Decision-Kernel
           persist-credentials: false
 
