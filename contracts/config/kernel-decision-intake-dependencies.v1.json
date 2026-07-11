@@ -1,0 +1,13 @@
+{
+  "schema_version": "kernel-decision-intake-dependencies.v1",
+  "repository": "rezahh107/EV4-Decision-Kernel",
+  "accepted_commit": "76a82e28543ff8f0babca11b7d7dccac96b92894",
+  "dependencies": [
+    {"role":"decision_record_schema","path":"kernel/schemas/decision-record.v2.schema.json","identity":{"field":"$id","value":"https://ev4.local/schemas/decision-record.v2.schema.json"}},
+    {"role":"p0_decision_matrices","path":"kernel/decision-governance/p0-decision-matrices.v0.json","identity":{"field":"matrix_registry_id","value":"p0-decision-matrices.v0"}},
+    {"role":"resolver_rule_registry","path":"kernel/decision-governance/resolver-rule-registry.v0.json","identity":{"field":"registry_id","value":"resolver-rule-registry.v0"}},
+    {"role":"layout_structure_rule","path":"kernel/decision-governance/resolver-rules/layout-structure.v0.json","identity":{"field":"contract_id","value":"resolver.contract.layout_structure.mvp.v0"}},
+    {"role":"resolver_implementation","path":"kernel/resolver-mvp/resolve-high-risk-p0.mjs","identity":{"contains":"export function resolveDecision"}},
+    {"role":"l2_audit_implementation","path":"kernel/validator/validate-l2-decision-correctness.mjs","identity":{"contains":"export function auditDecisionRecord"}}
+  ]
+}
