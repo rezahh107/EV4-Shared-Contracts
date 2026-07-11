@@ -9,7 +9,6 @@ from .architect_to_ce import TransitionValidatorHooks, transition_from_local_pat
 from .transitions.builder_to_responsive import transition_from_local_paths as builder_to_responsive_from_local_paths
 from .transitions.ce_to_builder import transition_from_local_paths as ce_to_builder_from_local_paths
 from .transitions.final_gate import final_gate_from_local_paths
-from .kernel_decision_intake import kernel_decision_intake_from_local_paths
 from .behavioral_coverage import CoverageSourceError, inspect_coverage_source, validate_coverage_source
 from .bundle_validator import BundleValidator, ResultValidationError
 from .canonical_json import canonical_dumps, load_json_file
@@ -30,13 +29,12 @@ def main(argv: list[str] | None = None) -> int:
     validate_parser.add_argument("--require-evidence", action="append", default=[])
     validate_parser.add_argument("--format", choices=["json", "persian"], default="json")
     transition_parser = sub.add_parser("transition", help="Run a deterministic Project Gate transition.")
-    transition_parser.add_argument("transition_name", choices=["architect-to-ce", "ce-to-builder", "builder-to-responsive", "kernel-decision-intake", "final-evidence-gate"])
+    transition_parser.add_argument("transition_name", choices=["architect-to-ce", "ce-to-builder", "builder-to-responsive", "final-evidence-gate"])
     transition_parser.add_argument("bundle")
     transition_parser.add_argument("--architect-repo")
     transition_parser.add_argument("--ce-repo")
     transition_parser.add_argument("--builder-repo")
     transition_parser.add_argument("--responsive-repo")
-    transition_parser.add_argument("--kernel-repo")
     transition_parser.add_argument("--project-gate-repo")
     transition_parser.add_argument("--lock")
     transition_parser.add_argument("--format", choices=["json", "persian"], default="json")
@@ -97,15 +95,13 @@ def _run_transition(args: argparse.Namespace, bundle: dict[str, Any]) -> dict[st
         return ce_to_builder_from_local_paths(bundle, args.schema_root, args.lock or "contracts/locks/ce-to-builder-transition.v1.lock.json", args.ce_repo, args.builder_repo)
     if args.transition_name == "builder-to-responsive":
         return builder_to_responsive_from_local_paths(bundle, args.schema_root, args.lock or "contracts/locks/builder-to-responsive-transition.v1.lock.json", args.builder_repo, args.responsive_repo)
-    if args.transition_name == "kernel-decision-intake":
-        return kernel_decision_intake_from_local_paths(bundle, schema_root=args.schema_root, lock_path=args.lock or "contracts/locks/kernel-decision-intake.v1.lock.json", kernel_repo=args.kernel_repo, project_gate_repo=args.project_gate_repo)
     if args.transition_name == "final-evidence-gate":
         return final_gate_from_local_paths(bundle, args.schema_root, args.lock or "contracts/locks/final-gate.v1.lock.json", args.project_gate_repo, args.responsive_repo)
     return _simple_insufficient("CLI_TRANSITION_NOT_WIRED", "Transition is not wired in the public CLI.", transition_name=args.transition_name)
 
 
 def _transition_preflight(args: argparse.Namespace) -> dict[str, Any] | None:
-    required_by_transition = {"architect-to-ce": ["architect_repo", "ce_repo"], "ce-to-builder": ["ce_repo", "builder_repo"], "builder-to-responsive": ["builder_repo", "responsive_repo"], "kernel-decision-intake": ["kernel_repo", "project_gate_repo"], "final-evidence-gate": ["project_gate_repo", "responsive_repo"]}
+    required_by_transition = {"architect-to-ce": ["architect_repo", "ce_repo"], "ce-to-builder": ["ce_repo", "builder_repo"], "builder-to-responsive": ["builder_repo", "responsive_repo"], "final-evidence-gate": ["project_gate_repo", "responsive_repo"]}
     for field in required_by_transition.get(args.transition_name, []):
         value = getattr(args, field, None)
         if isinstance(value, str):
@@ -137,7 +133,7 @@ def _load_capability_status() -> dict[str, Any]:
     expected = {"orchestration_baseline": "implemented", "cli_exposure": "guarded", "owner_fixture_integration": "verified", "real_non_synthetic_handoff": "insufficient_evidence"}
     if payload.get("schema_version") != "ev4-project-gate-capability-status.v1" or ce_to_builder != expected:
         raise ValueError("packaged capability truth is invalid")
-    for guarded_name in ["ce-to-builder", "builder-to-responsive", "kernel-decision-intake", "final-evidence-gate"]:
+    for guarded_name in ["ce-to-builder", "builder-to-responsive", "final-evidence-gate"]:
         if guarded_name not in payload.get("public_cli_transitions", []):
             raise ValueError(f"{guarded_name} guarded CLI exposure is not recorded")
     return payload
@@ -173,7 +169,7 @@ def _emit(payload: dict[str, Any], fmt: str) -> None:
         if "status" in payload:
             print(render_plain_summary(payload), end="")
         else:
-            print("هسته قطعی و Architect → CE به‌صورت functional در CLI فعال‌اند؛ CE → Builder، Builder → Responsive، Kernel Decision Intake و Final Evidence Gate به‌صورت guarded/fail-closed در CLI موجودند و شواهد real non-synthetic همچنان insufficient_evidence است.")
+            print("هسته قطعی و Architect → CE به‌صورت functional در CLI فعال‌اند؛ CE → Builder، Builder → Responsive و Final Evidence Gate فقط به‌صورت guarded/fail-closed در CLI موجودند و KROAD-011 به‌صورت internal guarded orchestration پیاده‌سازی شده است. شواهد real non-synthetic همچنان insufficient_evidence است.")
         return
     print(canonical_dumps(payload))
 
