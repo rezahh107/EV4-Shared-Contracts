@@ -1,1 +1,96 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://ev4.local/schemas/kernel-decision-intake-result/kernel-decision-intake-result.v1.schema.json","title":"EV4 Project Gate Kernel Decision Intake Result v1","type":"object","additionalProperties":false,"required":["schema_version","result_type","status","kernel_pin","accepted_requires","diagnostics","upstream_diagnostics","packet_results","derived_counts","decision_record_refs","source_evidence_refs","runtime_evidence_refs","hashes","provenance"],"properties":{"schema_version":{"const":"kernel-decision-intake-result.v1"},"result_type":{"const":"kernel_decision_intake"},"status":{"enum":["accepted","repair_needed","insufficient_evidence","invalid"]},"kernel_pin":{"type":"object","additionalProperties":false,"required":["repository","accepted_commit","semantic_lock_sha256"],"properties":{"repository":{"const":"rezahh107/EV4-Decision-Kernel"},"accepted_commit":{"const":"76a82e28543ff8f0babca11b7d7dccac96b92894"},"semantic_lock_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},"accepted_requires":{"type":"object","additionalProperties":false,"required":["kernel_pin_verified","semantic_lock_verified","intake_schema_valid","packet_binding_valid","l2_executed_all","no_unsupported_claims","result_schema_valid"],"properties":{"kernel_pin_verified":{"type":"boolean"},"semantic_lock_verified":{"type":"boolean"},"intake_schema_valid":{"type":"boolean"},"packet_binding_valid":{"type":"boolean"},"l2_executed_all":{"type":"boolean"},"no_unsupported_claims":{"type":"boolean"},"result_schema_valid":{"type":"boolean"}}},"diagnostics":{"type":"array","items":{"$ref":"#/$defs/diagnostic"}},"upstream_diagnostics":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["packet_id","diagnostics"],"properties":{"packet_id":{"type":"string"},"diagnostics":{"type":"array","items":{"type":"object","additionalProperties":true}}}}},"packet_results":{"type":"array","items":{"$ref":"#/$defs/packetResult"}},"derived_counts":{"type":"object","additionalProperties":false,"required":["provisional_count","human_override_count","unresolved_decision_count","accepted_decision_count","rejected_decision_count"],"properties":{"provisional_count":{"type":"integer","minimum":0},"human_override_count":{"type":"integer","minimum":0},"unresolved_decision_count":{"type":"integer","minimum":0},"accepted_decision_count":{"type":"integer","minimum":0},"rejected_decision_count":{"type":"integer","minimum":0}}},"decision_record_refs":{"type":"array","items":{"$ref":"#/$defs/recordRef"}},"source_evidence_refs":{"type":"array","items":{"$ref":"#/$defs/refProjection"}},"runtime_evidence_refs":{"type":"array","items":{"$ref":"#/$defs/refProjection"}},"hashes":{"type":"object","additionalProperties":false,"required":["source_input_hash","semantic_lock_hash"],"properties":{"source_input_hash":{"$ref":"#/$defs/hashRecord"},"semantic_lock_hash":{"$ref":"#/$defs/hashRecord"}}},"provenance":{"type":"object","additionalProperties":false,"required":["source_bundle_id","source_bundle_provenance","result_producer"],"properties":{"source_bundle_id":{"type":"string","minLength":1},"source_bundle_provenance":{"type":"object"},"result_producer":{"const":"rezahh107/EV4-Project-Gate"}}}},"$defs":{"hashRecord":{"type":"object","additionalProperties":false,"required":["algorithm","scope","value"],"properties":{"algorithm":{"const":"sha256"},"scope":{"type":"string","minLength":1},"value":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},"diagnostic":{"type":"object","additionalProperties":false,"required":["code","severity","message","path"],"properties":{"code":{"type":"string","minLength":1},"severity":{"enum":["error","warning","info","insufficient_evidence"]},"message":{"type":"string","minLength":1},"path":{"type":"string","minLength":1},"details":{"type":"object"}}},"recordRef":{"type":"object","additionalProperties":false,"required":["packet_id","decision_id","sha256"],"properties":{"packet_id":{"type":"string"},"decision_id":{"type":"string"},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},"refProjection":{"type":"object","additionalProperties":false,"required":["packet_id","reference"],"properties":{"packet_id":{"type":"string"},"reference":{"type":"string","minLength":1}}},"packetResult":{"type":"object","additionalProperties":false,"required":["packet_id","decision_id","decision_family_id","status","l2_executed","human_override_observed","project_gate_diagnostics","upstream_diagnostics","resolver_output","decision_record_ref","source_evidence_refs","runtime_evidence_refs","hashes","provenance","execution_record"],"properties":{"packet_id":{"type":"string"},"decision_id":{"type":"string"},"decision_family_id":{"type":"string"},"status":{"enum":["accepted","repair_needed","insufficient_evidence","invalid"]},"l2_executed":{"type":"boolean"},"human_override_observed":{"type":"boolean"},"project_gate_diagnostics":{"type":"array","items":{"$ref":"#/$defs/diagnostic"}},"upstream_diagnostics":{"type":"array","items":{"type":"object","additionalProperties":true}},"resolver_output":{"type":["object","null"]},"decision_record_ref":{"$ref":"#/$defs/recordRef"},"source_evidence_refs":{"type":"array","items":{"type":"string"}},"runtime_evidence_refs":{"type":"array","items":{"type":"string"}},"hashes":{"type":"object","additionalProperties":false,"required":["packet_hash","decision_record_hash","resolver_input_hash","audit_context_hash"],"properties":{"packet_hash":{"$ref":"#/$defs/hashRecord"},"decision_record_hash":{"$ref":"#/$defs/hashRecord"},"resolver_input_hash":{"$ref":"#/$defs/hashRecord"},"audit_context_hash":{"$ref":"#/$defs/hashRecord"}}},"provenance":{"type":"object"},"execution_record":{"type":["object","null"]}}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ev4.local/schemas/kernel-decision-intake-result/kernel-decision-intake-result.v1.schema.json",
+  "title": "EV4 Project Gate Kernel Decision Intake Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "result_type", "status", "kernel_pin", "accepted_requires", "diagnostics", "upstream_diagnostics", "packet_results", "derived_counts", "decision_record_refs", "source_evidence_refs", "runtime_evidence_refs", "hashes", "provenance"],
+  "properties": {
+    "schema_version": {"const": "kernel-decision-intake-result.v1"},
+    "result_type": {"const": "kernel_decision_intake"},
+    "status": {"enum": ["accepted", "repair_needed", "insufficient_evidence", "invalid"]},
+    "kernel_pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "accepted_commit", "semantic_lock_sha256"],
+      "properties": {
+        "repository": {"const": "rezahh107/EV4-Decision-Kernel"},
+        "accepted_commit": {"const": "76a82e28543ff8f0babca11b7d7dccac96b92894"},
+        "semantic_lock_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "accepted_requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernel_pin_verified", "semantic_lock_verified", "intake_schema_valid", "packet_binding_valid", "l2_executed_all", "no_unsupported_claims", "result_schema_valid"],
+      "properties": {
+        "kernel_pin_verified": {"type": "boolean"},
+        "semantic_lock_verified": {"type": "boolean"},
+        "intake_schema_valid": {"type": "boolean"},
+        "packet_binding_valid": {"type": "boolean"},
+        "l2_executed_all": {"type": "boolean"},
+        "no_unsupported_claims": {"type": "boolean"},
+        "result_schema_valid": {"type": "boolean"}
+      }
+    },
+    "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}},
+    "upstream_diagnostics": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["packet_id", "diagnostics"], "properties": {"packet_id": {"type": "string"}, "diagnostics": {"type": "array", "items": {"type": "object", "additionalProperties": true}}}}},
+    "packet_results": {"type": "array", "items": {"$ref": "#/$defs/packetResult"}},
+    "derived_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provisional_count", "human_override_count", "unresolved_decision_count", "accepted_decision_count", "rejected_decision_count"],
+      "properties": {
+        "provisional_count": {"type": "integer", "minimum": 0},
+        "human_override_count": {"type": "integer", "minimum": 0},
+        "unresolved_decision_count": {"type": "integer", "minimum": 0},
+        "accepted_decision_count": {"type": "integer", "minimum": 0},
+        "rejected_decision_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "decision_record_refs": {"type": "array", "items": {"$ref": "#/$defs/recordRef"}},
+    "source_evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/refProjection"}},
+    "runtime_evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/refProjection"}},
+    "hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_input_hash", "semantic_lock_hash"],
+      "properties": {"source_input_hash": {"$ref": "#/$defs/hashRecord"}, "semantic_lock_hash": {"$ref": "#/$defs/hashRecord"}}
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_bundle_id", "source_bundle_provenance", "result_producer"],
+      "properties": {"source_bundle_id": {"type": "string", "minLength": 1}, "source_bundle_provenance": {"type": "object"}, "result_producer": {"const": "rezahh107/EV4-Project-Gate"}}
+    }
+  },
+  "$defs": {
+    "hashRecord": {"type": "object", "additionalProperties": false, "required": ["algorithm", "scope", "value"], "properties": {"algorithm": {"const": "sha256"}, "scope": {"type": "string", "minLength": 1}, "value": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}},
+    "diagnostic": {"type": "object", "additionalProperties": false, "required": ["code", "severity", "message", "path"], "properties": {"code": {"type": "string", "minLength": 1}, "severity": {"enum": ["error", "warning", "info", "insufficient_evidence"]}, "message": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "details": {"type": "object"}}},
+    "recordRef": {"type": "object", "additionalProperties": false, "required": ["packet_id", "decision_id", "sha256"], "properties": {"packet_id": {"type": "string"}, "decision_id": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}},
+    "evidenceProjection": {"type": "object", "additionalProperties": false, "required": ["evidence_id", "source_type", "reference"], "properties": {"evidence_id": {"type": "string", "minLength": 1}, "source_type": {"enum": ["project_export", "runtime_browser"]}, "reference": {"type": "string", "minLength": 1}}},
+    "refProjection": {"type": "object", "additionalProperties": false, "required": ["packet_id", "evidence_id", "source_type", "reference"], "properties": {"packet_id": {"type": "string"}, "evidence_id": {"type": "string", "minLength": 1}, "source_type": {"enum": ["project_export", "runtime_browser"]}, "reference": {"type": "string", "minLength": 1}}},
+    "packetResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packet_id", "decision_id", "decision_family_id", "status", "l2_executed", "human_override_observed", "project_gate_diagnostics", "upstream_diagnostics", "resolver_output", "decision_record_ref", "source_evidence_refs", "runtime_evidence_refs", "hashes", "provenance", "execution_record"],
+      "properties": {
+        "packet_id": {"type": "string"},
+        "decision_id": {"type": "string"},
+        "decision_family_id": {"type": "string"},
+        "status": {"enum": ["accepted", "repair_needed", "insufficient_evidence", "invalid"]},
+        "l2_executed": {"type": "boolean"},
+        "human_override_observed": {"type": "boolean"},
+        "project_gate_diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}},
+        "upstream_diagnostics": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+        "resolver_output": {"type": ["object", "null"]},
+        "decision_record_ref": {"$ref": "#/$defs/recordRef"},
+        "source_evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/evidenceProjection"}},
+        "runtime_evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/evidenceProjection"}},
+        "hashes": {"type": "object", "additionalProperties": false, "required": ["packet_hash", "decision_record_hash", "resolver_input_hash", "audit_context_hash"], "properties": {"packet_hash": {"$ref": "#/$defs/hashRecord"}, "decision_record_hash": {"$ref": "#/$defs/hashRecord"}, "resolver_input_hash": {"$ref": "#/$defs/hashRecord"}, "audit_context_hash": {"$ref": "#/$defs/hashRecord"}}},
+        "provenance": {"type": "object"},
+        "execution_record": {"type": ["object", "null"]}
+      }
+    }
+  }
+}
