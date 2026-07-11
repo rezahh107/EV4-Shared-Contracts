@@ -3,7 +3,7 @@
   "bundle_id": "synthetic-kroad-011",
   "stage": "architect",
   "payload_schema": {"id":"ev4-project-gate-kernel-decision-intake@1.0.0","version":"1.0.0","owner_repository":"rezahh107/EV4-Project-Gate"},
-  "produced_by": {"repository":"rezahh107/source"},
+  "produced_by": {"repository":"rezahh107/source","ref":"synthetic-fixture","commit_sha":"1111111111111111111111111111111111111111"},
   "evidence_status": "complete",
   "payload": {
     "schema_id": "ev4-project-gate-kernel-decision-intake@1.0.0",
@@ -19,7 +19,14 @@
       }]
     }
   },
-  "evidence": [],
-  "provenance": {"source":"synthetic-fixture","created_by":"ev4-project-gate-tests"},
+  "evidence": [{
+    "id":"synthetic_kroad_011_source",
+    "kind":"fixture",
+    "state":"validated",
+    "description":"Synthetic KROAD-011 contract and binding fixture only.",
+    "artifact_hash":{"algorithm":"sha256","value":"0000000000000000000000000000000000000000000000000000000000000000","scope":"canonical_json"},
+    "source":{"type":"synthetic_fixture","reference":"fixtures/kernel-decision-intake/complete-layout-structure.synthetic.json"}
+  }],
+  "provenance": {"source":"synthetic-fixture","created_by":"ev4-project-gate-tests","created_at":"2026-07-11T00:00:00Z"},
   "synthetic": true
 }
