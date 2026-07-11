@@ -81,12 +81,25 @@ def _is_authoritative_intake_accepted(value: Any) -> bool:
     pin = value.get("kernel_pin")
     if not isinstance(pin, dict) or pin.get("repository") != KERNEL_REPOSITORY or pin.get("accepted_commit") != KERNEL_ACCEPTED_COMMIT:
         return False
+    pin_hash = pin.get("semantic_lock_sha256")
+    if not isinstance(pin_hash, str) or len(pin_hash) != 64:
+        return False
+    hashes = value.get("hashes")
+    semantic_hash = hashes.get("semantic_lock_hash") if isinstance(hashes, dict) and isinstance(hashes.get("semantic_lock_hash"), dict) else None
+    if semantic_hash is None or semantic_hash.get("value") != pin_hash or semantic_hash.get("algorithm") != "sha256":
+        return False
+    provenance = value.get("provenance")
+    if not isinstance(provenance, dict) or provenance.get("result_producer") != "rezahh107/EV4-Project-Gate":
+        return False
     required = value.get("accepted_requires")
     required_keys = ("kernel_pin_verified", "semantic_lock_verified", "intake_schema_valid", "packet_binding_valid", "l2_executed_all", "no_unsupported_claims", "result_schema_valid")
     if not isinstance(required, dict) or any(required.get(key) is not True for key in required_keys):
         return False
     packets = value.get("packet_results")
-    return isinstance(packets, list) and bool(packets) and all(isinstance(item, dict) and item.get("status") == "accepted" and item.get("l2_executed") is True for item in packets)
+    if not isinstance(packets, list) or not packets or not all(isinstance(item, dict) and item.get("status") == "accepted" and item.get("l2_executed") is True for item in packets):
+        return False
+    counts = value.get("derived_counts")
+    return isinstance(counts, dict) and counts.get("accepted_decision_count") == len(packets) and counts.get("rejected_decision_count") == 0 and counts.get("unresolved_decision_count") == 0
 
 
 def _get_path(value: Any, keys: tuple[str, ...]) -> Any:
