@@ -1,113 +1,26 @@
 {
   "capabilities": {
-    "architect_to_ce": {
-      "cli_exposure": "implemented",
-      "orchestration_baseline": "implemented",
-      "real_non_synthetic_handoff": "insufficient_evidence",
-      "verification_state": "synthetic_fixture_only"
-    },
-    "builder_to_responsive": {
-      "cli_exposure": "guarded",
-      "official_responsive_validator_integration": "implemented",
-      "orchestration_baseline": "implemented",
-      "owner_contract_lock": "computed_from_pinned_owner_file_bytes",
-      "real_non_synthetic_handoff": "insufficient_evidence",
-      "verification_state": "verified_by_exact_head_ci"
-    },
-    "ce_to_builder": {
-      "cli_exposure": "guarded",
-      "orchestration_baseline": "implemented",
-      "owner_fixture_integration": "verified",
-      "real_non_synthetic_handoff": "insufficient_evidence"
-    },
-    "final_evidence_gate": {
-      "cli_exposure": "guarded",
-      "official_responsive_validator_integration": "implemented",
-      "orchestration_baseline": "implemented",
-      "prior_lock_chain": "pinned_to_immutable_project_gate_commit",
-      "real_non_synthetic_evidence": "insufficient_evidence",
-      "verification_state": "verified_by_exact_head_ci"
-    },
-    "producer_emitted_gate_artifact": {
-      "common_contract": "implemented",
-      "downstream_producer_ci_enforcement": "implemented_immutable_sha_workflow",
-      "producer_adoption": "implemented",
-      "project_gate_runtime_integration": "implemented_prompt_05_explicit_mode",
-      "real_non_synthetic_handoff": "insufficient_evidence",
-      "reusable_verifier": "implemented"
-    },
-    "user_interface": {
-      "browser_accessibility_evidence": "insufficient_evidence",
-      "service_routing": "implemented_prompt_06_fail_closed",
-      "status": "implemented_initial_operator_panel"
-    }
+    "architect_to_ce": {"cli_exposure":"implemented","orchestration_baseline":"implemented","real_non_synthetic_handoff":"insufficient_evidence","verification_state":"synthetic_fixture_only"},
+    "builder_to_responsive": {"cli_exposure":"guarded","official_responsive_validator_integration":"implemented","orchestration_baseline":"implemented","owner_contract_lock":"computed_from_pinned_owner_file_bytes","real_non_synthetic_handoff":"insufficient_evidence","verification_state":"verified_by_exact_head_ci"},
+    "ce_to_builder": {"cli_exposure":"guarded","orchestration_baseline":"implemented","owner_fixture_integration":"verified","real_non_synthetic_handoff":"insufficient_evidence"},
+    "final_evidence_gate": {"cli_exposure":"guarded","kernel_decision_intake_requirement":"implemented_kroad_011","official_responsive_validator_integration":"implemented","orchestration_baseline":"implemented","prior_lock_chain":"pinned_to_immutable_project_gate_commit","real_non_synthetic_evidence":"insufficient_evidence","verification_state":"ci_pending_for_kroad_011"},
+    "kernel_decision_intake": {"cli_exposure":"guarded","contract":"ev4-project-gate-kernel-decision-intake@1.0.0","result_contract":"kernel-decision-intake-result.v1","kernel_pin":"76a82e28543ff8f0babca11b7d7dccac96b92894","semantic_dependencies":6,"official_l2_execution":"implemented","final_gate_integration":"implemented","receipt_authority":"implemented","real_non_synthetic_handoff":"insufficient_evidence","downstream_producer_integration":"insufficient_evidence","verification_state":"ci_pending"},
+    "producer_emitted_gate_artifact": {"common_contract":"implemented","downstream_producer_ci_enforcement":"implemented_immutable_sha_workflow","producer_adoption":"implemented","project_gate_runtime_integration":"implemented_prompt_05_explicit_mode","real_non_synthetic_handoff":"insufficient_evidence","reusable_verifier":"implemented"},
+    "user_interface": {"browser_accessibility_evidence":"insufficient_evidence","service_routing":"implemented_prompt_06_fail_closed","status":"implemented_initial_operator_panel"}
   },
   "evidence": {
-    "ce_to_builder_owner_fixture_integration": {
-      "head_sha": "42bfa484481c585f589d86c40424660c70b038a0",
-      "pull_request": 20,
-      "result": "success",
-      "scope": "owner_fixture_integration_only",
-      "workflow": "Skeleton Health",
-      "workflow_run_id": 28744810186
-    },
-    "current_main_head_ci": {
-      "observed_head_sha": "4233d2ff22310f86305b2e67055c8e4eeb03d6df",
-      "reason": "No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.",
-      "status": "insufficient_evidence"
-    },
-    "foundation_main_head_ci": {
-      "observed_head_sha": "4233d2ff22310f86305b2e67055c8e4eeb03d6df",
-      "reason": "No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.",
-      "status": "insufficient_evidence"
-    },
-    "last_verified_project_gate_pr": {
-      "head_sha": "ce356b6f6a8dee5f807679aed0f78aa057152d1b",
-      "pull_request": 21,
-      "result": "success",
-      "workflow": "Skeleton Health",
-      "workflow_run_id": 28748324684
-    },
-    "prompt_05_owner_contract_and_validator_integration": {
-      "prompt_05_workflow_run_id": 28749872553,
-      "pull_request": 23,
-      "result": "success",
-      "scope": "pinned_owner_contract_lock_reproduction_and_official_validator_integration_only",
-      "skeleton_health_workflow_run_id": 28749872558,
-      "verified_head_sha": "cf69f83682e65154678a85d05d9e2f3d31bdedaa"
-    }
+    "ce_to_builder_owner_fixture_integration": {"head_sha":"42bfa484481c585f589d86c40424660c70b038a0","pull_request":20,"result":"success","scope":"owner_fixture_integration_only","workflow":"Skeleton Health","workflow_run_id":28744810186},
+    "current_main_head_ci": {"observed_head_sha":"4233d2ff22310f86305b2e67055c8e4eeb03d6df","reason":"No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.","status":"insufficient_evidence"},
+    "foundation_main_head_ci": {"observed_head_sha":"4233d2ff22310f86305b2e67055c8e4eeb03d6df","reason":"No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.","status":"insufficient_evidence"},
+    "kroad_011": {"kernel_repository":"rezahh107/EV4-Decision-Kernel","kernel_pin":"76a82e28543ff8f0babca11b7d7dccac96b92894","scope":"synthetic_and_adversarial_fixture_validation_pending_ci","status":"ci_pending"},
+    "last_verified_project_gate_pr": {"head_sha":"ce356b6f6a8dee5f807679aed0f78aa057152d1b","pull_request":21,"result":"success","workflow":"Skeleton Health","workflow_run_id":28748324684},
+    "prompt_05_owner_contract_and_validator_integration": {"prompt_05_workflow_run_id":28749872553,"pull_request":23,"result":"success","scope":"pinned_owner_contract_lock_reproduction_and_official_validator_integration_only","skeleton_health_workflow_run_id":28749872558,"verified_head_sha":"cf69f83682e65154678a85d05d9e2f3d31bdedaa"}
   },
-  "implemented": [
-    "canonical_json",
-    "sha256",
-    "structured_diagnostics",
-    "stage_bundle_validation",
-    "transition_result_schema_foundation",
-    "status_presentation_mapping",
-    "behavioral_coverage_validation",
-    "architect-to-ce transition",
-    "ce-to-builder orchestration baseline",
-    "builder-to-responsive orchestration baseline",
-    "final evidence gate orchestration baseline",
-    "local operator UI shell",
-    "minimal_cli",
-    "producer adoption registry",
-    "explicit producer_emitted_gate_artifact intake",
-    "Prompt 5 immutable-SHA producer CI workflow"
-  ],
-  "not_implemented": [
-    "real EV4 artifact validation"
-  ],
+  "implemented": ["canonical_json","sha256","structured_diagnostics","stage_bundle_validation","transition_result_schema_foundation","status_presentation_mapping","behavioral_coverage_validation","architect-to-ce transition","ce-to-builder orchestration baseline","builder-to-responsive orchestration baseline","kernel decision intake orchestration baseline","final evidence gate orchestration baseline","local operator UI shell","minimal_cli","producer adoption registry","explicit producer_emitted_gate_artifact intake","Prompt 5 immutable-SHA producer CI workflow"],
+  "not_implemented": ["real EV4 artifact validation","KROAD-012 downstream producer integration","KROAD-013 runtime or browser evidence collection","KROAD-014 re-audit automation","KROAD-015 reopen automation"],
   "package": "ev4-project-gate",
-  "pinned_owner_file_computation": {
-    "status": "implemented_at_documented_scopes"
-  },
-  "public_cli_transitions": [
-    "architect-to-ce",
-    "ce-to-builder",
-    "builder-to-responsive",
-    "final-evidence-gate"
-  ],
+  "pinned_owner_file_computation": {"status":"implemented_at_documented_scopes"},
+  "public_cli_transitions": ["architect-to-ce","ce-to-builder","builder-to-responsive","kernel-decision-intake","final-evidence-gate"],
   "repository": "rezahh107/EV4-Project-Gate",
   "schema_version": "ev4-project-gate-capability-status.v1"
 }
