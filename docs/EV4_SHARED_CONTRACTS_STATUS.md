@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#51` | `Implement KROAD-011 Project Gate Kernel decision intake` | `feature/kroad-011-project-gate-intake` | `765fd4b1f086141e6453bd57ed4674d2025caf73` | `01fdc126f834e0c0d8fbb297a2d44488487e5379` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#50` | `Add UX-safe Kernel decision receipts for Project Gate outputs` | `ux/project-gate-kernel-decision-receipts-wave-5` | `cc1083ad78d5c548ec39488d114d243952002303` | `1b813da05837b43ea71047662b43bb64c89fd857` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#49` | `Add Project Gate decision lineage enforcement (Wave 4)` | `codex/add-project-gate-decision-lineage-enforcement` | `46d83e062b45722d8defff5e479648bd4a6d5043` | `70a6abc3aa88d2384095597c69a88212b6c0b825` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#48` | `Adopt EV4 consumer decision trigger architecture baseline (Wave 0)` | `codex/implement-wave-0-architecture-baseline` | `e95a0744a1393f6cf1530c4758eb2435dfb6c7e4` | `908055328a7dac611c0096951ff77e01be6e5636` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
