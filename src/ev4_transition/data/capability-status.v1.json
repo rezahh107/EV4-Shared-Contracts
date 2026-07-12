@@ -61,6 +61,13 @@
       "reason": "No exact-head workflow run was visible for the automatic historical-ledger commit during this repair audit.",
       "status": "insufficient_evidence"
     },
+    "kroad_011": {
+      "kernel_repository": "rezahh107/EV4-Decision-Kernel",
+      "kernel_pin": "76a82e28543ff8f0babca11b7d7dccac96b92894",
+      "scope": "project_gate_intake_result_final_gate_and_receipt_implementation",
+      "status": "ci_pending",
+      "evidence_limit": "synthetic_and_adversarial_fixtures_only"
+    },
     "last_verified_project_gate_pr": {
       "head_sha": "ce356b6f6a8dee5f807679aed0f78aa057152d1b",
       "pull_request": 21,
@@ -88,6 +95,7 @@
     "architect-to-ce transition",
     "ce-to-builder orchestration baseline",
     "builder-to-responsive orchestration baseline",
+    "KROAD-011 kernel decision intake internal orchestration baseline",
     "final evidence gate orchestration baseline",
     "local operator UI shell",
     "minimal_cli",
@@ -95,8 +103,26 @@
     "explicit producer_emitted_gate_artifact intake",
     "Prompt 5 immutable-SHA producer CI workflow"
   ],
+  "kroad_011": {
+    "api_exposure": "internal_guarded",
+    "contract": "ev4-project-gate-kernel-decision-intake@1.0.0",
+    "result_contract": "kernel-decision-intake-result.v1",
+    "kernel_repository": "rezahh107/EV4-Decision-Kernel",
+    "kernel_pin": "76a82e28543ff8f0babca11b7d7dccac96b92894",
+    "semantic_dependency_count": 6,
+    "official_l2_execution": "implemented",
+    "final_gate_requirement": "implemented",
+    "receipt_authority": "implemented",
+    "verification_state": "ci_pending",
+    "real_non_synthetic_handoff": "insufficient_evidence",
+    "downstream_producer_integration": "insufficient_evidence"
+  },
   "not_implemented": [
-    "real EV4 artifact validation"
+    "real EV4 artifact validation",
+    "KROAD-012 downstream producer integration",
+    "KROAD-013 runtime or browser evidence collection",
+    "KROAD-014 re-audit automation",
+    "KROAD-015 reopen automation"
   ],
   "package": "ev4-project-gate",
   "pinned_owner_file_computation": {

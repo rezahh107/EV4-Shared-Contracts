@@ -78,6 +78,7 @@ jobs:
           test -f docs/MIGRATION_READINESS_CHECKLIST.md
           test -f docs/VALIDATION_STRATEGY.md
           test -f docs/PROMOTION_RULES.md
+          test -f docs/KROAD_011_PROJECT_GATE_INTAKE.md
           test -f docs/ADR/0001-non-authoritative-skeleton.md
           test -f schemas/README.md
           test -f fixtures/README.md
@@ -94,14 +95,14 @@ jobs:
 
       - name: Verify no specialist canonical schema files exist
         run: |
-          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json|schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json|schemas/final-gate-result/final-gate-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json|schemas/producer-adoption/producer-adoption-set.v1.schema.json|schemas/transition-targets/transition-targets.v1.schema.json)$'
+          allowed='^(schemas/README.md|schemas/stage-bundle/stage-bundle.v1.schema.json|schemas/transition-result/transition-result.v1.schema.json|schemas/architect-to-ce-transition-result/architect-to-ce-transition-result.v1.schema.json|schemas/ce-to-builder-transition-result/ce-to-builder-transition-result.v1.schema.json|schemas/builder-to-responsive-transition-result/builder-to-responsive-transition-result.v1.schema.json|schemas/kernel-decision-intake/kernel-decision-intake.v1.schema.json|schemas/kernel-decision-intake-result/kernel-decision-intake-result.v1.schema.json|schemas/final-gate-result/final-gate-result.v1.schema.json|schemas/diagnostic/diagnostic.v1.schema.json|schemas/lock-manifest/lock-manifest.v1.schema.json|schemas/behavioral-coverage/behavioral-coverage.v1.schema.json|schemas/validator-evidence/validator-evidence.v1.schema.json|schemas/producer-adoption/producer-adoption-set.v1.schema.json|schemas/transition-targets/transition-targets.v1.schema.json)$'
           unexpected=$(find schemas -type f | grep -Ev "$allowed" || true)
           if [ -n "$unexpected" ]; then
             echo "Unexpected schema files found under schemas/."
             printf '%s\n' "$unexpected"
             exit 1
           fi
-          echo "Only Project Gate envelope/result/diagnostic/lock/behavioral-coverage/validator-evidence/producer-adoption/transition-target schemas found."
+          echo "Only Project Gate-owned envelope/result/intake/diagnostic/lock/behavioral-coverage/validator-evidence/producer-adoption/transition-target schemas found."
 
       - name: Record exact tested head
         run: echo "Skeleton Health validated source head ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
@@ -175,9 +176,9 @@ jobs:
         working-directory: EV4-Project-Gate
         run: uv run pytest tests/service
 
-      - name: Wave 4 Project Gate decision lineage sequence tests
+      - name: KROAD-011 intake, Final Gate, receipt, and governance tests
         working-directory: EV4-Project-Gate
-        run: uv run pytest tests/transitions/test_final_gate.py tests/planning/test_decision_escape_routes_schema.py
+        run: uv run pytest tests/kernel_decision_intake tests/transitions/test_final_gate.py tests/reports/test_decision_receipts.py tests/planning/test_decision_escape_routes_schema.py
 
       - name: Operator UI adapter tests
         working-directory: EV4-Project-Gate
