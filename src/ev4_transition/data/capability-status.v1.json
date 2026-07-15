@@ -57,8 +57,8 @@
       "exact_validated_main_head_sha": "c030460aa90b0b234c2e421554d4f8eb45061210",
       "exact_validated_main_workflow_run_id": 29185523846,
       "material_equivalence_to_validated_head": "verified_historical_ledger_only_delta",
-      "reason": "KROAD-011 exact corrected-main workflow run 29185523846 succeeded on c030460aa90b0b234c2e421554d4f8eb45061210. Current main 2ed9c256160e177605c08d3250d5ea7836b6bbf0 is one historical-ledger-only commit ahead and does not change the KROAD-011 acceptance surface.",
-      "status": "not_run_on_exact_current_head"
+      "reason": "KROAD-011 exact corrected-main workflow run 29185523846 succeeded on c030460aa90b0b234c2e421554d4f8eb45061210. Current main 2ed9c256160e177605c08d3250d5ea7836b6bbf0 is one historical-ledger-only commit ahead and does not change the KROAD-011 acceptance surface. Exact CI on the observed current head remains insufficient evidence.",
+      "status": "insufficient_evidence"
     },
     "foundation_main_head_ci": {
       "observed_head_sha": "4233d2ff22310f86305b2e67055c8e4eeb03d6df",
