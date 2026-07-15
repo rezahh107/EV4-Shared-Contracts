@@ -18,7 +18,8 @@ repository:
   default_branch: main
   current_main_head: 2ed9c256160e177605c08d3250d5ea7836b6bbf0
   current_main_head_ci:
-    status: not_run_on_exact_current_head
+    status: insufficient_evidence
+    exact_run_on_observed_head: false
     exact_validated_main_head: c030460aa90b0b234c2e421554d4f8eb45061210
     exact_validated_main_workflow_run_id: 29185523846
     material_equivalence_to_validated_head: verified_historical_ledger_only_delta
@@ -26,10 +27,11 @@ repository:
       KROAD-011 exact corrected-main workflow run 29185523846 succeeded on
       c030460aa90b0b234c2e421554d4f8eb45061210. Current main
       2ed9c256160e177605c08d3250d5ea7836b6bbf0 is one historical-ledger-only commit ahead and does not change
-      the KROAD-011 acceptance surface. No exact KROAD-specific run is claimed on 2ed9c256160e177605c08d3250d5ea7836b6bbf0.
+      the KROAD-011 acceptance surface. Exact CI on the observed current head remains insufficient evidence.
   current_main_ref_sha: 2ed9c256160e177605c08d3250d5ea7836b6bbf0
   current_main_ref_ci:
-    status: not_run_on_exact_current_head
+    status: insufficient_evidence
+    exact_run_on_observed_head: false
     exact_validated_main_head: c030460aa90b0b234c2e421554d4f8eb45061210
     exact_validated_main_workflow_run_id: 29185523846
     material_equivalence_to_validated_head: verified_historical_ledger_only_delta
