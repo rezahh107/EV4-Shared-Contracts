@@ -71,16 +71,14 @@ jobs:
           out = Path("bootstrap-authorities")
           out.mkdir()
           (out / "computed-a2c-lock.json").write_text(json.dumps(lock, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
-          for path in [
-              "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
-              ".github/workflows/validate.yml",
-              "docs/IMPLEMENTATION_STATUS.yaml",
-              "src/ev4_transition/data/capability-status.v1.json",
-          ]:
-              source = Path("EV4-Project-Gate") / path
-              target = out / path
-              target.parent.mkdir(parents=True, exist_ok=True)
-              target.write_bytes(source.read_bytes())
+          visible = {
+              "producer-adoption.json": "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
+              "validate.yml": ".github/workflows/validate.yml",
+              "implementation-status.yaml": "docs/IMPLEMENTATION_STATUS.yaml",
+              "capability-status.json": "src/ev4_transition/data/capability-status.v1.json",
+          }
+          for target_name, path in visible.items():
+              (out / target_name).write_bytes((Path("EV4-Project-Gate") / path).read_bytes())
           PY
       - name: Upload current authorities
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
