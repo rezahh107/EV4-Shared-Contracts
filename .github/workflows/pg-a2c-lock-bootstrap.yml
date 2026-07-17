@@ -88,6 +88,37 @@ jobs:
             EV4_ARCHITECT_REPO="${GITHUB_WORKSPACE}/EV4-Architect-Repo" \
             EV4_CE_REPO="${GITHUB_WORKSPACE}/EV4-Constructability-Engineer-Repo" \
               uv run pytest -vv --tb=long tests/test_architect_to_ce_transition.py
+            uv run python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from ev4_transition.architect_to_ce import TransitionValidatorHooks, transition_from_local_paths
+          from ev4_transition.canonical_json import bytes_sha256, canonical_dumps
+          from ev4_transition.external_lock import ARCHITECT_COMMIT, ARCHITECT_REPO
+          from ev4_transition.validator_runner import run_architect_validator, run_ce_validator
+
+          arch = Path(os.environ["GITHUB_WORKSPACE"]) / "EV4-Architect-Repo"
+          ce = Path(os.environ["GITHUB_WORKSPACE"]) / "EV4-Constructability-Engineer-Repo"
+          payload = json.loads((arch / "fixtures/architect-stage-payload/valid/minimal-complete.v1.json").read_text())
+          bundle = {
+              "schema_version": "stage-evidence-bundle.v1",
+              "bundle_id": "diagnostic-current-a2c",
+              "stage": "architect",
+              "payload_schema": {"id": "ev4-architect-stage-payload@1.0.0", "version": "1.0.0", "owner_repository": ARCHITECT_REPO},
+              "produced_by": {"repository": ARCHITECT_REPO, "ref": "synthetic-fixture", "commit_sha": ARCHITECT_COMMIT},
+              "evidence_status": "complete",
+              "payload": {"schema_id": "ev4-architect-stage-payload@1.0.0", "data": payload},
+              "evidence": [{"id": "architect-payload", "kind": "fixture", "state": "validated", "description": "diagnostic", "artifact_hash": {"algorithm": "sha256", "value": bytes_sha256(canonical_dumps(payload).encode()), "scope": "canonical_json"}, "source": {"type": "synthetic_fixture", "reference": "diagnostic"}}],
+              "provenance": {"source": "synthetic-fixture", "created_by": "diagnostic"},
+              "synthetic": True,
+          }
+          hooks = TransitionValidatorHooks(
+              architect=lambda item: run_architect_validator(arch, item),
+              ce=lambda item, source: run_ce_validator(ce, item, source),
+          )
+          result = transition_from_local_paths(bundle, "schemas", "contracts/locks/architect-to-ce-transition.v1.lock.json", arch, ce, validator_hooks=hooks)
+          Path("../bootstrap-authorities/a2c-one-case.json").write_text(canonical_dumps(result) + "\n")
+          PY
             uv run pytest -vv --tb=long \
               tests/producer_integration/test_prompt05_producer_integration.py \
               tests/producer_integration/test_pg_a2c_io.py \
@@ -96,6 +127,7 @@ jobs:
               --architect-repo "${GITHUB_WORKSPACE}/EV4-Architect-Repo" \
               --ce-repo "${GITHUB_WORKSPACE}/EV4-Constructability-Engineer-Repo" \
               --evidence-dir bootstrap-authorities/current-head-evidence
+            cp -R bootstrap-authorities/current-head-evidence ../bootstrap-authorities/current-head-evidence 2>/dev/null || true
           ) > bootstrap-authorities/a2c-tests.txt 2>&1
           echo "$?" > bootstrap-authorities/a2c-tests.exit-code
           exit 0
