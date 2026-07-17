@@ -19,7 +19,9 @@ PROJECT_GATE_REPOSITORY = "rezahh107/EV4-Project-Gate"
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Prove current-head synthetic Architect→CE compatibility.")
+    parser = argparse.ArgumentParser(
+        description="Prove current-head synthetic Architect→CE compatibility."
+    )
     parser.add_argument("--architect-repo", type=Path, required=True)
     parser.add_argument("--ce-repo", type=Path, required=True)
     parser.add_argument("--evidence-dir", type=Path, required=True)
@@ -30,11 +32,26 @@ def main(argv: list[str] | None = None) -> int:
     ce = args.ce_repo.resolve()
     evidence = args.evidence_dir.resolve()
     evidence.mkdir(parents=True, exist_ok=True)
+    try:
+        evidence.relative_to(project_gate)
+    except ValueError as exc:
+        raise SystemExit("evidence directory must be inside the Project Gate checkout") from exc
 
     identities = {
-        "project_gate": inspect_checkout(project_gate, expected_repository=PROJECT_GATE_REPOSITORY),
-        "architect": inspect_checkout(architect, expected_repository=ARCHITECT_REPO, expected_commit=ARCHITECT_COMMIT),
-        "ce": inspect_checkout(ce, expected_repository=CE_REPO, expected_commit=CE_COMMIT),
+        "project_gate": inspect_checkout(
+            project_gate,
+            expected_repository=PROJECT_GATE_REPOSITORY,
+        ),
+        "architect": inspect_checkout(
+            architect,
+            expected_repository=ARCHITECT_REPO,
+            expected_commit=ARCHITECT_COMMIT,
+        ),
+        "ce": inspect_checkout(
+            ce,
+            expected_repository=CE_REPO,
+            expected_commit=CE_COMMIT,
+        ),
     }
     if any(item["status"] != "accepted" for item in identities.values()):
         _write_json(evidence / "identity-failure.json", identities)
@@ -46,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = architect / "fixtures/architect-stage-payload/valid/minimal-complete.v1.json"
     exporter_command = [
         sys.executable,
+        "-B",
         "scripts/export-architect-project-gate.py",
         "--payload",
         str(payload.relative_to(architect)),
@@ -57,20 +75,25 @@ def main(argv: list[str] | None = None) -> int:
         "json",
     ]
     exporter = _run(exporter_command, cwd=architect)
-    _write_process(evidence / "architect-exporter-result.json", exporter_command, exporter)
+    _write_process(
+        evidence / "architect-exporter-result.json",
+        exporter_command,
+        exporter,
+    )
     if exporter.returncode != 0 or not architect_export.is_file():
         raise SystemExit("official Architect exporter did not emit an accepted artifact")
 
     export_value = _read_json(architect_export)
     if export_value.get("schema_version") != "producer-gate-export.v1":
         raise SystemExit("Architect exporter emitted an unexpected contract identity")
-    if export_value.get("synthetic") is False or not bool((export_value.get("final_stage_bundle") or {}).get("synthetic")):
-        raise SystemExit("current-head integration fixture must remain honestly synthetic")
+    final_bundle = export_value.get("final_stage_bundle")
+    if not isinstance(final_bundle, dict) or final_bundle.get("synthetic") is not True:
+        raise SystemExit("current-head integration evidence must remain honestly synthetic")
 
     source_copy = evidence / "architect-project-gate.json"
     source_copy.write_bytes(architect_export.read_bytes())
     source_bundle_path = evidence / "architect-source-bundle.json"
-    _write_json(source_bundle_path, export_value["final_stage_bundle"])
+    _write_json(source_bundle_path, final_bundle)
 
     output = evidence / "ce-input.json"
     receipt = evidence / "project-gate-a2c-receipt.json"
@@ -93,23 +116,20 @@ def main(argv: list[str] | None = None) -> int:
         "--ce-repo",
         str(ce),
         "--output",
-        str(output.relative_to(project_gate)),
+        output.relative_to(project_gate).as_posix(),
         "--receipt-output",
-        str(receipt.relative_to(project_gate)),
+        receipt.relative_to(project_gate).as_posix(),
         "--format",
         "json",
     ]
     first = _run(cli_command, cwd=project_gate)
-    _write_process(evidence / "project-gate-first-result.json", cli_command, first)
-    if first.returncode != 0 or not output.is_file() or not receipt.is_file():
-        raise SystemExit("Project Gate did not publish accepted standalone outputs")
+    _write_process(
+        evidence / "project-gate-first-result.json",
+        cli_command,
+        first,
+    )
     first_result = _single_json_line(first.stdout)
-    if first_result.get("status") != "accepted" or first_result.get("handoff_allowed") is not True:
-        raise SystemExit("Project Gate did not report an accepted handoff")
-    if first_result.get("producer_validation", {}).get("official_validator_status") != "accepted":
-        raise SystemExit("official Architect validator was not accepted")
-    if first_result.get("consumer_validation", {}).get("status") != "accepted":
-        raise SystemExit("official CE validator was not accepted")
+    _assert_accepted_publication(first, first_result, output, receipt)
 
     shutil.copyfile(output, first_ce)
     shutil.copyfile(receipt, first_receipt)
@@ -119,9 +139,13 @@ def main(argv: list[str] | None = None) -> int:
     receipt.unlink()
 
     second = _run(cli_command, cwd=project_gate)
-    _write_process(evidence / "project-gate-second-result.json", cli_command, second)
-    if second.returncode != 0:
-        raise SystemExit("deterministic repeat execution failed")
+    _write_process(
+        evidence / "project-gate-second-result.json",
+        cli_command,
+        second,
+    )
+    second_result = _single_json_line(second.stdout)
+    _assert_accepted_publication(second, second_result, output, receipt)
     if output.read_bytes() != first_ce_bytes:
         raise SystemExit("repeated Project Gate execution changed CE input bytes")
     if receipt.read_bytes() != first_receipt_bytes:
@@ -138,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ce_validator_command = [
         sys.executable,
+        "-B",
         "scripts/validate-ce-architect-stage-intake.py",
         "--repo-root",
         str(ce),
@@ -151,16 +176,27 @@ def main(argv: list[str] | None = None) -> int:
         "json",
     ]
     ce_validation = _run(ce_validator_command, cwd=ce)
-    _write_process(evidence / "official-ce-revalidation.json", ce_validator_command, ce_validation)
+    _write_process(
+        evidence / "official-ce-revalidation.json",
+        ce_validator_command,
+        ce_validation,
+    )
     if ce_validation.returncode != 0:
         raise SystemExit("standalone CE input failed official CE revalidation")
 
     overwrite = _run(cli_command, cwd=project_gate)
-    _write_process(evidence / "overwrite-rejection.json", cli_command, overwrite)
+    _write_process(
+        evidence / "overwrite-rejection.json",
+        cli_command,
+        overwrite,
+    )
     overwrite_result = _single_json_line(overwrite.stdout)
     if overwrite.returncode == 0 or overwrite_result.get("status") != "invalid":
         raise SystemExit("existing outputs were not rejected fail-closed")
-    if not any(item.get("code") == "PG_A2C_OUTPUT_EXISTS" for item in overwrite_result.get("diagnostics", [])):
+    if not any(
+        item.get("code") == "PG_A2C_OUTPUT_EXISTS"
+        for item in overwrite_result.get("diagnostics", [])
+    ):
         raise SystemExit("overwrite rejection diagnostic was not deterministic")
 
     summary = {
@@ -168,7 +204,13 @@ def main(argv: list[str] | None = None) -> int:
         "evidence_classification": "cross_repository_integration",
         "real_run": "not_available",
         "synthetic": True,
-        "repository_identities": {key: {"repository": value["repository"], "commit": value["commit"]} for key, value in identities.items()},
+        "repository_identities": {
+            key: {
+                "repository": value["repository"],
+                "commit": value["commit"],
+            }
+            for key, value in identities.items()
+        },
         "architect_export": {
             "path": source_copy.name,
             "sha256_file_bytes": _sha256(source_copy),
@@ -178,7 +220,9 @@ def main(argv: list[str] | None = None) -> int:
             "path": output.name,
             "schema_id": ce_input.get("schema_id"),
             "sha256_file_bytes": _sha256(output),
-            "canonical_sha256": first_result["downstream_artifact"]["canonical_sha256"],
+            "canonical_sha256": first_result["downstream_artifact"][
+                "canonical_sha256"
+            ],
         },
         "receipt": {
             "path": receipt.name,
@@ -188,7 +232,9 @@ def main(argv: list[str] | None = None) -> int:
             "canonical_sha256": first_result["receipt"]["canonical_sha256"],
         },
         "validators": {
-            "architect": first_result["producer_validation"]["official_validator_status"],
+            "architect": first_result["producer_validation"][
+                "official_validator_status"
+            ],
             "ce": first_result["consumer_validation"]["status"],
             "ce_standalone_revalidation": "valid",
         },
@@ -201,28 +247,91 @@ def main(argv: list[str] | None = None) -> int:
             "stale_pin_tests": "covered_by_exact_head_test_suite",
             "tamper_tests": "covered_by_adversarial_test_suite",
         },
-        "operator_command": "ev4-transition transition architect-to-ce architect-project-gate.json --acquisition-mode producer_emitted_gate_artifact --architect-repo ../EV4-Architect-Repo --ce-repo ../EV4-Constructability-Engineer-Repo --output ce-input.json --receipt-output project-gate-a2c-receipt.json --format json",
+        "operator_command": (
+            "ev4-transition transition architect-to-ce architect-project-gate.json "
+            "--acquisition-mode producer_emitted_gate_artifact "
+            "--architect-repo ../EV4-Architect-Repo "
+            "--ce-repo ../EV4-Constructability-Engineer-Repo "
+            "--output ce-input.json "
+            "--receipt-output project-gate-a2c-receipt.json --format json"
+        ),
     }
     _write_json(evidence / "summary.json", summary)
     print(canonical_dumps(summary))
     return 0
 
 
+def _assert_accepted_publication(
+    completed: subprocess.CompletedProcess[str],
+    result: dict[str, Any],
+    output: Path,
+    receipt: Path,
+) -> None:
+    if completed.returncode != 0 or not output.is_file() or not receipt.is_file():
+        raise SystemExit("Project Gate did not publish accepted standalone outputs")
+    if result.get("status") != "accepted" or result.get("handoff_allowed") is not True:
+        raise SystemExit("Project Gate did not report an accepted handoff")
+    if result.get("producer_validation", {}).get("official_validator_status") != "accepted":
+        raise SystemExit("official Architect validator was not accepted")
+    if result.get("consumer_validation", {}).get("status") != "accepted":
+        raise SystemExit("official CE validator was not accepted")
+
+
 def _ensure_named_branch(repo: Path) -> None:
-    current = subprocess.run(["git", "-C", str(repo), "symbolic-ref", "--short", "HEAD"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False)
+    current = subprocess.run(
+        ["git", "-C", str(repo), "symbolic-ref", "--short", "HEAD"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        check=False,
+    )
     if current.returncode == 0:
         return
-    subprocess.run(["git", "-C", str(repo), "switch", "-c", "pg-a2c-current-head-integration"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "switch", "-c", "pg-a2c-current-head-integration"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
 
 
 def _run(command: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
-    env.update({"LC_ALL": "C.UTF-8", "LANG": "C.UTF-8", "PYTHONHASHSEED": "0"})
-    return subprocess.run(command, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False, timeout=120)
+    env.update(
+        {
+            "LC_ALL": "C.UTF-8",
+            "LANG": "C.UTF-8",
+            "PYTHONHASHSEED": "0",
+            "PYTHONDONTWRITEBYTECODE": "1",
+        }
+    )
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+        timeout=120,
+    )
 
 
-def _write_process(path: Path, command: list[str], completed: subprocess.CompletedProcess[str]) -> None:
-    _write_json(path, {"command": command, "exit_code": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr})
+def _write_process(
+    path: Path,
+    command: list[str],
+    completed: subprocess.CompletedProcess[str],
+) -> None:
+    _write_json(
+        path,
+        {
+            "command": command,
+            "exit_code": completed.returncode,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+        },
+    )
 
 
 def _single_json_line(text: str) -> dict[str, Any]:
@@ -236,7 +345,10 @@ def _single_json_line(text: str) -> dict[str, Any]:
 
 
 def _read_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"), parse_constant=_reject_constant)
+    value = json.loads(
+        path.read_text(encoding="utf-8"),
+        parse_constant=_reject_constant,
+    )
     if not isinstance(value, dict):
         raise SystemExit(f"expected JSON object: {path}")
     return value
