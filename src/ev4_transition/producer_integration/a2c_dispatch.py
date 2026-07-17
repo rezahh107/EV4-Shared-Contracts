@@ -273,7 +273,7 @@ def _build_receipt(
             "bundle_id": final_bundle.get("bundle_id"),
             "canonical_sha256": canonical_sha256(final_bundle),
         },
-        "owner_checkouts": identities,
+        "owner_checkouts": {name: _stable_identity(value) for name, value in sorted(identities.items())},
         "owner_validators": {
             "architect": _outcome_record(architect_outcome),
             "ce": _outcome_record(ce_outcome),
@@ -286,7 +286,7 @@ def _build_receipt(
         "transition_status": transition_status,
         "handoff_allowed": handoff_allowed,
         "ce_input": {
-            "path": str(output_path),
+            "path": _workspace_relative(output_path),
             "schema_id": ce_input.get("schema_id"),
             "canonical_sha256": canonical_sha256(ce_input),
             "publication_state": "published_verified",
@@ -301,15 +301,37 @@ def _build_receipt(
     return base
 
 
+def _stable_identity(identity: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": identity.get("status"),
+        "repository": identity.get("repository"),
+        "commit": identity.get("commit"),
+    }
+
+
 def _outcome_record(outcome: ToolExecutionOutcome | None) -> dict[str, Any]:
     if outcome is None:
-        return {"status": "not_run", "execution_record": None}
+        return {"status": "not_run", "execution": None}
+    record = outcome.execution_record
     return {
         "status": normalize_status(outcome.status),
-        "execution_record": outcome.execution_record.to_dict(),
-        "stdout_hash": outcome.stdout_hash,
-        "stderr_hash": outcome.stderr_hash,
+        "execution": {
+            "owner_repository": record.owner_repo,
+            "owner_commit": record.owner_commit,
+            "validator_path": record.validator_path,
+            "exit_code": record.exit_code,
+            "timeout_seconds": record.timeout_policy.seconds,
+            "stdout_hash": outcome.stdout_hash,
+            "stderr_hash": outcome.stderr_hash,
+        },
     }
+
+
+def _workspace_relative(path: Path) -> str:
+    try:
+        return path.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return path.name
 
 
 def _base_result(
