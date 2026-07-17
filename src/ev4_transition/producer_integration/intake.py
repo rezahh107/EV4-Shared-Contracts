@@ -125,7 +125,7 @@ def transition_producer_export(
     result = intake_producer_export(artifact, transition_name=transition_name, **kwargs)
     result["transition_id"] = transition_name
     result["join_evidence_preflight"] = preflight
-    if result["status"] != "accepted":
+    if result["status"] == "invalid":
         return result
 
     if result.get("resolved_transition") != "architect-to-ce":
