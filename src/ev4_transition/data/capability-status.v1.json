@@ -2,9 +2,16 @@
   "capabilities": {
     "architect_to_ce": {
       "cli_exposure": "implemented",
+      "current_head_synthetic_integration": "verified_by_exact_head_ci",
+      "current_merged_pin_compatibility": "verified_by_exact_head_ci",
+      "deterministic_atomic_publication": "verified_by_exact_head_ci",
+      "official_architect_validator_integration": "implemented",
+      "official_ce_validator_integration": "implemented",
       "orchestration_baseline": "implemented",
+      "producer_emitted_dispatch": "implemented",
+      "producer_export_intake": "implemented",
       "real_non_synthetic_handoff": "insufficient_evidence",
-      "verification_state": "synthetic_fixture_only"
+      "standalone_ce_input_publication": "implemented"
     },
     "builder_to_responsive": {
       "cli_exposure": "guarded",
@@ -29,12 +36,18 @@
       "verification_state": "verified_by_exact_head_ci"
     },
     "producer_emitted_gate_artifact": {
+      "architect_to_ce_dispatch": "implemented",
+      "atomic_no_overwrite_publication": "implemented",
       "common_contract": "implemented",
+      "current_head_synthetic_integration": "verified_by_exact_head_ci",
       "downstream_producer_ci_enforcement": "implemented_immutable_sha_workflow",
+      "official_owner_validator_execution": "implemented",
       "producer_adoption": "implemented",
       "project_gate_runtime_integration": "implemented_prompt_05_explicit_mode",
       "real_non_synthetic_handoff": "insufficient_evidence",
-      "reusable_verifier": "implemented"
+      "reusable_verifier": "implemented",
+      "source_snapshot_and_tamper_resistance": "implemented",
+      "standalone_output_publication": "implemented"
     },
     "user_interface": {
       "browser_accessibility_evidence": "insufficient_evidence",
@@ -126,6 +139,24 @@
       "scope": "kroad_011_exact_corrected_main_pinned_kernel_and_synthetic_adversarial_fixture_scope",
       "workflow": "KROAD-011 Project Gate Intake",
       "workflow_run_id": 29185523846
+    },
+    "pg_a2c": {
+      "architect_commit": "be9bdea9ae246b1587043f2582c1a950ea2a6ec5",
+      "architect_export_handoff_allowed": false,
+      "architect_exporter_exit_code": 2,
+      "architect_validator": "accepted",
+      "ce_commit": "6650c31304e5a0472b276c36018c1df8f42ac983",
+      "ce_standalone_revalidation": "valid",
+      "ce_validator": "accepted",
+      "deterministic_repeat": "passed",
+      "evidence_classification": "cross_repository_integration",
+      "implementation_head_sha": "972d2bc25b083c41f23f41afea248d2c69e198cf",
+      "overwrite_rejection": "passed",
+      "project_gate_handoff_allowed": false,
+      "project_gate_status": "insufficient_evidence",
+      "real_run": "not_available",
+      "run_url": "https://github.com/rezahh107/EV4-Project-Gate/actions/runs/29620862502",
+      "synthetic": true
     }
   },
   "implemented": [
@@ -137,6 +168,10 @@
     "status_presentation_mapping",
     "behavioral_coverage_validation",
     "architect-to-ce transition",
+    "producer-emitted architect-to-ce dispatch",
+    "official Architect and CE validator execution",
+    "standalone CE input and Project Gate receipt publication",
+    "immutable source snapshot and atomic no-overwrite publication",
     "ce-to-builder orchestration baseline",
     "builder-to-responsive orchestration baseline",
     "KROAD-011 kernel decision intake internal orchestration baseline",
@@ -173,6 +208,7 @@
   },
   "not_implemented": [
     "real EV4 artifact validation",
+    "real non-synthetic Architect-to-CE handoff evidence",
     "KROAD-012 downstream producer integration",
     "KROAD-013 runtime or browser evidence collection",
     "KROAD-014 re-audit automation",
