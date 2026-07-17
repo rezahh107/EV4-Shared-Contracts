@@ -41,15 +41,7 @@ def intake_producer_export(
             "invalid",
             None,
             None,
-            [
-                _diag(
-                    "PG_EXPORT_SCHEMA_INVALID",
-                    "error",
-                    "$",
-                    "Producer Gate Export input must be a JSON object.",
-                    "Producer",
-                )
-            ],
+            [_diag("PG_EXPORT_SCHEMA_INVALID", "error", "$", "Producer Gate Export input must be a JSON object.", "Producer")],
         )
 
     item = copy.deepcopy(artifact)
@@ -194,6 +186,7 @@ def _result(status: str, producer: Any, transition: Any, diagnostics: list[dict[
         "producer": producer or {},
         "resolved_transition": transition,
         "common_validation": "passed" if status == "accepted" else "failed",
+        "handoff_allowed": False,
         "diagnostics": diagnostics,
     }
 
