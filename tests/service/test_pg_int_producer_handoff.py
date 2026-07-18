@@ -326,6 +326,30 @@ def test_missing_required_checkout_is_insufficient_evidence(monkeypatch, tmp_pat
     assert result["diagnostics"][0]["code"] == "PG_INT_REPOSITORY_PATH_NOT_FOUND"
 
 
+def test_required_checkout_regular_file_is_invalid(monkeypatch, tmp_path: Path):
+    monkeypatch.chdir(tmp_path)
+    source = _write_source(tmp_path)
+    architect = tmp_path / "architect-file"
+    architect.write_text("not a checkout", encoding="utf-8")
+    ce = tmp_path / "ce"
+    ce.mkdir()
+    monkeypatch.setattr(
+        facade,
+        "intake_producer_export",
+        lambda *args, **kwargs: _accepted_intake("architect-to-ce"),
+    )
+
+    result = facade.execute_producer_handoff(
+        source,
+        project_gate_repo=ROOT,
+        architect_repo=architect,
+        ce_repo=ce,
+    )
+
+    assert result["status"] == "invalid"
+    assert result["diagnostics"][0]["code"] == "PG_INT_REPOSITORY_PATH_UNSAFE"
+
+
 def test_unsafe_required_checkout_is_invalid(monkeypatch, tmp_path: Path):
     monkeypatch.chdir(tmp_path)
     source = _write_source(tmp_path)
