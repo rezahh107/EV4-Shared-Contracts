@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +81,13 @@ def dispatch_ce_export(
             ce_repo,
             builder_repo,
             require_real_evidence=True,
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        return _base_result(
+            intake_result,
+            "invalid",
+            [_lock_read_diag(exc)],
+            identities=identities,
         )
     except ResultValidationError as exc:
         return _base_result(
@@ -246,13 +254,13 @@ def dispatch_ce_export(
         staged_receipt = stage_canonical_json(receipt, receipt_payload)
         receipt_publication = publish_staged_json(staged_receipt)
         staged_receipt = None
-    except (PublicationError, SnapshotError) as exc:
+    except (PublicationError, SnapshotError, OSError, json.JSONDecodeError) as exc:
         cleanup_diagnostics: list[dict[str, Any]] = []
         try:
             discard_staged_json(staged_receipt)
         except PublicationError as cleanup_exc:
             cleanup_diagnostics.append(_publication_diag(cleanup_exc))
-        diagnostics.append(_publication_diag(exc))
+        diagnostics.append(_receipt_failure_diag(exc))
         diagnostics.extend(cleanup_diagnostics)
         result = _base_result(
             intake_result,
@@ -410,9 +418,27 @@ def _outcome_record(outcome: Any) -> dict[str, Any]:
 
 def _workspace_relative(path: Path) -> str:
     try:
-        return path.relative_to(Path.cwd().resolve()).as_posix()
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
     except ValueError:
         return path.name
+
+
+def _receipt_failure_diag(exc: Exception) -> dict[str, Any]:
+    if isinstance(exc, SnapshotError):
+        return _publication_diag(exc)
+    if isinstance(exc, (OSError, json.JSONDecodeError)):
+        return _lock_read_diag(exc)
+    return _publication_diag(exc)
+
+
+def _lock_read_diag(exc: Exception) -> dict[str, Any]:
+    return _diag(
+        "PG_C2B_LOCK_READ_FAILED",
+        "error",
+        "$.external_lock",
+        "The CE→Builder lock file could not be read as valid JSON.",
+        error_type=type(exc).__name__,
+    )
 
 
 def _publication_diag(exc: Exception) -> dict[str, Any]:
