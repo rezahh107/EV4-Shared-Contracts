@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from html import escape
-import tempfile
 from typing import Any
 
 from ev4_transition.canonical_json import canonical_dumps
@@ -74,7 +73,6 @@ def run_uploaded_handoff(
         }
         return status_summary_markdown(payload), diagnostics_to_rows(payload["diagnostics"]), canonical_dumps(payload), []
 
-    selected_output_dir = output_dir.strip() if isinstance(output_dir, str) and output_dir.strip() else tempfile.mkdtemp(prefix="ev4_pg_int_")
     response = run_producer_handoff_request(
         ProducerHandoffRequest(
             source_path=source_path,
@@ -84,7 +82,7 @@ def run_uploaded_handoff(
                 ce_repo_path=_clean(ce_repo),
                 builder_repo_path=_clean(builder_repo),
             ),
-            output_dir=selected_output_dir,
+            output_dir=_clean(output_dir),
         )
     )
     payload = response.to_dict()
@@ -150,7 +148,7 @@ def build_demo():
             )
             output_dir = gr.Textbox(
                 label="Output directory — اختیاری",
-                placeholder="خالی بگذارید تا پوشه موقت امن ساخته شود",
+                placeholder="خالی بگذارید تا پوشه موقت امن داخل workspace ساخته شود",
                 elem_classes=["ev4-ltr"],
             )
 
