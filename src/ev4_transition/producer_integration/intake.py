@@ -18,6 +18,19 @@ TRANSITIONS = {
     "final-evidence-gate": "final-evidence-gate",
 }
 
+_TRANSITION_DEFAULTS = {
+    "architect-to-ce": {
+        "lock": "contracts/locks/architect-to-ce-transition.v1.lock.json",
+        "output": "ce-input.json",
+        "receipt": "project-gate-a2c-receipt.json",
+    },
+    "ce-to-builder": {
+        "lock": "contracts/locks/ce-to-builder-transition.v1.lock.json",
+        "output": "builder-input.json",
+        "receipt": "project-gate-c2b-receipt.json",
+    },
+}
+
 
 def load_transition_targets(path: str | Path = "contracts/transition-targets/ev4-transition-targets.v1.json") -> dict[str, str]:
     data = load_json_file(path)
@@ -107,13 +120,13 @@ def transition_producer_export(
     join_packet_path: str | Path = "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json",
     snapshot: JsonInputSnapshot | None = None,
     schema_root: str | Path = "schemas",
-    lock_path: str | Path = "contracts/locks/architect-to-ce-transition.v1.lock.json",
+    lock_path: str | Path | None = None,
     architect_repo: str | Path | None = None,
     ce_repo: str | Path | None = None,
     builder_repo: str | Path | None = None,
     project_gate_repo: str | Path = ".",
-    output_path: str | Path = "ce-input.json",
-    receipt_path: str | Path = "project-gate-a2c-receipt.json",
+    output_path: str | Path | None = None,
+    receipt_path: str | Path | None = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
     preflight = validate_join_evidence_packet(join_packet_path)
@@ -143,17 +156,18 @@ def transition_producer_export(
 
         from .a2c_dispatch import dispatch_architect_export
 
+        defaults = _defaults_for_dispatched_transition(resolved)
         dispatched = dispatch_architect_export(
             artifact,
             result,
             snapshot=snapshot,
             schema_root=schema_root,
-            lock_path=lock_path,
+            lock_path=lock_path if lock_path is not None else defaults["lock"],
             architect_repo=architect_repo,
             ce_repo=ce_repo,
             project_gate_repo=project_gate_repo,
-            output_path=output_path,
-            receipt_path=receipt_path,
+            output_path=output_path if output_path is not None else defaults["output"],
+            receipt_path=receipt_path if receipt_path is not None else defaults["receipt"],
         )
         dispatched["join_evidence_preflight"] = preflight
         return dispatched
@@ -171,21 +185,18 @@ def transition_producer_export(
 
         from .c2b_dispatch import dispatch_ce_export
 
-        selected_lock_path = lock_path
-        if str(lock_path) == "contracts/locks/architect-to-ce-transition.v1.lock.json":
-            selected_lock_path = "contracts/locks/ce-to-builder-transition.v1.lock.json"
-
+        defaults = _defaults_for_dispatched_transition(resolved)
         dispatched = dispatch_ce_export(
             artifact,
             result,
             snapshot=snapshot,
             schema_root=schema_root,
-            lock_path=selected_lock_path,
+            lock_path=lock_path if lock_path is not None else defaults["lock"],
             ce_repo=ce_repo,
             builder_repo=builder_repo,
             project_gate_repo=project_gate_repo,
-            output_path=output_path,
-            receipt_path=receipt_path,
+            output_path=output_path if output_path is not None else defaults["output"],
+            receipt_path=receipt_path if receipt_path is not None else defaults["receipt"],
         )
         dispatched["join_evidence_preflight"] = preflight
         return dispatched
@@ -197,6 +208,10 @@ def transition_producer_export(
     }
     result["downstream_artifact"] = {"status": "not_fabricated"}
     return result
+
+
+def _defaults_for_dispatched_transition(transition_name: str) -> dict[str, str]:
+    return _TRANSITION_DEFAULTS[transition_name]
 
 
 def _runtime_evidence_required(result: dict[str, Any], code: str, message: str, missing: list[str]) -> dict[str, Any]:
