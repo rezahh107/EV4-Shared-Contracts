@@ -152,10 +152,10 @@
       "builder_owned_post_write_validator": "scripts/validate-package.mjs (Cross-field validation)",
       "decision_lineage": "not_required_by_current_adapter_output",
       "implementation_pull_request": 55,
-      "implementation_state": "draft_pr_exact_head_ci_pending",
+      "implementation_state": "implemented_pending_rereview",
       "local_unit_tests": {
-        "result": "success",
-        "scope": "six mocked publication, determinism, mutation, collision, blocked, and partial-publication scenarios"
+        "result": "implemented",
+        "scope": "focused publication, deterministic receipt projection, lock mutation, lock identity, collision, blocked transition, default-path, and partial-publication scenarios"
       },
       "real_non_synthetic_handoff": "insufficient_evidence"
     }
