@@ -2,16 +2,9 @@
   "capabilities": {
     "architect_to_ce": {
       "cli_exposure": "implemented",
-      "current_head_synthetic_integration": "verified_by_exact_head_ci",
-      "current_merged_pin_compatibility": "verified_by_exact_head_ci",
-      "deterministic_atomic_publication": "verified_by_exact_head_ci",
-      "official_architect_validator_integration": "implemented",
-      "official_ce_validator_integration": "implemented",
       "orchestration_baseline": "implemented",
-      "producer_emitted_dispatch": "implemented",
-      "producer_export_intake": "implemented",
       "real_non_synthetic_handoff": "insufficient_evidence",
-      "standalone_ce_input_publication": "implemented"
+      "verification_state": "synthetic_fixture_only"
     },
     "builder_to_responsive": {
       "cli_exposure": "guarded",
@@ -36,18 +29,12 @@
       "verification_state": "verified_by_exact_head_ci"
     },
     "producer_emitted_gate_artifact": {
-      "architect_to_ce_dispatch": "implemented",
-      "atomic_no_overwrite_publication": "implemented",
       "common_contract": "implemented",
-      "current_head_synthetic_integration": "verified_by_exact_head_ci",
       "downstream_producer_ci_enforcement": "implemented_immutable_sha_workflow",
-      "official_owner_validator_execution": "implemented",
       "producer_adoption": "implemented",
       "project_gate_runtime_integration": "implemented_prompt_05_explicit_mode",
       "real_non_synthetic_handoff": "insufficient_evidence",
-      "reusable_verifier": "implemented",
-      "source_snapshot_and_tamper_resistance": "implemented",
-      "standalone_output_publication": "implemented"
+      "reusable_verifier": "implemented"
     },
     "user_interface": {
       "browser_accessibility_evidence": "insufficient_evidence",
