@@ -110,6 +110,7 @@ def transition_producer_export(
     lock_path: str | Path = "contracts/locks/architect-to-ce-transition.v1.lock.json",
     architect_repo: str | Path | None = None,
     ce_repo: str | Path | None = None,
+    builder_repo: str | Path | None = None,
     project_gate_repo: str | Path = ".",
     output_path: str | Path = "ce-input.json",
     receipt_path: str | Path = "project-gate-a2c-receipt.json",
@@ -128,54 +129,78 @@ def transition_producer_export(
     if result["status"] == "invalid":
         return result
 
-    if result.get("resolved_transition") != "architect-to-ce":
-        result["producer_validation"] = {
-            "status": "passed",
-            "official_validator_status": "not_run",
-            "note": "The shared intake resolved a non-A2C target; this task does not dispatch other transitions.",
-        }
-        result["downstream_artifact"] = {"status": "not_fabricated"}
-        return result
+    resolved = result.get("resolved_transition")
+    if resolved == "architect-to-ce":
+        missing = []
+        if snapshot is None:
+            missing.append("immutable source snapshot")
+        if architect_repo is None:
+            missing.append("Architect checkout")
+        if ce_repo is None:
+            missing.append("CE checkout")
+        if missing:
+            return _runtime_evidence_required(result, "PG_A2C_RUNTIME_EVIDENCE_REQUIRED", "Producer-emitted A2C dispatch requires immutable source bytes and exact owner checkouts.", missing)
 
-    missing = []
-    if snapshot is None:
-        missing.append("immutable source snapshot")
-    if architect_repo is None:
-        missing.append("Architect checkout")
-    if ce_repo is None:
-        missing.append("CE checkout")
-    if missing:
-        result["status"] = "insufficient_evidence"
-        result["diagnostics"] = [
-            _diag(
-                "PG_A2C_RUNTIME_EVIDENCE_REQUIRED",
-                "insufficient_evidence",
-                "$",
-                "Producer-emitted A2C dispatch requires immutable source bytes and exact owner checkouts.",
-                "Project Gate",
-                missing=missing,
-            )
-        ]
-        result["producer_validation"] = {"status": "not_run", "official_validator_status": "not_run"}
-        result["downstream_artifact"] = {"status": "not_published"}
-        return result
+        from .a2c_dispatch import dispatch_architect_export
 
-    from .a2c_dispatch import dispatch_architect_export
+        dispatched = dispatch_architect_export(
+            artifact,
+            result,
+            snapshot=snapshot,
+            schema_root=schema_root,
+            lock_path=lock_path,
+            architect_repo=architect_repo,
+            ce_repo=ce_repo,
+            project_gate_repo=project_gate_repo,
+            output_path=output_path,
+            receipt_path=receipt_path,
+        )
+        dispatched["join_evidence_preflight"] = preflight
+        return dispatched
 
-    dispatched = dispatch_architect_export(
-        artifact,
-        result,
-        snapshot=snapshot,
-        schema_root=schema_root,
-        lock_path=lock_path,
-        architect_repo=architect_repo,
-        ce_repo=ce_repo,
-        project_gate_repo=project_gate_repo,
-        output_path=output_path,
-        receipt_path=receipt_path,
-    )
-    dispatched["join_evidence_preflight"] = preflight
-    return dispatched
+    if resolved == "ce-to-builder":
+        missing = []
+        if snapshot is None:
+            missing.append("immutable source snapshot")
+        if ce_repo is None:
+            missing.append("CE checkout")
+        if builder_repo is None:
+            missing.append("Builder checkout")
+        if missing:
+            return _runtime_evidence_required(result, "PG_C2B_RUNTIME_EVIDENCE_REQUIRED", "Producer-emitted C2B dispatch requires immutable source bytes and exact CE and Builder checkouts.", missing)
+
+        from .c2b_dispatch import dispatch_ce_export
+
+        dispatched = dispatch_ce_export(
+            artifact,
+            result,
+            snapshot=snapshot,
+            schema_root=schema_root,
+            lock_path=lock_path,
+            ce_repo=ce_repo,
+            builder_repo=builder_repo,
+            project_gate_repo=project_gate_repo,
+            output_path=output_path,
+            receipt_path=receipt_path,
+        )
+        dispatched["join_evidence_preflight"] = preflight
+        return dispatched
+
+    result["producer_validation"] = {
+        "status": "passed",
+        "official_validator_status": "not_run",
+        "note": "The shared intake resolved a transition that is not yet dispatched by producer-emitted runtime integration.",
+    }
+    result["downstream_artifact"] = {"status": "not_fabricated"}
+    return result
+
+
+def _runtime_evidence_required(result: dict[str, Any], code: str, message: str, missing: list[str]) -> dict[str, Any]:
+    result["status"] = "insufficient_evidence"
+    result["diagnostics"] = [_diag(code, "insufficient_evidence", "$", message, "Project Gate", missing=missing)]
+    result["producer_validation"] = {"status": "not_run", "official_validator_status": "not_run"}
+    result["downstream_artifact"] = {"status": "not_published"}
+    return result
 
 
 def _result(status: str, producer: Any, transition: Any, diagnostics: list[dict[str, Any]]) -> dict[str, Any]:
