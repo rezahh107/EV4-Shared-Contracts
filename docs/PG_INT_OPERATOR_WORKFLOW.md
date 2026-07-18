@@ -78,6 +78,30 @@ uv run ev4-project-gate-handoff-ui
 
 The panel has no transition selector. After upload it displays the detected source and destination and reveals only the repository path fields required for that route.
 
+When the output field is empty, the facade creates a unique `.ev4_pg_int_*` directory directly inside the current Project Gate publication workspace. It does not use the uploaded file's system-temporary parent or the operating-system temporary directory. An explicit operator-selected output directory remains supported only when it resolves inside that same workspace.
+
+## Operator path boundary
+
+All CLI, service, and UI path inputs cross the same fail-closed normalization boundary before dispatch:
+
+- `project_gate_repo`;
+- the transition-specific specialist repository checkouts;
+- `output_dir`;
+- explicit output and receipt paths;
+- `schema_root`;
+- `lock_path`.
+
+The boundary catches `OSError`, `ValueError`, and `RuntimeError`, including unknown-user `~username` expansion. The Project Gate root must exist, be an accessible directory, and expose readable strict-JSON adoption-registry and transition-target files before intake runs.
+
+Classification remains explicit:
+
+```text
+malformed or unsafe operator path → invalid
+missing required specialist checkout → insufficient_evidence
+```
+
+Repository identity, exact commit pins, owner validators, and lock verification remain delegated to the existing A2C and C2B dispatchers.
+
 ## Service API
 
 Use `run_producer_handoff_request` with `ProducerHandoffRequest` from:
@@ -112,7 +136,7 @@ builder-input.json
 project-gate-c2b-receipt.json
 ```
 
-The existing safe publication layer remains authoritative for collision rejection, no-overwrite behavior, source/output separation, atomic publication, snapshot re-verification, and post-write checks.
+The existing safe publication layer remains authoritative for workspace containment, path traversal and collision rejection, no-overwrite behavior, source/output separation, atomic publication, snapshot re-verification, and post-write checks.
 
 A next-stage artifact is offered as a primary download only when:
 
