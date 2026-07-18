@@ -42,8 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     transition_parser.add_argument("--project-gate-repo")
     transition_parser.add_argument("--kernel-repo")
     transition_parser.add_argument("--lock")
-    transition_parser.add_argument("--output", default="ce-input.json")
-    transition_parser.add_argument("--receipt-output", default="project-gate-a2c-receipt.json")
+    transition_parser.add_argument("--output")
+    transition_parser.add_argument("--receipt-output")
     transition_parser.add_argument("--format", choices=["json", "persian"], default="json")
     transition_parser.add_argument("--acquisition-mode", choices=["pinned_owner_file_computation", "producer_emitted_gate_artifact"], default="pinned_owner_file_computation")
 
@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
                 bundle,
                 snapshot=snapshot,
                 schema_root=args.schema_root,
-                lock_path=args.lock or _default_lock_for_transition(args.transition_name),
+                lock_path=args.lock,
                 architect_repo=args.architect_repo,
                 ce_repo=args.ce_repo,
                 builder_repo=args.builder_repo,
