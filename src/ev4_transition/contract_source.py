@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+from ev4_transition.runners.git_contracts import read_pinned_git_bytes
 
 
 class ContractSource(Protocol):
@@ -24,26 +25,13 @@ class LocalCheckoutContractSource:
         if root_resolved not in file_path.parents and file_path != root_resolved:
             raise FileNotFoundError(f"Contract path escapes checkout root: {path}")
 
-        # Real Git checkouts must resolve bytes from the declared immutable commit.
-        # Reading the working tree would silently bind current bytes to a historical
-        # commit and break the commit/hash identity invariant.
+        # Real Git checkouts resolve bytes from the declared immutable commit.
+        # Hermetic non-Git fixture directories retain direct-file behavior.
         if (root_resolved / ".git").exists():
             try:
-                completed = subprocess.run(
-                    ["git", "-C", str(root_resolved), "show", f"{commit}:{path}"],
-                    check=False,
-                    capture_output=True,
-                )
-            except OSError as exc:
-                raise FileNotFoundError(
-                    f"Unable to execute Git for pinned contract {repository}@{commit}:{path}."
-                ) from exc
-            if completed.returncode != 0:
+                return read_pinned_git_bytes(root_resolved, commit, path)
+            except FileNotFoundError as exc:
                 raise FileNotFoundError(
                     f"Unable to read pinned contract {repository}@{commit}:{path}."
-                )
-            return completed.stdout
-
-        # Hermetic fixture directories used by unit tests are intentionally allowed
-        # to provide direct bytes without pretending to be immutable Git checkouts.
+                ) from exc
         return file_path.read_bytes()
