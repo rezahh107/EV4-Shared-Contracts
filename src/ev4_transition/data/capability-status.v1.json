@@ -144,6 +144,20 @@
       "real_run": "not_available",
       "run_url": "https://github.com/rezahh107/EV4-Project-Gate/actions/runs/29620862502",
       "synthetic": true
+    },
+    "pg_c2b": {
+      "accepted_builder_contract": "ev4-builder-context-package@1.0.0",
+      "accepted_builder_revision": "b599c000118dcbe77572d6f387da5da0f46d1f91",
+      "accepted_ce_revision": "6650c31304e5a0472b276c36018c1df8f42ac983",
+      "builder_owned_post_write_validator": "scripts/validate-package.mjs (Cross-field validation)",
+      "decision_lineage": "not_required_by_current_adapter_output",
+      "implementation_pull_request": 55,
+      "implementation_state": "implemented_pending_rereview",
+      "local_unit_tests": {
+        "result": "implemented",
+        "scope": "focused publication, deterministic receipt projection, lock mutation, lock identity, collision, blocked transition, default-path, and partial-publication scenarios"
+      },
+      "real_non_synthetic_handoff": "insufficient_evidence"
     }
   },
   "implemented": [
@@ -160,6 +174,7 @@
     "standalone CE input and Project Gate receipt publication",
     "immutable source snapshot and atomic no-overwrite publication",
     "ce-to-builder orchestration baseline",
+    "producer-emitted ce-to-builder dispatch with standalone Builder input and separate Project Gate receipt",
     "builder-to-responsive orchestration baseline",
     "KROAD-011 kernel decision intake internal orchestration baseline",
     "final evidence gate orchestration baseline",

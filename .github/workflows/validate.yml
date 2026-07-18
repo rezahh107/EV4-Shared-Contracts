@@ -146,7 +146,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           repository: rezahh107/EV4-Constructability-Engineer-Repo
-          ref: cfceec5c20269c75a1cc19b2675d7087cede4599
+          ref: 6650c31304e5a0472b276c36018c1df8f42ac983
           path: EV4-Constructability-Engineer-Repo-Prompt04
           persist-credentials: false
 
@@ -154,7 +154,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           repository: rezahh107/EV4-Builder-Assistant-Repo
-          ref: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
+          ref: b599c000118dcbe77572d6f387da5da0f46d1f91
           path: EV4-Builder-Assistant-Repo-Prompt04
           persist-credentials: false
 
@@ -209,9 +209,9 @@ jobs:
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
         run: uv run pytest tests/test_architect_to_ce_transition.py
 
-      - name: PG-A2C producer dispatch and adversarial tests
+      - name: Producer dispatch and adversarial tests
         working-directory: EV4-Project-Gate
-        run: uv run pytest -q tests/producer_integration/test_prompt05_producer_integration.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py
+        run: uv run pytest -q tests/producer_integration/test_prompt05_producer_integration.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py tests/producer_integration/test_pg_c2b_dispatch.py
 
       - name: Prompt 01 unit tests
         working-directory: EV4-Project-Gate

@@ -42,8 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     transition_parser.add_argument("--project-gate-repo")
     transition_parser.add_argument("--kernel-repo")
     transition_parser.add_argument("--lock")
-    transition_parser.add_argument("--output", default="ce-input.json")
-    transition_parser.add_argument("--receipt-output", default="project-gate-a2c-receipt.json")
+    transition_parser.add_argument("--output")
+    transition_parser.add_argument("--receipt-output")
     transition_parser.add_argument("--format", choices=["json", "persian"], default="json")
     transition_parser.add_argument("--acquisition-mode", choices=["pinned_owner_file_computation", "producer_emitted_gate_artifact"], default="pinned_owner_file_computation")
 
@@ -113,9 +113,10 @@ def main(argv: list[str] | None = None) -> int:
                 bundle,
                 snapshot=snapshot,
                 schema_root=args.schema_root,
-                lock_path=args.lock or "contracts/locks/architect-to-ce-transition.v1.lock.json",
+                lock_path=args.lock,
                 architect_repo=args.architect_repo,
                 ce_repo=args.ce_repo,
+                builder_repo=args.builder_repo,
                 project_gate_repo=args.project_gate_repo or ".",
                 output_path=args.output,
                 receipt_path=args.receipt_output,
@@ -136,6 +137,15 @@ def main(argv: list[str] | None = None) -> int:
     info = _load_capability_status()
     _emit(info, args.format)
     return 0
+
+
+def _default_lock_for_transition(transition_name: str) -> str:
+    return {
+        "architect-to-ce": "contracts/locks/architect-to-ce-transition.v1.lock.json",
+        "ce-to-builder": "contracts/locks/ce-to-builder-transition.v1.lock.json",
+        "builder-to-responsive": "contracts/locks/builder-to-responsive-transition.v1.lock.json",
+        "final-evidence-gate": "contracts/locks/final-gate.v1.lock.json",
+    }[transition_name]
 
 
 def _run_transition(args: argparse.Namespace, bundle: dict[str, Any]) -> dict[str, Any]:
