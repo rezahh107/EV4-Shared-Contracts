@@ -228,6 +228,7 @@ def dispatch_ce_export(
         result["failure_class"] = "owner_tool_failed"
         return result
 
+    staged_receipt: StagedJson | None = None
     try:
         verify_snapshot_unchanged(snapshot)
         lock = load_json_file(lock_path)
@@ -244,8 +245,15 @@ def dispatch_ce_export(
         )
         staged_receipt = stage_canonical_json(receipt, receipt_payload)
         receipt_publication = publish_staged_json(staged_receipt)
+        staged_receipt = None
     except (PublicationError, SnapshotError) as exc:
+        cleanup_diagnostics: list[dict[str, Any]] = []
+        try:
+            discard_staged_json(staged_receipt)
+        except PublicationError as cleanup_exc:
+            cleanup_diagnostics.append(_publication_diag(cleanup_exc))
         diagnostics.append(_publication_diag(exc))
+        diagnostics.extend(cleanup_diagnostics)
         result = _base_result(
             intake_result,
             "invalid",
