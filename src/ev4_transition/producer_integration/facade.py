@@ -17,6 +17,7 @@ _SUPPORTED_ROUTES: dict[str, dict[str, Any]] = {
         "required_repository_roles": ("architect", "ce"),
         "output_filename": "ce-input.json",
         "receipt_filename": "project-gate-a2c-receipt.json",
+        "lock_filename": "contracts/locks/architect-to-ce-transition.v1.lock.json",
         "next_action_fa": "فایل ce-input.json را به CE بدهید.",
     },
     "ce-to-builder": {
@@ -26,6 +27,7 @@ _SUPPORTED_ROUTES: dict[str, dict[str, Any]] = {
         "required_repository_roles": ("ce", "builder"),
         "output_filename": "builder-input.json",
         "receipt_filename": "project-gate-c2b-receipt.json",
+        "lock_filename": "contracts/locks/ce-to-builder-transition.v1.lock.json",
         "next_action_fa": "فایل builder-input.json را به Builder بدهید.",
     },
 }
@@ -36,48 +38,10 @@ def inspect_producer_handoff(
     *,
     project_gate_repo: str | Path = ".",
 ) -> dict[str, Any]:
-    """Validate immutable Producer Gate Export bytes and resolve a supported route.
+    """Validate immutable source bytes and resolve a PG-INT route from contract data."""
 
-    Routing authority is the validated export plus Project Gate adoption/target
-    registries. The source filename and any operator-selected transition are ignored.
-    """
-
-    project_gate_root = Path(project_gate_repo).expanduser()
-    try:
-        snapshot = capture_json_snapshot(source_path)
-    except SnapshotError as exc:
-        return _snapshot_failure(exc)
-
-    intake = intake_producer_export(
-        snapshot.value,
-        registry_path=project_gate_root / "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
-        targets_path=project_gate_root / "contracts/transition-targets/ev4-transition-targets.v1.json",
-        repository_root=project_gate_root,
-    )
-    result = deepcopy(intake)
-    result["source_snapshot"] = _snapshot_metadata(snapshot)
-
-    resolved = result.get("resolved_transition")
-    route = _SUPPORTED_ROUTES.get(str(resolved))
-    if result.get("status") != "accepted":
-        result["routing"] = _routing_metadata(result, route)
-        result["handoff_allowed"] = False
-        return result
-    if route is None:
-        result["status"] = "invalid"
-        result["failure_class"] = "unsupported"
-        result["handoff_allowed"] = False
-        result.setdefault("diagnostics", []).append(
-            _diag(
-                "PG_INT_UNSUPPORTED_TRANSITION",
-                "error",
-                "$.handoff.target",
-                "The validated Producer Gate Export resolves to a transition outside S-003 / PG-INT.",
-                resolved_transition=resolved,
-                supported_transitions=sorted(_SUPPORTED_ROUTES),
-            )
-        )
-    result["routing"] = _routing_metadata(result, route)
+    snapshot, result = _capture_and_inspect(source_path, Path(project_gate_repo).expanduser())
+    del snapshot
     return result
 
 
@@ -94,10 +58,11 @@ def execute_producer_handoff(
     schema_root: str | Path = "schemas",
     lock_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Execute the validated A2C or C2B producer handoff through existing dispatchers."""
+    """Reuse the existing A2C/C2B dispatchers through one validated routing facade."""
 
-    inspection = inspect_producer_handoff(source_path, project_gate_repo=project_gate_repo)
-    if inspection.get("status") != "accepted":
+    project_gate_root = Path(project_gate_repo).expanduser()
+    snapshot, inspection = _capture_and_inspect(source_path, project_gate_root)
+    if snapshot is None or inspection.get("status") != "accepted":
         return _with_operator_artifacts(inspection)
 
     resolved = str(inspection["resolved_transition"])
@@ -113,49 +78,34 @@ def execute_producer_handoff(
     if path_diagnostics:
         result = deepcopy(inspection)
         result["status"] = _status_from_diagnostics(path_diagnostics)
-        result["diagnostics"] = sorted(path_diagnostics, key=lambda item: (item.get("path", "$"), item.get("code", "")))
+        result["diagnostics"] = sorted(path_diagnostics, key=_diagnostic_key)
         result["handoff_allowed"] = False
         result["failure_class"] = "repository_path_validation_failed"
         return _with_operator_artifacts(result)
 
-    source = Path(source_path).expanduser()
-    project_gate_root = Path(project_gate_repo).expanduser()
-    publication_root = Path(output_dir).expanduser() if output_dir is not None else source.parent
+    publication_root = Path(output_dir).expanduser() if output_dir is not None else snapshot.path.parent
     try:
         publication_root.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
-        result = deepcopy(inspection)
-        result["status"] = "invalid"
-        result["handoff_allowed"] = False
-        result["failure_class"] = "publication_failed"
-        result["diagnostics"] = [
-            _diag(
-                "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
-                "error",
-                "$.output_dir",
-                "The requested output directory could not be prepared.",
-                error_type=type(exc).__name__,
+        return _with_operator_artifacts(
+            _failure_from_inspection(
+                inspection,
+                "invalid",
+                "publication_failed",
+                _diag(
+                    "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
+                    "error",
+                    "$.output_dir",
+                    "The requested output directory could not be prepared.",
+                    error_type=type(exc).__name__,
+                ),
             )
-        ]
-        return _with_operator_artifacts(result)
+        )
 
-    selected_output = Path(output_path).expanduser() if output_path is not None else publication_root / route["output_filename"]
-    selected_receipt = Path(receipt_path).expanduser() if receipt_path is not None else publication_root / route["receipt_filename"]
-    selected_schema_root = Path(schema_root).expanduser()
-    if not selected_schema_root.is_absolute():
-        selected_schema_root = project_gate_root / selected_schema_root
-    selected_lock = Path(lock_path).expanduser() if lock_path is not None else project_gate_root / (
-        "contracts/locks/architect-to-ce-transition.v1.lock.json"
-        if resolved == "architect-to-ce"
-        else "contracts/locks/ce-to-builder-transition.v1.lock.json"
-    )
-
-    snapshot = _snapshot_from_inspection(inspection, source)
-    if snapshot is None:
-        try:
-            snapshot = capture_json_snapshot(source)
-        except SnapshotError as exc:
-            return _with_operator_artifacts(_snapshot_failure(exc))
+    selected_output = _resolve_publication_path(output_path, publication_root, route["output_filename"])
+    selected_receipt = _resolve_publication_path(receipt_path, publication_root, route["receipt_filename"])
+    selected_schema_root = _resolve_project_gate_path(schema_root, project_gate_root)
+    selected_lock = _resolve_project_gate_path(lock_path or route["lock_filename"], project_gate_root)
 
     result = transition_producer_export(
         resolved,
@@ -184,23 +134,79 @@ def required_repository_fields(resolved_transition: str) -> tuple[str, ...]:
     return tuple(route["required_repo_fields"]) if route else ()
 
 
-def _snapshot_from_inspection(inspection: dict[str, Any], source: Path) -> JsonInputSnapshot | None:
-    metadata = inspection.get("source_snapshot")
-    if not isinstance(metadata, dict):
-        return None
+def _capture_and_inspect(
+    source_path: str | Path,
+    project_gate_root: Path,
+) -> tuple[JsonInputSnapshot | None, dict[str, Any]]:
     try:
-        return capture_json_snapshot(source)
-    except SnapshotError:
-        return None
+        snapshot = capture_json_snapshot(source_path)
+    except SnapshotError as exc:
+        return None, _snapshot_failure(exc)
 
+    intake = intake_producer_export(
+        snapshot.value,
+        registry_path=project_gate_root / "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
+        targets_path=project_gate_root / "contracts/transition-targets/ev4-transition-targets.v1.json",
+        repository_root=project_gate_root,
+    )
+    result = deepcopy(intake)
+    result["source_snapshot"] = _snapshot_metadata(snapshot)
+    resolved = result.get("resolved_transition")
+    route = _SUPPORTED_ROUTES.get(str(resolved))
+    result["routing"] = _routing_metadata(snapshot.value, result, route)
 
-def _routing_metadata(result: dict[str, Any], route: dict[str, Any] | None) -> dict[str, Any]:
+    if result.get("status") != "accepted":
+        result["handoff_allowed"] = False
+        return snapshot, result
+    if route is None:
+        result["status"] = "invalid"
+        result["failure_class"] = "unsupported"
+        result["handoff_allowed"] = False
+        result.setdefault("diagnostics", []).append(
+            _diag(
+                "PG_INT_UNSUPPORTED_TRANSITION",
+                "error",
+                "$.handoff.target",
+                "The validated Producer Gate Export resolves outside S-003 / PG-INT.",
+                resolved_transition=resolved,
+                supported_transitions=sorted(_SUPPORTED_ROUTES),
+            )
+        )
+        return snapshot, result
+
     producer = result.get("producer") if isinstance(result.get("producer"), dict) else {}
+    observed_stage = producer.get("stage")
+    if observed_stage != route["producer_stage"]:
+        result["status"] = "invalid"
+        result["failure_class"] = "unsupported"
+        result["handoff_allowed"] = False
+        result.setdefault("diagnostics", []).append(
+            _diag(
+                "PG_INT_PRODUCER_TARGET_MISMATCH",
+                "error",
+                "$.handoff.target",
+                "Producer stage and handoff target do not form a supported transition pair.",
+                producer_stage=observed_stage,
+                expected_producer_stage=route["producer_stage"],
+                resolved_transition=resolved,
+            )
+        )
+    result["diagnostics"] = sorted(result.get("diagnostics", []), key=_diagnostic_key)
+    return snapshot, result
+
+
+def _routing_metadata(
+    artifact: dict[str, Any],
+    result: dict[str, Any],
+    route: dict[str, Any] | None,
+) -> dict[str, Any]:
+    producer = result.get("producer") if isinstance(result.get("producer"), dict) else {}
+    handoff = artifact.get("handoff") if isinstance(artifact.get("handoff"), dict) else {}
     return {
         "authority": "validated_producer_gate_export",
         "producer_stage": producer.get("stage"),
         "producer_repository": producer.get("repository"),
-        "handoff_target": ((result.get("handoff") or {}).get("target") if isinstance(result.get("handoff"), dict) else None),
+        "handoff_target": handoff.get("target"),
         "resolved_transition": result.get("resolved_transition"),
         "target_stage": route.get("target_stage") if route else None,
         "required_repository_roles": list(route.get("required_repository_roles", ())) if route else [],
@@ -213,23 +219,41 @@ def _with_operator_artifacts(result: dict[str, Any]) -> dict[str, Any]:
     route = _SUPPORTED_ROUTES.get(str(result.get("resolved_transition")))
     artifact = result.get("downstream_artifact") if isinstance(result.get("downstream_artifact"), dict) else {}
     receipt = result.get("receipt") if isinstance(result.get("receipt"), dict) else {}
-    artifact_published = artifact.get("status") == "published_verified" and isinstance(artifact.get("path"), str)
-    receipt_published = receipt.get("status") == "published_verified" and isinstance(receipt.get("path"), str)
+    publication = result.get("publication") if isinstance(result.get("publication"), dict) else {}
+    artifact_publication = publication.get("ce_input") or publication.get("builder_input")
+    receipt_publication = publication.get("receipt")
+    artifact_state = artifact.get("status") or (
+        artifact_publication.get("state") if isinstance(artifact_publication, dict) else "not_generated"
+    )
+    receipt_state = receipt.get("status") or (
+        receipt_publication.get("state") if isinstance(receipt_publication, dict) else "not_generated"
+    )
+    artifact_path = artifact.get("path") or (
+        artifact_publication.get("path") if isinstance(artifact_publication, dict) else None
+    )
+    receipt_path = receipt.get("path") or (
+        receipt_publication.get("path") if isinstance(receipt_publication, dict) else None
+    )
+    accepted = result.get("status") == "accepted" and result.get("handoff_allowed") is True
     result["operator_artifacts"] = {
         "next_stage": {
             "filename": route.get("output_filename") if route else None,
-            "path": artifact.get("path"),
-            "publication_state": artifact.get("status", "not_generated"),
-            "downloadable": bool(artifact_published and result.get("handoff_allowed") is True and result.get("status") == "accepted"),
-            "consumable": bool(artifact_published and result.get("handoff_allowed") is True and result.get("status") == "accepted"),
+            "path": artifact_path,
+            "publication_state": artifact_state,
+            "downloadable": bool(accepted and artifact_state == "published_verified"),
+            "consumable": bool(accepted and artifact_state == "published_verified"),
         },
         "receipt": {
             "filename": route.get("receipt_filename") if route else None,
-            "path": receipt.get("path"),
-            "publication_state": receipt.get("status", "not_generated"),
-            "downloadable": bool(receipt_published),
+            "path": receipt_path,
+            "publication_state": receipt_state,
+            "downloadable": bool(receipt_state == "published_verified"),
         },
-        "next_action_fa": route.get("next_action_fa") if route and result.get("handoff_allowed") is True else "diagnostics را بررسی و مانع فعلی را رفع کنید.",
+        "next_action_fa": (
+            route.get("next_action_fa")
+            if route and accepted
+            else "diagnostics را بررسی و مانع فعلی را رفع کنید."
+        ),
     }
     return result
 
@@ -250,6 +274,18 @@ def _validate_repo_path(field: str, value: str | Path | None) -> list[dict[str, 
     except (OSError, ValueError) as exc:
         return [_diag("PG_INT_REPOSITORY_PATH_UNSAFE", "insufficient_evidence", path_expr, "The required local repository checkout path is invalid or inaccessible.", field=field, error_type=type(exc).__name__)]
     return []
+
+
+def _resolve_publication_path(value: str | Path | None, root: Path, default_name: str) -> Path:
+    if value is None:
+        return root / default_name
+    candidate = Path(value).expanduser()
+    return candidate if candidate.is_absolute() else root / candidate
+
+
+def _resolve_project_gate_path(value: str | Path, root: Path) -> Path:
+    candidate = Path(value).expanduser()
+    return candidate if candidate.is_absolute() else root / candidate
 
 
 def _looks_like_url(value: str) -> bool:
@@ -291,6 +327,20 @@ def _snapshot_failure(exc: SnapshotError) -> dict[str, Any]:
     }
 
 
+def _failure_from_inspection(
+    inspection: dict[str, Any],
+    status: str,
+    failure_class: str,
+    diagnostic: dict[str, Any],
+) -> dict[str, Any]:
+    result = deepcopy(inspection)
+    result["status"] = status
+    result["handoff_allowed"] = False
+    result["failure_class"] = failure_class
+    result["diagnostics"] = [diagnostic]
+    return result
+
+
 def _snapshot_metadata(snapshot: JsonInputSnapshot) -> dict[str, Any]:
     return {
         "path": str(snapshot.path),
@@ -300,8 +350,11 @@ def _snapshot_metadata(snapshot: JsonInputSnapshot) -> dict[str, Any]:
 
 
 def _status_from_diagnostics(diagnostics: list[dict[str, Any]]) -> str:
-    severities = {item.get("severity") for item in diagnostics}
-    return "invalid" if "error" in severities else "insufficient_evidence"
+    return "invalid" if any(item.get("severity") == "error" for item in diagnostics) else "insufficient_evidence"
+
+
+def _diagnostic_key(item: Any) -> tuple[str, str]:
+    return (item.get("path", "$"), item.get("code", "")) if isinstance(item, dict) else ("$", "")
 
 
 def _diag(code: str, severity: str, path: str, message: str, **details: Any) -> dict[str, Any]:
