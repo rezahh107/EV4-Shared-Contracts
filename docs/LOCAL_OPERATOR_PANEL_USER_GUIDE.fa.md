@@ -46,8 +46,10 @@ Project Gate یک checkpoint و orchestrator است؛ جای Architect، CE، Bu
 8. خلاصه نتیجه را بخوان
 9. Diagnostics را در صورت نیاز باز کن
 10. result.json و گزارش‌ها را دانلود کن
-11. فقط در صورت تولید output معتبر، مرحله بعد را ادامه بده
+11. فقط artifact مستقل و رسمی workflow همان transition را به مرحله بعد بده
 ```
+
+`result.json` و مقدار تو‌در‌توی `result.output` ورودی semantic مرحله بعد نیستند. در transitionهایی که workflow انتشار رسمی دارند، فقط artifact مستقل منتشرشده و post-write-verified مجاز است.
 
 ---
 
@@ -128,7 +130,7 @@ JSON را upload یا paste کن
 stage = architect
 ```
 
-در صورت موفقیت، خروجی مرحله بعد باید CE input bundle باشد.
+نتیجه UI و مقدار تو‌در‌توی `result.output`، CE semantic input محسوب نمی‌شوند. برای handoff واقعی باید workflow رسمی `docs/PG_A2C_OPERATOR_WORKFLOW.md` اجرا شود و artifact مستقل `ce-input.json` تولید، منتشر و post-write verified شود.
 
 مسیرهای لازم:
 
@@ -594,7 +596,7 @@ wired through internal service; guarded/fail-closed
 }
 ```
 
-`result.json` گزارش اجرای Project Gate است و به‌صورت خودکار ورودی مرحله بعد نیست.
+`result.json` گزارش اجرای Project Gate است و ورودی مرحله بعد نیست. مقدار تو‌در‌توی `result.output` نیز نباید inspect، extract، copy یا به‌عنوان artifact canonical بازسازی شود.
 
 اگر:
 
@@ -670,8 +672,10 @@ report.html
 3. مسیر local Architect و CE را بده.
 4. Preflight را اجرا کن.
 5. خطاهای path، lock یا file را رفع کن.
-6. Gate را اجرا کن.
-7. فقط اگر status و output معتبر بودند، output تولیدشده را برای مرحله CE استفاده کن.
+6. Gate را اجرا کن و نتیجه UI را فقط برای status، Diagnostics و evidence بررسی کن.
+7. `result.json` یا مقدار تو‌در‌توی `result.output` را به‌عنوان CE input استفاده، استخراج، copy یا بازسازی نکن.
+8. workflow رسمی `docs/PG_A2C_OPERATOR_WORKFLOW.md` را اجرا کن و فقط artifact مستقل `ce-input.json` را که به‌صورت canonical، atomic و post-write-verified منتشر شده است به CE بده.
+9. `project-gate-a2c-receipt.json` را جداگانه برای audit و diagnosis نگه دار؛ receipt، CE semantic input نیست.
 
 ## 4.3 می‌خواهم فقط قابلیت‌ها را ببینم
 
@@ -690,7 +694,7 @@ report.html
 
 ## اشتباه 2: استفاده از `result.json` به‌عنوان ورودی transition بعدی
 
-`result.json` گزارش است. فقط downstream artifact واقعی و مجاز باید وارد مرحله بعد شود.
+`result.json` گزارش است. `result.output` نیز artifact مستقل و canonical مرحله بعد نیست. فقط downstream artifact رسمی منتشرشده توسط workflow همان transition باید وارد مرحله بعد شود.
 
 ## اشتباه 3: نادیده گرفتن `insufficient_evidence`
 
@@ -761,6 +765,8 @@ python -m ev4_transition.ui.app
 - `docs/OPERATOR_GUIDE.md`
 - `docs/UI_OPERATOR_PANEL.md`
 - `docs/UI_SERVICE_CONTRACT.md`
+- `docs/PG_A2C_OPERATOR_WORKFLOW.md`
+- `docs/PG_C2B_OPERATOR_WORKFLOW.md`
 
 ---
 
