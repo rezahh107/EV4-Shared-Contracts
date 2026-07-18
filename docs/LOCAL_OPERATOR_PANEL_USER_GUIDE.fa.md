@@ -490,7 +490,7 @@ JSON، schema identity، path، hash، transition selection یا اجرای serv
 مثال:
 
 ```text
-PG.UI.PREFLIGHT_WRONG_STAGE_FOR_TRANSITION
+PG_A2C_ARCHITECT_SCHEMA_VALIDATION_FAILED
 ```
 
 ### 43. ستون `severity`
