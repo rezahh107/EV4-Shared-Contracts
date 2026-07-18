@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           path: EV4-Project-Gate
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify dispatched exact head
@@ -98,7 +99,7 @@ jobs:
 
       - name: Prompt-05 transition and capability tests
         working-directory: EV4-Project-Gate
-        run: uv run pytest -q tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py
+        run: uv run pytest -q tests/transitions/test_builder_to_responsive.py tests/transitions/test_final_gate.py tests/test_cli.py tests/test_contract_source.py
 
       - name: Recompute and compare immutable locks
         working-directory: EV4-Project-Gate
