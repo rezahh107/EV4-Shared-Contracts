@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
 from ev4_transition.bundle_validator import ResultValidationError
 from ev4_transition.canonical_json import CANONICAL_JSON_VERSION, canonical_sha256, load_json_file
+from ev4_transition.contract_source import LocalCheckoutContractSource
 from ev4_transition.io.safe_publication import (
     PublicationError,
     StagedJson,
@@ -14,7 +14,12 @@ from ev4_transition.io.safe_publication import (
     resolve_publication_paths,
     stage_canonical_json,
 )
-from ev4_transition.io.secure_snapshot import JsonInputSnapshot, SnapshotError, verify_snapshot_unchanged
+from ev4_transition.io.secure_snapshot import (
+    JsonInputSnapshot,
+    SnapshotError,
+    capture_json_snapshot,
+    verify_snapshot_unchanged,
+)
 from ev4_transition.presentation.status_mapping import normalize_status
 from ev4_transition.runners.official_tools import execute_builder_output_validator
 from ev4_transition.runners.repository_identity import inspect_checkout
@@ -27,7 +32,8 @@ from ev4_transition.transitions.ce_to_builder import (
     PG_REPO,
     TRANSITION_ID,
     TRANSITION_VERSION,
-    transition_from_local_paths,
+    CeToBuilderTransitionConfig,
+    transition_ce_to_builder,
 )
 
 RECEIPT_SCHEMA_ID = "project-gate-c2b-receipt.v1"
@@ -74,20 +80,22 @@ def dispatch_ce_export(
         )
 
     try:
-        transition_result = transition_from_local_paths(
-            final_bundle,
-            schema_root,
-            lock_path,
-            ce_repo,
-            builder_repo,
-            require_real_evidence=True,
-        )
-    except (OSError, json.JSONDecodeError) as exc:
+        lock_snapshot = capture_json_snapshot(lock_path)
+    except SnapshotError as exc:
         return _base_result(
             intake_result,
             "invalid",
             [_lock_read_diag(exc)],
             identities=identities,
+        )
+
+    try:
+        transition_result = _transition_from_lock_snapshot(
+            final_bundle,
+            schema_root=schema_root,
+            lock=lock_snapshot.value,
+            ce_repo=ce_repo,
+            builder_repo=builder_repo,
         )
     except ResultValidationError as exc:
         return _base_result(
@@ -96,6 +104,18 @@ def dispatch_ce_export(
             [_diag("TRANSITION_RESULT_SCHEMA_VALIDATION_FAILED", "error", "$", "The CE→Builder transition result failed its Project Gate schema.", error=str(exc))],
             identities=identities,
         )
+
+    lock_identity_diagnostic = _transition_lock_identity_diagnostic(transition_result, lock_snapshot.value)
+    if lock_identity_diagnostic is not None:
+        result = _base_result(
+            intake_result,
+            "invalid",
+            list(transition_result.get("diagnostics") or []) + [lock_identity_diagnostic],
+            identities=identities,
+            transition_result=transition_result,
+        )
+        result["failure_class"] = "lock_verification_failed"
+        return result
 
     transition_status = normalize_status(str(transition_result.get("status")))
     diagnostics = list(transition_result.get("diagnostics") or [])
@@ -220,6 +240,7 @@ def dispatch_ce_export(
         builder_context_package=published_builder_input,
     )
     diagnostics.extend(item.to_dict() for item in post_write_outcome.diagnostics)
+    post_write_record = _outcome_record(post_write_outcome)
     if post_write_outcome.status != "accepted":
         result = _base_result(
             intake_result,
@@ -227,7 +248,7 @@ def dispatch_ce_export(
             diagnostics,
             identities=identities,
             transition_result=transition_result,
-            post_write_validator=_outcome_record(post_write_outcome),
+            post_write_validator=post_write_record,
         )
         result["publication"] = {
             "builder_input": output_publication,
@@ -238,8 +259,6 @@ def dispatch_ce_export(
 
     staged_receipt: StagedJson | None = None
     try:
-        verify_snapshot_unchanged(snapshot)
-        lock = load_json_file(lock_path)
         receipt_payload = _build_receipt(
             artifact=artifact,
             snapshot=snapshot,
@@ -248,19 +267,27 @@ def dispatch_ce_export(
             diagnostics=diagnostics,
             builder_input=published_builder_input,
             output_path=output,
-            lock=lock,
-            post_write_validator=_outcome_record(post_write_outcome),
+            lock=lock_snapshot.value,
+            post_write_validator=post_write_record,
         )
         staged_receipt = stage_canonical_json(receipt, receipt_payload)
+        verify_snapshot_unchanged(snapshot)
+        try:
+            verify_snapshot_unchanged(lock_snapshot)
+        except SnapshotError as exc:
+            raise _LockMutationError(exc) from exc
+        lock_identity_diagnostic = _transition_lock_identity_diagnostic(transition_result, lock_snapshot.value)
+        if lock_identity_diagnostic is not None:
+            raise _LockIdentityError(lock_identity_diagnostic)
         receipt_publication = publish_staged_json(staged_receipt)
         staged_receipt = None
-    except (PublicationError, SnapshotError, OSError, json.JSONDecodeError) as exc:
+    except (PublicationError, SnapshotError, _LockIdentityError, _LockMutationError) as exc:
         cleanup_diagnostics: list[dict[str, Any]] = []
         try:
             discard_staged_json(staged_receipt)
         except PublicationError as cleanup_exc:
             cleanup_diagnostics.append(_publication_diag(cleanup_exc))
-        diagnostics.append(_receipt_failure_diag(exc))
+        diagnostics.append(_receipt_failure_diag(exc, lock_snapshot=lock_snapshot))
         diagnostics.extend(cleanup_diagnostics)
         result = _base_result(
             intake_result,
@@ -268,7 +295,7 @@ def dispatch_ce_export(
             diagnostics,
             identities=identities,
             transition_result=transition_result,
-            post_write_validator=_outcome_record(post_write_outcome),
+            post_write_validator=post_write_record,
         )
         result["publication"] = {
             "builder_input": output_publication,
@@ -283,7 +310,7 @@ def dispatch_ce_export(
         diagnostics,
         identities=identities,
         transition_result=transition_result,
-        post_write_validator=_outcome_record(post_write_outcome),
+        post_write_validator=post_write_record,
     )
     result.update(
         {
@@ -309,6 +336,26 @@ def dispatch_ce_export(
     return result
 
 
+def _transition_from_lock_snapshot(
+    final_bundle: dict[str, Any],
+    *,
+    schema_root: str | Path,
+    lock: dict[str, Any],
+    ce_repo: str | Path,
+    builder_repo: str | Path,
+) -> dict[str, Any]:
+    config = CeToBuilderTransitionConfig(
+        Path(schema_root),
+        lock,
+        Path(ce_repo),
+        Path(builder_repo),
+        30,
+        True,
+    )
+    source = LocalCheckoutContractSource({CE_REPO: Path(ce_repo), BUILDER_REPO: Path(builder_repo)})
+    return transition_ce_to_builder(final_bundle, source, config)
+
+
 def _build_receipt(
     *,
     artifact: dict[str, Any],
@@ -322,6 +369,10 @@ def _build_receipt(
     post_write_validator: dict[str, Any],
 ) -> dict[str, Any]:
     final_bundle = artifact["final_stage_bundle"]
+    lock_hash = _transition_lock_hash(transition_result)
+    if not isinstance(lock_hash, str):
+        raise _LockIdentityError(_lock_identity_diag(None, canonical_sha256(lock)))
+    owner_tools = _stable_owner_tools(transition_result.get("execution_records"), post_write_validator)
     base: dict[str, Any] = {
         "schema_version": RECEIPT_SCHEMA_ID,
         "transition": {"id": TRANSITION_ID, "version": TRANSITION_VERSION},
@@ -338,14 +389,11 @@ def _build_receipt(
             "canonical_sha256": canonical_sha256(final_bundle),
         },
         "owner_checkouts": {name: _stable_identity(value) for name, value in sorted(identities.items())},
-        "owner_tools": {
-            **dict(transition_result.get("execution_records") or {}),
-            "builder_post_write_validator": post_write_validator,
-        },
+        "owner_tools": owner_tools,
         "external_lock": {
             "schema_version": lock.get("schema_version"),
             "canonicalization": CANONICAL_JSON_VERSION,
-            "canonical_sha256": canonical_sha256(lock),
+            "canonical_sha256": lock_hash,
         },
         "transition_status": transition_result.get("status"),
         "handoff_allowed": True,
@@ -400,19 +448,84 @@ def _stable_identity(identity: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _stable_owner_tools(records: Any, post_write_validator: dict[str, Any]) -> dict[str, Any]:
+    stable: dict[str, Any] = {}
+    if isinstance(records, dict):
+        for name, record in sorted(records.items()):
+            if isinstance(record, dict):
+                stable[name] = _stable_execution_projection(record)
+    stable["builder_post_write_validator"] = post_write_validator
+    return stable
+
+
+def _stable_execution_projection(record: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(record.get("execution"), dict):
+        projected = _stable_execution_projection(record["execution"])
+        if record.get("status") is not None:
+            projected = {"status": record.get("status"), "execution": projected}
+        return projected
+
+    tool_path = record.get("validator_path") or record.get("adapter_path") or record.get("entrypoint")
+    timeout = record.get("timeout_policy")
+    stable_timeout: dict[str, Any] | None = None
+    if isinstance(timeout, dict):
+        stable_timeout = {
+            key: timeout.get(key)
+            for key in ("seconds", "kill_process_tree")
+            if timeout.get(key) is not None
+        }
+    elif record.get("timeout_seconds") is not None:
+        stable_timeout = {"seconds": record.get("timeout_seconds")}
+
+    projected: dict[str, Any] = {}
+    values = {
+        "status": record.get("status"),
+        "tool_kind": record.get("tool_kind"),
+        "owner_repository": record.get("owner_repository") or record.get("owner_repo"),
+        "owner_commit": record.get("owner_commit"),
+        "entrypoint": tool_path,
+        "input_ref": record.get("input_ref"),
+        "input_hash": record.get("input_hash"),
+        "output_ref": record.get("output_ref"),
+        "output_hash": record.get("output_hash"),
+        "parsed_result_ref": record.get("parsed_result_ref"),
+        "validator_after_adapter_ref": record.get("validator_after_adapter_ref"),
+        "exit_code": record.get("exit_code"),
+        "timeout_policy": stable_timeout,
+        "stdout_hash": record.get("stdout_hash"),
+        "stderr_hash": record.get("stderr_hash"),
+        "failure_code": record.get("failure_code"),
+    }
+    for key, value in values.items():
+        if value is not None:
+            projected[key] = value
+    projected["evidence_hash"] = canonical_sha256(projected)
+    return projected
+
+
 def _outcome_record(outcome: Any) -> dict[str, Any]:
     record = outcome.execution_record
+    raw = {
+        "tool_kind": getattr(record, "tool_kind", None),
+        "owner_repo": getattr(record, "owner_repo", None),
+        "owner_commit": getattr(record, "owner_commit", None),
+        "validator_path": getattr(record, "validator_path", None),
+        "adapter_path": getattr(record, "adapter_path", None),
+        "input_ref": getattr(record, "input_ref", None),
+        "input_hash": getattr(record, "input_hash", None),
+        "output_ref": getattr(record, "output_ref", None),
+        "output_hash": getattr(record, "output_hash", None),
+        "parsed_result_ref": getattr(record, "parsed_result_ref", None),
+        "validator_after_adapter_ref": getattr(record, "validator_after_adapter_ref", None),
+        "exit_code": getattr(record, "exit_code", None),
+        "timeout_seconds": getattr(getattr(record, "timeout_policy", None), "seconds", None),
+        "stdout_hash": outcome.stdout_hash,
+        "stderr_hash": outcome.stderr_hash,
+        "failure_code": getattr(record, "failure_code", None),
+    }
     return {
         "status": normalize_status(outcome.status),
-        "execution": {
-            "owner_repository": record.owner_repo,
-            "owner_commit": record.owner_commit,
-            "validator_path": record.validator_path,
-            "exit_code": record.exit_code,
-            "timeout_seconds": record.timeout_policy.seconds,
-            "stdout_hash": outcome.stdout_hash,
-            "stderr_hash": outcome.stderr_hash,
-        },
+        "execution": _stable_execution_projection(raw),
     }
 
 
@@ -423,11 +536,43 @@ def _workspace_relative(path: Path) -> str:
         return path.name
 
 
-def _receipt_failure_diag(exc: Exception) -> dict[str, Any]:
+def _transition_lock_hash(transition_result: dict[str, Any]) -> Any:
+    hashes = transition_result.get("hashes")
+    if not isinstance(hashes, dict):
+        return None
+    lock_hash = hashes.get("external_contract_lock")
+    if not isinstance(lock_hash, dict):
+        return None
+    return lock_hash.get("value")
+
+
+def _transition_lock_identity_diagnostic(transition_result: dict[str, Any], lock: dict[str, Any]) -> dict[str, Any] | None:
+    expected = canonical_sha256(lock)
+    actual = _transition_lock_hash(transition_result)
+    if actual == expected:
+        return None
+    return _lock_identity_diag(actual, expected)
+
+
+def _lock_identity_diag(actual: Any, expected: str) -> dict[str, Any]:
+    return _diag(
+        "PG_C2B_LOCK_IDENTITY_MISMATCH",
+        "error",
+        "$.external_lock",
+        "The transition result is not bound to the captured CE→Builder lock identity.",
+        transition_lock_hash=actual,
+        captured_lock_hash=expected,
+    )
+
+
+def _receipt_failure_diag(exc: Exception, *, lock_snapshot: JsonInputSnapshot) -> dict[str, Any]:
+    del lock_snapshot
+    if isinstance(exc, _LockIdentityError):
+        return exc.diagnostic
+    if isinstance(exc, _LockMutationError):
+        return _lock_mutation_diag(exc.cause)
     if isinstance(exc, SnapshotError):
         return _publication_diag(exc)
-    if isinstance(exc, (OSError, json.JSONDecodeError)):
-        return _lock_read_diag(exc)
     return _publication_diag(exc)
 
 
@@ -436,8 +581,20 @@ def _lock_read_diag(exc: Exception) -> dict[str, Any]:
         "PG_C2B_LOCK_READ_FAILED",
         "error",
         "$.external_lock",
-        "The CE→Builder lock file could not be read as valid JSON.",
+        "The CE→Builder lock file could not be captured as immutable strict JSON.",
         error_type=type(exc).__name__,
+        source_code=getattr(exc, "code", None),
+    )
+
+
+def _lock_mutation_diag(exc: Exception) -> dict[str, Any]:
+    return _diag(
+        "PG_C2B_LOCK_MUTATED_BEFORE_RECEIPT",
+        "error",
+        "$.external_lock",
+        "The CE→Builder lock changed after transition authorization and before receipt publication.",
+        error_type=type(exc).__name__,
+        source_code=getattr(exc, "code", None),
     )
 
 
@@ -458,3 +615,15 @@ def _diag(code: str, severity: str, path: str, message: str, **details: Any) -> 
         "details": details,
         "repair_owner": "Project Gate",
     }
+
+
+class _LockIdentityError(RuntimeError):
+    def __init__(self, diagnostic: dict[str, Any]) -> None:
+        self.diagnostic = diagnostic
+        super().__init__(diagnostic["message"])
+
+
+class _LockMutationError(RuntimeError):
+    def __init__(self, cause: SnapshotError) -> None:
+        self.cause = cause
+        super().__init__(str(cause))
