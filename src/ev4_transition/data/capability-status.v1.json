@@ -161,7 +161,7 @@
     },
     "pg_int": {
       "base_main_sha": "ef4385f5aef2622ddb1f60ae66b0b1df10c195c5",
-      "implementation_state": "implemented_on_feature_branch_pending_exact_head_ci",
+      "implementation_state": "implemented_on_feature_branch_pending_rereview",
       "routing_authority": "validated_producer_gate_export",
       "supported_transitions": [
         "architect-to-ce",
@@ -233,7 +233,7 @@
   },
   "pg_int": {
     "api_exposure": "local_service_and_operator_entrypoints",
-    "implementation_state": "implemented_on_feature_branch_pending_exact_head_ci",
+    "implementation_state": "implemented_on_feature_branch_pending_rereview",
     "routing_source": "validated_envelope_only",
     "filename_routing": "forbidden",
     "operator_transition_selection": "not_used",
