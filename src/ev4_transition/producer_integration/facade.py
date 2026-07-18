@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import tempfile
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -32,6 +34,12 @@ _SUPPORTED_ROUTES: dict[str, dict[str, Any]] = {
     },
 }
 
+_ROUTING_FILES = (
+    "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
+    "contracts/transition-targets/ev4-transition-targets.v1.json",
+)
+_PATH_ERRORS = (OSError, ValueError, RuntimeError)
+
 
 def inspect_producer_handoff(
     source_path: str | Path,
@@ -40,8 +48,10 @@ def inspect_producer_handoff(
 ) -> dict[str, Any]:
     """Validate immutable source bytes and resolve a PG-INT route from contract data."""
 
-    snapshot, result = _capture_and_inspect(source_path, Path(project_gate_repo).expanduser())
-    del snapshot
+    root, failure = _project_gate_root(project_gate_repo)
+    if failure is not None:
+        return failure
+    _, result = _capture_and_inspect(source_path, root)
     return result
 
 
@@ -60,70 +70,129 @@ def execute_producer_handoff(
 ) -> dict[str, Any]:
     """Reuse the existing A2C/C2B dispatchers through one validated routing facade."""
 
-    project_gate_root = Path(project_gate_repo).expanduser()
-    snapshot, inspection = _capture_and_inspect(source_path, project_gate_root)
+    root, failure = _project_gate_root(project_gate_repo)
+    if failure is not None:
+        return _with_operator_artifacts(failure)
+
+    snapshot, inspection = _capture_and_inspect(source_path, root)
     if snapshot is None or inspection.get("status") != "accepted":
         return _with_operator_artifacts(inspection)
 
     resolved = str(inspection["resolved_transition"])
     route = _SUPPORTED_ROUTES[resolved]
+    workspace, diagnostic = _workspace()
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic)
+
     supplied = {
         "architect_repo": architect_repo,
         "ce_repo": ce_repo,
         "builder_repo": builder_repo,
     }
-    path_diagnostics: list[dict[str, Any]] = []
+    normalized: dict[str, Path | None] = dict.fromkeys(supplied)
+    diagnostics: list[dict[str, Any]] = []
     for field in route["required_repo_fields"]:
-        path_diagnostics.extend(_validate_repo_path(field, supplied.get(field)))
-    if path_diagnostics:
+        normalized[field], field_diagnostics = _repository_path(
+            field,
+            supplied[field],
+            workspace=workspace,
+        )
+        diagnostics.extend(field_diagnostics)
+    if diagnostics:
         result = deepcopy(inspection)
-        result["status"] = _status_from_diagnostics(path_diagnostics)
-        result["diagnostics"] = sorted(path_diagnostics, key=_diagnostic_key)
-        result["handoff_allowed"] = False
-        result["failure_class"] = "repository_path_validation_failed"
+        result.update(
+            status=_status_from_diagnostics(diagnostics),
+            diagnostics=sorted(diagnostics, key=_diagnostic_key),
+            handoff_allowed=False,
+            failure_class="repository_path_validation_failed",
+        )
         return _with_operator_artifacts(result)
 
-    publication_root = Path(output_dir).expanduser() if output_dir is not None else snapshot.path.parent
+    publication_root, diagnostic = _publication_root(output_dir, workspace=workspace)
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic, "publication_failed")
+
+    selected_output, diagnostic = _path(
+        output_path,
+        base=publication_root,
+        path_expr="$.output_path",
+        default=route["output_filename"],
+    )
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic)
+
+    selected_receipt, diagnostic = _path(
+        receipt_path,
+        base=publication_root,
+        path_expr="$.receipt_path",
+        default=route["receipt_filename"],
+    )
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic)
+
+    selected_schema_root, diagnostic = _existing_path(
+        schema_root,
+        base=root,
+        path_expr="$.schema_root",
+        expected_kind="directory",
+        code="PG_INT_SCHEMA_ROOT_INVALID",
+        default="schemas",
+    )
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic)
+
+    selected_lock, diagnostic = _existing_path(
+        lock_path,
+        base=root,
+        path_expr="$.lock_path",
+        expected_kind="file",
+        code="PG_INT_LOCK_PATH_INVALID",
+        default=route["lock_filename"],
+    )
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic)
+
+    join_packet, diagnostic = _existing_path(
+        "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json",
+        base=root,
+        path_expr="$.project_gate_repo.join_evidence_packet",
+        expected_kind="file",
+        code="PG_INT_PROJECT_GATE_FILES_UNAVAILABLE",
+    )
+    if diagnostic is not None:
+        return _operator_failure(inspection, diagnostic, "project_gate_files_unavailable")
+
     try:
-        publication_root.mkdir(parents=True, exist_ok=True)
-    except OSError as exc:
-        return _with_operator_artifacts(
-            _failure_from_inspection(
-                inspection,
-                "invalid",
-                "publication_failed",
-                _diag(
-                    "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
-                    "error",
-                    "$.output_dir",
-                    "The requested output directory could not be prepared.",
-                    error_type=type(exc).__name__,
-                ),
-            )
+        result = transition_producer_export(
+            resolved,
+            snapshot.value,
+            join_packet_path=join_packet,
+            snapshot=snapshot,
+            schema_root=selected_schema_root,
+            lock_path=selected_lock,
+            architect_repo=normalized["architect_repo"],
+            ce_repo=normalized["ce_repo"],
+            builder_repo=normalized["builder_repo"],
+            project_gate_repo=root,
+            output_path=selected_output,
+            receipt_path=selected_receipt,
+            registry_path=root / _ROUTING_FILES[0],
+            targets_path=root / _ROUTING_FILES[1],
+            repository_root=root,
+        )
+    except Exception as exc:
+        return _operator_failure(
+            inspection,
+            _diag(
+                "PG_INT_EXECUTION_FAILED",
+                "error",
+                "$",
+                "The handoff execution boundary rejected an unavailable or malformed local dependency.",
+                error_type=type(exc).__name__,
+            ),
+            "execution_boundary_failed",
         )
 
-    selected_output = _resolve_publication_path(output_path, publication_root, route["output_filename"])
-    selected_receipt = _resolve_publication_path(receipt_path, publication_root, route["receipt_filename"])
-    selected_schema_root = _resolve_project_gate_path(schema_root, project_gate_root)
-    selected_lock = _resolve_project_gate_path(lock_path or route["lock_filename"], project_gate_root)
-
-    result = transition_producer_export(
-        resolved,
-        snapshot.value,
-        join_packet_path=project_gate_root / "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json",
-        snapshot=snapshot,
-        schema_root=selected_schema_root,
-        lock_path=selected_lock,
-        architect_repo=architect_repo,
-        ce_repo=ce_repo,
-        builder_repo=builder_repo,
-        project_gate_repo=project_gate_root,
-        output_path=selected_output,
-        receipt_path=selected_receipt,
-        registry_path=project_gate_root / "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
-        targets_path=project_gate_root / "contracts/transition-targets/ev4-transition-targets.v1.json",
-        repository_root=project_gate_root,
-    )
     result["routing"] = deepcopy(inspection["routing"])
     result["source_snapshot"] = deepcopy(inspection["source_snapshot"])
     return _with_operator_artifacts(result)
@@ -134,21 +203,117 @@ def required_repository_fields(resolved_transition: str) -> tuple[str, ...]:
     return tuple(route["required_repo_fields"]) if route else ()
 
 
+def _project_gate_root(value: str | Path) -> tuple[Path | None, dict[str, Any] | None]:
+    workspace, diagnostic = _workspace()
+    if diagnostic is not None:
+        return None, _empty_failure("invalid", "operator_path_validation_failed", diagnostic)
+
+    root, diagnostic = _path(
+        value,
+        base=workspace,
+        path_expr="$.project_gate_repo",
+        default=".",
+        resolve=True,
+    )
+    if diagnostic is not None:
+        return None, _empty_failure("invalid", "operator_path_validation_failed", diagnostic)
+
+    try:
+        if not root.exists() or not root.is_dir():
+            raise NotADirectoryError(str(root))
+        root.stat()
+        next(root.iterdir(), None)
+    except _PATH_ERRORS as exc:
+        return None, _empty_failure(
+            "invalid",
+            "project_gate_repo_invalid",
+            _diag(
+                "PG_INT_PROJECT_GATE_REPO_INVALID",
+                "error",
+                "$.project_gate_repo",
+                "The Project Gate repository root does not exist, is not a directory, or is inaccessible.",
+                project_gate_repo=str(root),
+                error_type=type(exc).__name__,
+            ),
+        )
+
+    for relative in _ROUTING_FILES:
+        candidate = root / relative
+        try:
+            if not candidate.is_file():
+                raise FileNotFoundError(relative)
+            json.loads(candidate.read_text(encoding="utf-8"), parse_constant=_reject_json_constant)
+        except Exception as exc:
+            return None, _empty_failure(
+                "invalid",
+                "project_gate_files_unavailable",
+                _diag(
+                    "PG_INT_PROJECT_GATE_FILES_UNAVAILABLE",
+                    "error",
+                    "$.project_gate_repo.routing_files",
+                    "A required Project Gate routing file is missing, unreadable, or malformed.",
+                    file=relative,
+                    error_type=type(exc).__name__,
+                ),
+            )
+    return root, None
+
+
 def _capture_and_inspect(
     source_path: str | Path,
     project_gate_root: Path,
 ) -> tuple[JsonInputSnapshot | None, dict[str, Any]]:
+    workspace, diagnostic = _workspace()
+    if diagnostic is not None:
+        return None, _empty_failure("invalid", "operator_path_validation_failed", diagnostic)
+
+    normalized_source, diagnostic = _path(
+        source_path,
+        base=workspace,
+        path_expr="$.source_path",
+    )
+    if diagnostic is not None:
+        return None, _empty_failure("invalid", "source_snapshot_failed", diagnostic)
+
     try:
-        snapshot = capture_json_snapshot(source_path)
+        snapshot = capture_json_snapshot(normalized_source)
     except SnapshotError as exc:
         return None, _snapshot_failure(exc)
+    except _PATH_ERRORS as exc:
+        return None, _empty_failure(
+            "invalid",
+            "source_snapshot_failed",
+            _diag(
+                "PG_INT_PATH_EXPANSION_FAILED",
+                "error",
+                "$.source_path",
+                "The Producer Gate Export path could not be inspected safely.",
+                error_type=type(exc).__name__,
+            ),
+        )
 
-    intake = intake_producer_export(
-        snapshot.value,
-        registry_path=project_gate_root / "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
-        targets_path=project_gate_root / "contracts/transition-targets/ev4-transition-targets.v1.json",
-        repository_root=project_gate_root,
-    )
+    try:
+        intake = intake_producer_export(
+            snapshot.value,
+            registry_path=project_gate_root / _ROUTING_FILES[0],
+            targets_path=project_gate_root / _ROUTING_FILES[1],
+            repository_root=project_gate_root,
+        )
+    except Exception as exc:
+        failure = _empty_failure(
+            "invalid",
+            "project_gate_files_unavailable",
+            _diag(
+                "PG_INT_PROJECT_GATE_FILES_UNAVAILABLE",
+                "error",
+                "$.project_gate_repo",
+                "Project Gate contract files could not be loaded or validated.",
+                error_type=type(exc).__name__,
+            ),
+        )
+        failure["source_snapshot"] = _snapshot_metadata(snapshot)
+        return snapshot, failure
+
     result = deepcopy(intake)
     result["source_snapshot"] = _snapshot_metadata(snapshot)
     resolved = result.get("resolved_transition")
@@ -159,9 +324,7 @@ def _capture_and_inspect(
         result["handoff_allowed"] = False
         return snapshot, result
     if route is None:
-        result["status"] = "invalid"
-        result["failure_class"] = "unsupported"
-        result["handoff_allowed"] = False
+        result.update(status="invalid", failure_class="unsupported", handoff_allowed=False)
         result.setdefault("diagnostics", []).append(
             _diag(
                 "PG_INT_UNSUPPORTED_TRANSITION",
@@ -177,9 +340,7 @@ def _capture_and_inspect(
     producer = result.get("producer") if isinstance(result.get("producer"), dict) else {}
     observed_stage = producer.get("stage")
     if observed_stage != route["producer_stage"]:
-        result["status"] = "invalid"
-        result["failure_class"] = "unsupported"
-        result["handoff_allowed"] = False
+        result.update(status="invalid", failure_class="unsupported", handoff_allowed=False)
         result.setdefault("diagnostics", []).append(
             _diag(
                 "PG_INT_PRODUCER_TARGET_MISMATCH",
@@ -193,6 +354,206 @@ def _capture_and_inspect(
         )
     result["diagnostics"] = sorted(result.get("diagnostics", []), key=_diagnostic_key)
     return snapshot, result
+
+
+def _repository_path(
+    field: str,
+    value: str | Path | None,
+    *,
+    workspace: Path,
+) -> tuple[Path | None, list[dict[str, Any]]]:
+    path_expr = f"$.repository_paths.{field}"
+    if value is None or not str(value).strip():
+        return None, [
+            _diag(
+                "PG_INT_REPOSITORY_PATH_REQUIRED",
+                "insufficient_evidence",
+                path_expr,
+                "A required local repository checkout path is missing.",
+                field=field,
+            )
+        ]
+    if _looks_like_url(str(value).strip()):
+        return None, [
+            _diag(
+                "PG_INT_GITHUB_URL_REJECTED",
+                "error",
+                path_expr,
+                "A local checkout directory is required; repository URLs are not accepted.",
+                field=field,
+            )
+        ]
+
+    candidate, diagnostic = _path(
+        value,
+        base=workspace,
+        path_expr=path_expr,
+        code="PG_INT_REPOSITORY_PATH_UNSAFE",
+        message="The required local repository checkout path is invalid or inaccessible.",
+    )
+    if diagnostic is not None:
+        return None, [diagnostic]
+
+    try:
+        if not candidate.exists():
+            return None, [
+                _diag(
+                    "PG_INT_REPOSITORY_PATH_NOT_FOUND",
+                    "insufficient_evidence",
+                    path_expr,
+                    "The required local repository checkout does not exist.",
+                    field=field,
+                )
+            ]
+        if not candidate.is_dir():
+            return None, [
+                _diag(
+                    "PG_INT_REPOSITORY_PATH_NOT_DIRECTORY",
+                    "insufficient_evidence",
+                    path_expr,
+                    "The required local repository checkout path is not a directory.",
+                    field=field,
+                )
+            ]
+    except _PATH_ERRORS as exc:
+        return None, [
+            _diag(
+                "PG_INT_REPOSITORY_PATH_UNSAFE",
+                "error",
+                path_expr,
+                "The required local repository checkout path is invalid or inaccessible.",
+                field=field,
+                error_type=type(exc).__name__,
+            )
+        ]
+    return candidate, []
+
+
+def _publication_root(
+    value: str | Path | None,
+    *,
+    workspace: Path,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    if value is None or not str(value).strip():
+        try:
+            created = Path(tempfile.mkdtemp(prefix=".ev4_pg_int_", dir=workspace)).resolve(strict=True)
+        except _PATH_ERRORS as exc:
+            return None, _diag(
+                "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
+                "error",
+                "$.output_dir",
+                "A unique temporary output directory could not be created inside the publication workspace.",
+                workspace=str(workspace),
+                error_type=type(exc).__name__,
+            )
+        return created, None
+
+    candidate, diagnostic = _path(
+        value,
+        base=workspace,
+        path_expr="$.output_dir",
+        code="PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
+        message="The requested output directory path is invalid or inaccessible.",
+        resolve=True,
+    )
+    if diagnostic is not None:
+        return None, diagnostic
+
+    try:
+        candidate.relative_to(workspace)
+        candidate.mkdir(parents=True, exist_ok=True)
+        if not candidate.is_dir():
+            raise NotADirectoryError(str(candidate))
+    except _PATH_ERRORS as exc:
+        return None, _diag(
+            "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE",
+            "error",
+            "$.output_dir",
+            "The requested output directory must be a usable directory inside the current publication workspace.",
+            workspace=str(workspace),
+            output_dir=str(candidate),
+            error_type=type(exc).__name__,
+        )
+    return candidate, None
+
+
+def _existing_path(
+    value: str | Path | None,
+    *,
+    base: Path,
+    path_expr: str,
+    expected_kind: str,
+    code: str,
+    default: str | Path | None = None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    candidate, diagnostic = _path(
+        value,
+        base=base,
+        path_expr=path_expr,
+        default=default,
+    )
+    if diagnostic is not None:
+        return None, diagnostic
+    try:
+        valid = candidate.is_dir() if expected_kind == "directory" else candidate.is_file()
+    except _PATH_ERRORS as exc:
+        return None, _diag(
+            code,
+            "error",
+            path_expr,
+            "The required local path is invalid or inaccessible.",
+            path=str(candidate),
+            expected_kind=expected_kind,
+            error_type=type(exc).__name__,
+        )
+    if not valid:
+        return None, _diag(
+            code,
+            "error",
+            path_expr,
+            "The required local path is missing or has the wrong type.",
+            path=str(candidate),
+            expected_kind=expected_kind,
+        )
+    return candidate, None
+
+
+def _path(
+    value: str | Path | None,
+    *,
+    base: Path,
+    path_expr: str,
+    default: str | Path | None = None,
+    code: str = "PG_INT_PATH_EXPANSION_FAILED",
+    message: str = "The operator-supplied path could not be expanded or resolved safely.",
+    resolve: bool = False,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    selected = value if value is not None and str(value).strip() else default
+    if selected is None:
+        return None, _diag(code, "error", path_expr, message, error_type="MissingPath")
+    try:
+        candidate = Path(str(selected).strip()).expanduser()
+        if not candidate.is_absolute():
+            candidate = base / candidate
+        return (candidate.resolve(strict=False) if resolve else candidate), None
+    except _PATH_ERRORS as exc:
+        return None, _diag(code, "error", path_expr, message, error_type=type(exc).__name__)
+
+
+def _workspace() -> tuple[Path | None, dict[str, Any] | None]:
+    try:
+        root = Path.cwd().resolve(strict=True)
+        if not root.is_dir():
+            raise NotADirectoryError(str(root))
+    except _PATH_ERRORS as exc:
+        return None, _diag(
+            "PG_INT_PATH_EXPANSION_FAILED",
+            "error",
+            "$.workspace",
+            "The current publication workspace is unavailable.",
+            error_type=type(exc).__name__,
+        )
+    return root, None
 
 
 def _routing_metadata(
@@ -258,34 +619,65 @@ def _with_operator_artifacts(result: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _validate_repo_path(field: str, value: str | Path | None) -> list[dict[str, Any]]:
-    path_expr = f"$.repository_paths.{field}"
-    if value is None or not str(value).strip():
-        return [_diag("PG_INT_REPOSITORY_PATH_REQUIRED", "insufficient_evidence", path_expr, "A required local repository checkout path is missing.", field=field)]
-    text = str(value).strip()
-    if _looks_like_url(text):
-        return [_diag("PG_INT_GITHUB_URL_REJECTED", "insufficient_evidence", path_expr, "A local checkout directory is required; GitHub URLs are not accepted.", field=field)]
-    try:
-        path = Path(text).expanduser()
-        if not path.exists():
-            return [_diag("PG_INT_REPOSITORY_PATH_NOT_FOUND", "insufficient_evidence", path_expr, "The required local repository checkout does not exist.", field=field)]
-        if not path.is_dir():
-            return [_diag("PG_INT_REPOSITORY_PATH_NOT_DIRECTORY", "insufficient_evidence", path_expr, "The required local repository checkout path is not a directory.", field=field)]
-    except (OSError, ValueError) as exc:
-        return [_diag("PG_INT_REPOSITORY_PATH_UNSAFE", "insufficient_evidence", path_expr, "The required local repository checkout path is invalid or inaccessible.", field=field, error_type=type(exc).__name__)]
-    return []
+def _operator_failure(
+    inspection: dict[str, Any],
+    diagnostic: dict[str, Any],
+    failure_class: str = "operator_path_validation_failed",
+) -> dict[str, Any]:
+    result = deepcopy(inspection)
+    result.update(
+        status="invalid",
+        handoff_allowed=False,
+        failure_class=failure_class,
+        diagnostics=[diagnostic],
+    )
+    return _with_operator_artifacts(result)
 
 
-def _resolve_publication_path(value: str | Path | None, root: Path, default_name: str) -> Path:
-    if value is None:
-        return root / default_name
-    candidate = Path(value).expanduser()
-    return candidate if candidate.is_absolute() else root / candidate
+def _snapshot_failure(exc: SnapshotError) -> dict[str, Any]:
+    return _empty_failure(
+        exc.status,
+        "source_snapshot_failed",
+        _diag(
+            exc.code,
+            "insufficient_evidence" if exc.status == "insufficient_evidence" else "error",
+            "$",
+            str(exc),
+            **exc.details,
+        ),
+    )
 
 
-def _resolve_project_gate_path(value: str | Path, root: Path) -> Path:
-    candidate = Path(value).expanduser()
-    return candidate if candidate.is_absolute() else root / candidate
+def _empty_failure(
+    status: str,
+    failure_class: str,
+    diagnostic: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": "producer-emitted-transition-result.v1",
+        "status": status,
+        "acquisition_mode": "producer_emitted_gate_artifact",
+        "producer": {},
+        "resolved_transition": None,
+        "handoff_allowed": False,
+        "failure_class": failure_class,
+        "diagnostics": [diagnostic],
+        "routing": {
+            "authority": "validated_producer_gate_export",
+            "resolved_transition": None,
+            "filename_used_for_routing": False,
+            "operator_transition_selection_used": False,
+            "required_repository_roles": [],
+        },
+    }
+
+
+def _snapshot_metadata(snapshot: JsonInputSnapshot) -> dict[str, Any]:
+    return {
+        "path": str(snapshot.path),
+        "filename": snapshot.path.name,
+        "sha256_file_bytes": snapshot.sha256_file_bytes,
+    }
 
 
 def _looks_like_url(value: str) -> bool:
@@ -297,56 +689,6 @@ def _looks_like_url(value: str) -> bool:
     except ValueError:
         return False
     return bool(parsed.scheme and parsed.netloc)
-
-
-def _snapshot_failure(exc: SnapshotError) -> dict[str, Any]:
-    return {
-        "schema_version": "producer-emitted-transition-result.v1",
-        "status": exc.status,
-        "acquisition_mode": "producer_emitted_gate_artifact",
-        "producer": {},
-        "resolved_transition": None,
-        "handoff_allowed": False,
-        "failure_class": "source_snapshot_failed",
-        "diagnostics": [
-            _diag(
-                exc.code,
-                "insufficient_evidence" if exc.status == "insufficient_evidence" else "error",
-                "$",
-                str(exc),
-                **exc.details,
-            )
-        ],
-        "routing": {
-            "authority": "validated_producer_gate_export",
-            "resolved_transition": None,
-            "filename_used_for_routing": False,
-            "operator_transition_selection_used": False,
-            "required_repository_roles": [],
-        },
-    }
-
-
-def _failure_from_inspection(
-    inspection: dict[str, Any],
-    status: str,
-    failure_class: str,
-    diagnostic: dict[str, Any],
-) -> dict[str, Any]:
-    result = deepcopy(inspection)
-    result["status"] = status
-    result["handoff_allowed"] = False
-    result["failure_class"] = failure_class
-    result["diagnostics"] = [diagnostic]
-    return result
-
-
-def _snapshot_metadata(snapshot: JsonInputSnapshot) -> dict[str, Any]:
-    return {
-        "path": str(snapshot.path),
-        "filename": snapshot.path.name,
-        "sha256_file_bytes": snapshot.sha256_file_bytes,
-    }
 
 
 def _status_from_diagnostics(diagnostics: list[dict[str, Any]]) -> str:
@@ -366,3 +708,7 @@ def _diag(code: str, severity: str, path: str, message: str, **details: Any) -> 
         "details": details,
         "repair_owner": "Project Gate",
     }
+
+
+def _reject_json_constant(value: str) -> Any:
+    raise ValueError(f"Non-finite JSON constant is forbidden: {value}")
