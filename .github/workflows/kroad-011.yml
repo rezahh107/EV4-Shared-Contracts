@@ -44,8 +44,14 @@ jobs:
       - name: Checkout Project Gate
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           path: EV4-Project-Gate
           persist-credentials: false
+
+      - name: Assert exact Project Gate PR head
+        if: github.event_name == 'pull_request'
+        run: test "$(git -C EV4-Project-Gate rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
 
       - name: Checkout pinned Decision Kernel
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -181,4 +187,6 @@ jobs:
           if-no-files-found: error
 
       - name: Record exact tested head
-        run: echo "KROAD-011 validated source head ${{ github.sha }} against Kernel 76a82e28543ff8f0babca11b7d7dccac96b92894" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          TESTED_SHA="$(git -C EV4-Project-Gate rev-parse HEAD)"
+          echo "KROAD-011 validated source head ${TESTED_SHA} against Kernel 76a82e28543ff8f0babca11b7d7dccac96b92894" >> "$GITHUB_STEP_SUMMARY"
