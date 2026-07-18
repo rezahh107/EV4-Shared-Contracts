@@ -25,7 +25,7 @@ uv run python -m ev4_transition.ui.app
 uv run ev4-project-gate-ui
 ```
 
-اگر `gradio` نصب نشده باشد، entry point باید با پیام روشن خطا بدهد و کاربر را به `uv sync --extra ui` راهنمایی کند. `gradio` وابستگی اجباری core package نیست. مسیر `pip install -e ".[dev,ui]"` فقط fallback است اگر `uv` در دسترس نباشد.
+اگر `gradio` نصب نشده باشد، entry point باید با پیام روشن خطا بدهد و کاربر را به `uv sync --extra ui` راهنمایی کند. `gradio` وابستگی اجباری core package نیست. مسیر `pip install -e "[dev,ui]"` فقط fallback است اگر `uv` در دسترس نباشد.
 
 ## محدوده اجرایی Prompt 06
 
@@ -103,6 +103,7 @@ uv run ev4-project-gate-ui
 
 ## اسناد مرتبط
 
+- `docs/LOCAL_OPERATOR_PANEL_QUICK_START.fa.md`
 - `docs/LOCAL_OPERATOR_PANEL_USER_GUIDE.fa.md`
 - `docs/OPERATOR_GUIDE.md`
 - `docs/DIAGNOSTIC_GUIDE.md`
