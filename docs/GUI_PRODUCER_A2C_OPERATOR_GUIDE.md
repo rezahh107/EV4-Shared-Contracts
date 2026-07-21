@@ -106,3 +106,43 @@ The authoritative lifecycle preserves:
 The GUI is an adapter for source selection, visible route confirmation, local settings, preflight rendering, result rendering, downloads and opening the real output folder. It does not independently implement producer transition orchestration and does not shell out to the CLI.
 
 Normal owner operation requires no CLI command.
+
+## Repair architecture and repository-path contract
+
+The operator surfaces are passive adapters. They construct `GateRequest` and call `run_gate_request`; they do not capture snapshots, resolve producer routes, call transition engines, or publish artifacts independently.
+
+```text
+GUI adapter ─┐
+             ├─> GateRequest -> run_gate_request
+CLI adapter ─┘                     |
+                                    v
+                         producer_handoff service
+                                    |
+                                    v
+                immutable snapshot + Project Gate routing
+                + repository identity/pins + validators
+                + atomic publication + receipt verification
+```
+
+The shared repository-path contract is centralized in `service/transition_contracts.py`:
+
+| Transition | Required repositories | Engine consumer |
+| --- | --- | --- |
+| `architect_to_ce` | Architect, CE | Architect/CE transition boundary |
+| `ce_to_builder` | CE, Builder | CE/Builder transition boundary |
+| `builder_to_responsive` | Builder, Responsive | Builder/Responsive transition boundary |
+| `final_gate` | Project Gate, Responsive, Decision Kernel | Final Gate + Kernel L2 audit |
+
+`project_gate_repo_path` remains available to producer-emitted A2C/C2B routing and is validated by the producer-handoff facade. A supplied `JsonInputSnapshot` is accepted only as an already-captured capability; its bytes, SHA-256, parsed value, source path, filesystem identity, and current source bytes are revalidated before routing. It does not select a different transition authority.
+
+## Native UI runner boundaries
+
+`Browse…` launches the Tk directory chooser in a bounded child process through `ev4_transition.runners.native_dialog`. This keeps Tk on the child process main thread and preserves the previous value on cancellation, timeout, malformed response, or unavailable GUI facilities. `Open output folder` is isolated in `ev4_transition.runners.open_output_folder` and uses argument vectors with `shell=False`.
+
+## Exact-head CI evidence
+
+The repair workflow checks out and verifies the exact PR Head, runs focused and full tests, constructs the Gradio demo, builds a wheel, clean-installs the wheel, imports packaged runner/UI modules, and creates source evidence outside the checkout tree. The evidence manifest records `tested_head_sha`, archive path, SHA-256 digest, and packaging result. Archive or manifest paths inside the source tree are rejected.
+
+## Owner acceptance boundary
+
+CI does not prove native Windows dialog behavior, repository checkouts on the owner workstation, or execution of the original non-synthetic Architect export. Owner acceptance remains mandatory and must verify the original source classification, visible route/mode, settings persistence/reset, repository origins and pins, immutable source identity, `ce-input.json`, `project-gate-a2c-receipt.json`, hashes/paths, reports, Browse, Open output folder, and operation without CLI.
