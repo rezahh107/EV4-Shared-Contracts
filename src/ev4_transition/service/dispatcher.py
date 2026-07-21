@@ -18,27 +18,21 @@ from .json_input import parse_json_input
 from .models import GateRequest, GateResponse, ServiceDiagnostic
 from .producer_handoff import ProducerHandoffRequest, run_producer_handoff_request
 from .repo_paths import resolve_relative_to_project_gate, validate_repo_paths
+from .transition_contracts import (
+    all_service_choices,
+    lock_path_for_service,
+    producer_transition_for_service,
+)
 from .reports import build_report_bundle
 
-_ALLOWED = {"validate_bundle", "inspect_capabilities", "architect_to_ce", "ce_to_builder", "builder_to_responsive", "final_gate"}
 _STATUSES = {"accepted", "invalid", "insufficient_evidence", "repair_needed"}
-_LOCKS = {
-    "architect_to_ce": "contracts/locks/architect-to-ce-transition.v1.lock.json",
-    "ce_to_builder": "contracts/locks/ce-to-builder-transition.v1.lock.json",
-    "builder_to_responsive": "contracts/locks/builder-to-responsive-transition.v1.lock.json",
-    "final_gate": "contracts/locks/final-gate.v1.lock.json",
-}
-_PRODUCER_TRANSITIONS = {
-    "architect_to_ce": "architect-to-ce",
-    "ce_to_builder": "ce-to-builder",
-}
 
 
 def run_gate_request(request: GateRequest) -> GateResponse:
     """Execute one authoritative transition lifecycle for GUI and CLI adapters."""
 
     choice = str(request.transition_choice)
-    if choice not in _ALLOWED:
+    if choice not in all_service_choices():
         return _response(choice, "invalid", None, [_diag("PG.SERVICE.TRANSITION_UNKNOWN", "error", "Unsupported transition choice.", "$.transition_choice")])
     if choice == "inspect_capabilities":
         capabilities = get_capabilities()
@@ -68,14 +62,15 @@ def run_gate_request(request: GateRequest) -> GateResponse:
 
 def _run_producer_emitted_request(request: GateRequest) -> GateResponse:
     choice = str(request.transition_choice)
-    if choice not in _PRODUCER_TRANSITIONS:
+    expected = producer_transition_for_service(choice)
+    if expected is None:
         return _response(
             choice,
             "invalid",
             None,
             [_diag("PG.UI.SOURCE_SCHEMA_TRANSITION_MISMATCH", "error", "Producer-emitted execution is not compatible with the selected transition.", "$.transition_choice", selected_transition=choice)],
         )
-    if request.input_json_text is not None or request.input_data is not None or not request.input_json_path:
+    if request.input_json_text is not None or request.input_data is not None:
         return _response(
             choice,
             "invalid",
@@ -90,11 +85,27 @@ def _run_producer_emitted_request(request: GateRequest) -> GateResponse:
                 )
             ],
         )
+    if request.input_snapshot is None and not request.input_json_path:
+        return _response(
+            choice,
+            "invalid",
+            None,
+            [
+                _diag(
+                    "PG.UI.PRODUCER_SOURCE_FILE_REQUIRED",
+                    "error",
+                    "در حالت producer_emitted_gate_artifact باید فایل اصلی Producer Gate Export را بارگذاری کنید.",
+                    "$.input_json_path",
+                    acquisition_mode=request.acquisition_mode,
+                )
+            ],
+        )
 
     output_dir = _execution_directory(request.output_dir) if request.output_dir and not request.output_path and not request.receipt_path else request.output_dir
     response = run_producer_handoff_request(
         ProducerHandoffRequest(
             source_path=request.input_json_path,
+            source_snapshot=request.input_snapshot,
             repo_paths=request.repo_paths,
             output_dir=output_dir,
             output_path=request.output_path,
@@ -103,7 +114,6 @@ def _run_producer_emitted_request(request: GateRequest) -> GateResponse:
             lock_path=request.lock_path,
         )
     )
-    expected = _PRODUCER_TRANSITIONS[choice]
     if response.resolved_transition and response.resolved_transition != expected:
         diagnostic = _diag(
             "PG.UI.SOURCE_SCHEMA_TRANSITION_MISMATCH",
@@ -163,7 +173,7 @@ def _execute(choice: str, request: GateRequest, payload: Any) -> dict[str, Any]:
     if choice == "builder_to_responsive":
         return builder_to_responsive_from_local_paths(payload, _schema_root(request), _lock_path(request, choice), str(repos.builder_repo_path), str(repos.responsive_repo_path), timeout_seconds=request.timeout_seconds, require_real_evidence=request.require_real_evidence)
     if choice == "final_gate":
-        return final_gate_from_local_paths(payload, _schema_root(request), _lock_path(request, choice), str(repos.project_gate_repo_path), str(repos.responsive_repo_path), timeout_seconds=request.timeout_seconds, require_real_evidence=request.require_real_evidence)
+        return final_gate_from_local_paths(payload, _schema_root(request), _lock_path(request, choice), str(repos.project_gate_repo_path), str(repos.responsive_repo_path), kernel_repo=str(repos.kernel_repo_path), timeout_seconds=request.timeout_seconds, require_real_evidence=request.require_real_evidence)
     raise AssertionError(choice)
 
 
@@ -172,7 +182,7 @@ def _schema_root(request: GateRequest) -> Path:
 
 
 def _lock_path(request: GateRequest, choice: str) -> Path:
-    return resolve_relative_to_project_gate(request.repo_paths, request.lock_path or _LOCKS[choice])
+    return resolve_relative_to_project_gate(request.repo_paths, request.lock_path or lock_path_for_service(choice))
 
 
 def _response(
