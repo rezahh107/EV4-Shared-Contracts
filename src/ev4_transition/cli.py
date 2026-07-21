@@ -7,6 +7,7 @@ from typing import Any
 from .behavioral_coverage import CoverageSourceError, inspect_coverage_source, validate_coverage_source
 from .bundle_validator import BundleValidator
 from .canonical_json import canonical_dumps, load_json_file
+from .io.secure_snapshot import capture_json_snapshot
 from .presentation.status_mapping import exit_code_for_status
 from .reports import render_plain_summary
 from .service import GateRequest, RepoPaths, run_gate_request
@@ -59,9 +60,29 @@ def main(argv: list[str] | None = None) -> int:
         return _exit_for_status(result["status"])
 
     if args.command == "transition":
+        preflight_failure = _transition_preflight(args)
+        if preflight_failure is not None:
+            _emit(preflight_failure, args.format)
+            return _exit_for_status(preflight_failure["status"])
+
+        snapshot = None
+        if args.acquisition_mode == "producer_emitted_gate_artifact":
+            try:
+                snapshot = capture_json_snapshot(args.bundle)
+            except Exception as exc:
+                payload = _simple_invalid(
+                    "CLI_PRODUCER_SOURCE_CAPTURE_FAILED",
+                    "The original producer source file could not be captured immutably.",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
+                )
+                _emit(payload, args.format)
+                return _exit_for_status(payload["status"])
+
         request = GateRequest(
             transition_choice=_service_choice(args.transition_name),  # type: ignore[arg-type]
             input_json_path=args.bundle,
+            input_snapshot=snapshot,
             repo_paths=RepoPaths(
                 project_gate_repo_path=args.project_gate_repo or ".",
                 architect_repo_path=args.architect_repo,
@@ -116,6 +137,15 @@ def _cli_payload(response: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _service_choice(transition_name: str) -> str:
+    return {
+        "architect-to-ce": "architect_to_ce",
+        "ce-to-builder": "ce_to_builder",
+        "builder-to-responsive": "builder_to_responsive",
+        "final-evidence-gate": "final_gate",
+    }[transition_name]
+
+
 def _default_lock_for_transition(transition_name: str) -> str:
     return {
         "architect-to-ce": "contracts/locks/architect-to-ce-transition.v1.lock.json",
@@ -126,7 +156,6 @@ def _default_lock_for_transition(transition_name: str) -> str:
 
 
 def _transition_preflight(args: argparse.Namespace) -> dict[str, Any] | None:
-    """Backward-compatible helper retained for callers; authoritative checks live in service."""
     required_by_transition = {
         "architect-to-ce": ["architect_repo", "ce_repo"],
         "ce-to-builder": ["ce_repo", "builder_repo"],
