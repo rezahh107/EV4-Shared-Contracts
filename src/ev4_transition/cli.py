@@ -132,6 +132,9 @@ def _transition_preflight(args: argparse.Namespace, service_choice: str | None =
     for repo_field in repo_fields:
         arg_field = _REPO_FIELD_TO_ARG[repo_field]
         value = getattr(args, arg_field, None)
+        if repo_field == "project_gate_repo_path" and not value:
+            value = "."
+            setattr(args, arg_field, value)
         if isinstance(value, str):
             value = value.strip()
             setattr(args, arg_field, value)
