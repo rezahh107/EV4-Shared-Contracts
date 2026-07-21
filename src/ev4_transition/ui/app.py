@@ -2,23 +2,24 @@ from __future__ import annotations
 
 from html import escape
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 from ev4_transition.presentation.theme_tokens import THEME_TOKENS, css_custom_properties
 from ev4_transition.service.preflight import run_preflight
+from ev4_transition.runners.native_dialog import select_directory
 from ev4_transition.runners.open_output_folder import open_directory
 
 from .adapters import build_capability_rows, build_gate_request, run_operator_check
 from .components import CAPABILITY_HEADERS, DIAGNOSTIC_HEADERS
-from .operator_settings import default_settings, load_settings, reset_settings, save_settings, settings_path
+from .operator_settings import load_settings, reset_settings, save_settings, settings_path
 from .preflight_components import preflight_result_html
 from .source_preflight import classify_source_file
 from .state import transition_choices
 
 HEADER_WARNING_FA = (
-    "این پنل مسیر authoritative Project Gate را اجرا می‌کند؛ موفقیت فقط پس از validatorهای رسمی و publication تأییدشده نمایش داده می‌شود."
+    "این پنل gate runner است و Elementor، Responsive یا specialist repository را اجرا نمی‌کند؛ "
+    "فقط authoritative Project Gate را با validator و publication تأییدشده اجرا می‌کند."
 )
 HEADER_HELPER_FA = (
     "فایل اصلی JSON را بارگذاری کنید، مسیر تشخیص‌داده‌شده و checkoutهای local را بازبینی کنید، سپس Preflight و اجرا را انجام دهید. عملیات عادی به CLI نیاز ندارد."
@@ -37,7 +38,7 @@ def operator_header_html() -> str:
       <h1 class="ev4-header-title"><bdi dir="ltr">EV4 Project Gate</bdi></h1>
       <span class="ev4-header-badge">authoritative gate runner</span>
     </div>
-    <p class="ev4-header-subtitle">پنل محلی اجرای گذارهای کنترل‌شده</p>
+    <p class="ev4-header-subtitle">پنل محلی بررسی گذارها</p>
     <p class="ev4-warning">⚠️ {HEADER_WARNING_FA}</p>
     <p class="ev4-helper">{HEADER_HELPER_FA}</p>
   </header>
@@ -109,6 +110,8 @@ def operator_panel_css() -> str:
     .gradio-container button:not(.primary):not([variant="primary"]):hover { background: var(--ev4-button-secondary-hover-bg) !important; color: var(--ev4-button-secondary-hover-text) !important; }
     .gradio-container :disabled, .gradio-container [aria-disabled="true"] { background: var(--ev4-disabled-bg) !important; color: var(--ev4-disabled-text) !important; cursor: not-allowed; opacity: 1 !important; }
     .ev4-classification { border-inline-start: 5px solid var(--ev4-info); }
+    .ev4-status-card { background: var(--ev4-surface-raised); border: 1px solid var(--ev4-border-subtle); }
+    .ev4-code, code, pre { background: var(--ev4-code-bg); }
     """
 
 
@@ -144,6 +147,7 @@ def build_demo():
             ce_path, ce_browse = _path_row(gr, "Constructability Engineer repository", settings["ce_repo_path"])
             builder_path, builder_browse = _path_row(gr, "Builder repository", settings["builder_repo_path"])
             responsive_path, responsive_browse = _path_row(gr, "Responsive repository", settings["responsive_repo_path"])
+            kernel_path, kernel_browse = _path_row(gr, "Decision Kernel repository", settings["kernel_repo_path"])
             output_dir, output_browse = _path_row(gr, "Default output directory", settings["default_output_directory"])
             with gr.Row():
                 save_button = gr.Button("ذخیره مسیرها در تنظیمات محلی")
@@ -178,7 +182,7 @@ def build_demo():
             selected_mode = payload.get("selected_acquisition_mode") or "pinned_owner_file_computation"
             return html, gr.update(value=selected_transition), gr.update(value=selected_mode), gr.update(interactive=False)
 
-        def _preflight(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, output):
+        def _preflight(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output):
             classification = classify_source_file(uploaded, project_gate) if uploaded else None
             if selected_mode == "producer_emitted_gate_artifact":
                 ready = bool(
@@ -201,6 +205,7 @@ def build_demo():
                 ce_repo_path=ce,
                 builder_repo_path=builder,
                 responsive_repo_path=responsive,
+                kernel_repo_path=kernel,
                 acquisition_mode=selected_mode,
                 output_dir=output,
             )
@@ -208,7 +213,7 @@ def build_demo():
             ready = result.status == "ready"
             return preflight_result_html(result), gr.update(interactive=ready)
 
-        def _run(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, output):
+        def _run(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output):
             result = run_operator_check(
                 selected_transition,
                 pasted_json=pasted,
@@ -218,6 +223,7 @@ def build_demo():
                 ce_repo_path=ce,
                 builder_repo_path=builder,
                 responsive_repo_path=responsive,
+                kernel_repo_path=kernel,
                 acquisition_mode=selected_mode,
                 output_dir=output,
             )
@@ -228,12 +234,12 @@ def build_demo():
         project_gate_path.change(_classify, inputs=[source_file, project_gate_path], outputs=[source_classification, transition, acquisition_mode, run_button])
         preflight_button.click(
             _preflight,
-            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, output_dir],
+            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir],
             outputs=[preflight_summary, run_button],
         )
         run_button.click(
             _run,
-            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, output_dir],
+            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir],
             outputs=[status_summary, diagnostics, capabilities, json_preview, downloads, open_folder_button],
         )
 
@@ -243,18 +249,19 @@ def build_demo():
             (ce_browse, ce_path),
             (builder_browse, builder_path),
             (responsive_browse, responsive_path),
+            (kernel_browse, kernel_path),
             (output_browse, output_dir),
         ):
             button.click(browse_directory, inputs=[textbox], outputs=[textbox])
 
         save_button.click(
             _save_settings_callback,
-            inputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, output_dir, transition, acquisition_mode],
+            inputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir, transition, acquisition_mode],
             outputs=[settings_status],
         )
         reset_button.click(
             _reset_settings_callback,
-            outputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, output_dir, transition, acquisition_mode, settings_status, run_button],
+            outputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir, transition, acquisition_mode, settings_status, run_button],
         )
         open_folder_button.click(open_output_folder, inputs=[json_preview], outputs=[open_folder_status])
 
@@ -269,20 +276,10 @@ def _path_row(gr: Any, label: str, value: str):
 
 
 def browse_directory(current: str | None) -> str:
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        selected = filedialog.askdirectory(initialdir=current if current and Path(current).is_dir() else None)
-        root.destroy()
-        return selected or (current or "")
-    except Exception:
-        return current or ""
+    return select_directory(current, timeout_seconds=120.0)
 
 
-def _save_settings_callback(project_gate, architect, ce, builder, responsive, output, transition, mode):
+def _save_settings_callback(project_gate, architect, ce, builder, responsive, kernel, output, transition, mode):
     path = save_settings(
         {
             "project_gate_repo_path": project_gate,
@@ -290,6 +287,7 @@ def _save_settings_callback(project_gate, architect, ce, builder, responsive, ou
             "ce_repo_path": ce,
             "builder_repo_path": builder,
             "responsive_repo_path": responsive,
+            "kernel_repo_path": kernel,
             "default_output_directory": output,
             "default_transition": transition,
             "default_acquisition_mode": mode,
@@ -306,6 +304,7 @@ def _reset_settings_callback():
         value["ce_repo_path"],
         value["builder_repo_path"],
         value["responsive_repo_path"],
+        value["kernel_repo_path"],
         value["default_output_directory"],
         value["default_transition"],
         value["default_acquisition_mode"],
