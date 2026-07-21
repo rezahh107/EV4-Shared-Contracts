@@ -1,22 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 from typing import Any
 
-from .architect_to_ce import TransitionValidatorHooks, transition_from_local_paths
-from .transitions.builder_to_responsive import transition_from_local_paths as builder_to_responsive_from_local_paths
-from .transitions.ce_to_builder import transition_from_local_paths as ce_to_builder_from_local_paths
-from .transitions.final_gate import final_gate_from_local_paths
 from .behavioral_coverage import CoverageSourceError, inspect_coverage_source, validate_coverage_source
-from .bundle_validator import BundleValidator, ResultValidationError
+from .bundle_validator import BundleValidator
 from .canonical_json import canonical_dumps, load_json_file
-from .io.secure_snapshot import SnapshotError, capture_json_snapshot
 from .presentation.status_mapping import exit_code_for_status
 from .reports import render_plain_summary
-from .validator_runner import run_architect_validator, run_ce_validator
-from .producer_integration.intake import transition_producer_export
+from .service import GateRequest, RepoPaths, run_gate_request
 
 _CAPABILITY_STATUS_PATH = Path(__file__).resolve().parent / "data" / "capability-status.v1.json"
 
@@ -24,7 +17,6 @@ _CAPABILITY_STATUS_PATH = Path(__file__).resolve().parent / "data" / "capability
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ev4-transition")
     parser.add_argument("--schema-root", default="schemas")
-
     sub = parser.add_subparsers(dest="command", required=True)
 
     validate_parser = sub.add_parser("validate", help="Validate a Stage Evidence Bundle.")
@@ -60,7 +52,6 @@ def main(argv: list[str] | None = None) -> int:
     inspect_parser.add_argument("--format", choices=["json", "persian"], default="json")
 
     args = parser.parse_args(argv)
-
     if args.command == "validate":
         validator = BundleValidator(args.schema_root)
         result = validator.validate_file(args.bundle, required_evidence_ids=args.require_evidence)
@@ -68,68 +59,26 @@ def main(argv: list[str] | None = None) -> int:
         return _exit_for_status(result["status"])
 
     if args.command == "transition":
-        bundle_path = Path(args.bundle)
-        snapshot = None
-        if args.acquisition_mode == "producer_emitted_gate_artifact":
-            try:
-                snapshot = capture_json_snapshot(bundle_path)
-                bundle = snapshot.value
-            except SnapshotError as exc:
-                payload = {
-                    "status": exc.status,
-                    "diagnostics": [
-                        {
-                            "code": exc.code,
-                            "severity": "insufficient_evidence" if exc.status == "insufficient_evidence" else "error",
-                            "message": str(exc),
-                            "path": "$",
-                            "details": exc.details,
-                        }
-                    ],
-                    "handoff_allowed": False,
-                }
-                _emit(payload, args.format)
-                return _exit_for_status(payload["status"])
-        else:
-            try:
-                bundle = load_json_file(bundle_path)
-            except json.JSONDecodeError as exc:
-                payload = _simple_invalid("MALFORMED_JSON", "File is not valid JSON.", line=exc.lineno, column=exc.colno)
-                _emit(payload, args.format)
-                return 1
-            except OSError as exc:
-                payload = _simple_invalid("FILE_READ_ERROR", "File could not be read.", error_type=type(exc).__name__)
-                _emit(payload, args.format)
-                return 1
-
-        preflight = _transition_preflight(args)
-        if preflight is not None:
-            _emit(preflight, args.format)
-            return _exit_for_status(preflight["status"])
-
-        if args.acquisition_mode == "producer_emitted_gate_artifact":
-            result = transition_producer_export(
-                args.transition_name,
-                bundle,
-                snapshot=snapshot,
-                schema_root=args.schema_root,
-                lock_path=args.lock,
-                architect_repo=args.architect_repo,
-                ce_repo=args.ce_repo,
-                builder_repo=args.builder_repo,
-                project_gate_repo=args.project_gate_repo or ".",
-                output_path=args.output,
-                receipt_path=args.receipt_output,
-                repository_root=".",
-            )
-            _emit(result, args.format)
-            return _exit_for_status(result["status"])
-        try:
-            result = _run_transition(args, bundle)
-        except ResultValidationError as exc:
-            result = _simple_invalid("TRANSITION_RESULT_SCHEMA_VALIDATION_FAILED", "Transition result schema validation failed.", error=str(exc))
-        _emit(result, args.format)
-        return _exit_for_status(result["status"])
+        request = GateRequest(
+            transition_choice=_service_choice(args.transition_name),  # type: ignore[arg-type]
+            input_json_path=args.bundle,
+            repo_paths=RepoPaths(
+                project_gate_repo_path=args.project_gate_repo or ".",
+                architect_repo_path=args.architect_repo,
+                ce_repo_path=args.ce_repo,
+                builder_repo_path=args.builder_repo,
+                responsive_repo_path=args.responsive_repo,
+            ),
+            acquisition_mode=args.acquisition_mode,
+            schema_root=args.schema_root,
+            lock_path=args.lock,
+            output_path=args.output,
+            receipt_path=args.receipt_output,
+        )
+        response = run_gate_request(request)
+        payload = _cli_payload(response.to_dict())
+        _emit(payload, args.format)
+        return _exit_for_status(str(payload.get("status", "invalid")))
 
     if args.command == "coverage":
         return _coverage_command(args)
@@ -137,6 +86,34 @@ def main(argv: list[str] | None = None) -> int:
     info = _load_capability_status()
     _emit(info, args.format)
     return 0
+
+
+def _service_choice(transition_name: str) -> str:
+    return {
+        "architect-to-ce": "architect_to_ce",
+        "ce-to-builder": "ce_to_builder",
+        "builder-to-responsive": "builder_to_responsive",
+        "final-evidence-gate": "final_gate",
+    }[transition_name]
+
+
+def _cli_payload(response: dict[str, Any]) -> dict[str, Any]:
+    engine = response.get("engine_result")
+    if isinstance(engine, dict):
+        payload = dict(engine)
+        if response.get("service_diagnostics"):
+            existing = list(payload.get("diagnostics") or [])
+            payload["diagnostics"] = existing + list(response["service_diagnostics"])
+        return payload
+    return {
+        "schema_version": "project-gate-service-result.v1",
+        "result_type": "service_layer_failure",
+        "status": response.get("status", "invalid"),
+        "transition_choice": response.get("transition_choice"),
+        "diagnostics": list(response.get("service_diagnostics") or []),
+        "handoff_allowed": False,
+        "output": None,
+    }
 
 
 def _default_lock_for_transition(transition_name: str) -> str:
@@ -148,57 +125,15 @@ def _default_lock_for_transition(transition_name: str) -> str:
     }[transition_name]
 
 
-def _run_transition(args: argparse.Namespace, bundle: dict[str, Any]) -> dict[str, Any]:
-    if args.transition_name == "architect-to-ce":
-        hooks = TransitionValidatorHooks(
-            architect=lambda payload: run_architect_validator(args.architect_repo, payload),
-            ce=lambda payload, source_bundle: run_ce_validator(args.ce_repo, payload, source_bundle),
-        )
-        return transition_from_local_paths(
-            bundle,
-            args.schema_root,
-            args.lock or "contracts/locks/architect-to-ce-transition.v1.lock.json",
-            args.architect_repo,
-            args.ce_repo,
-            validator_hooks=hooks,
-        )
-    if args.transition_name == "ce-to-builder":
-        return ce_to_builder_from_local_paths(
-            bundle,
-            args.schema_root,
-            args.lock or "contracts/locks/ce-to-builder-transition.v1.lock.json",
-            args.ce_repo,
-            args.builder_repo,
-        )
-    if args.transition_name == "builder-to-responsive":
-        return builder_to_responsive_from_local_paths(
-            bundle,
-            args.schema_root,
-            args.lock or "contracts/locks/builder-to-responsive-transition.v1.lock.json",
-            args.builder_repo,
-            args.responsive_repo,
-        )
-    if args.transition_name == "final-evidence-gate":
-        return final_gate_from_local_paths(
-            bundle,
-            args.schema_root,
-            args.lock or "contracts/locks/final-gate.v1.lock.json",
-            args.project_gate_repo,
-            args.responsive_repo,
-            kernel_repo=args.kernel_repo,
-        )
-    return _simple_insufficient("CLI_TRANSITION_NOT_WIRED", "Transition is not wired in the public CLI.", transition_name=args.transition_name)
-
-
 def _transition_preflight(args: argparse.Namespace) -> dict[str, Any] | None:
+    """Backward-compatible helper retained for callers; authoritative checks live in service."""
     required_by_transition = {
         "architect-to-ce": ["architect_repo", "ce_repo"],
         "ce-to-builder": ["ce_repo", "builder_repo"],
         "builder-to-responsive": ["builder_repo", "responsive_repo"],
         "final-evidence-gate": ["project_gate_repo", "responsive_repo", "kernel_repo"],
     }
-    required = required_by_transition.get(args.transition_name, [])
-    for field in required:
+    for field in required_by_transition.get(args.transition_name, []):
         value = getattr(args, field, None)
         if isinstance(value, str):
             value = value.strip()
@@ -207,7 +142,7 @@ def _transition_preflight(args: argparse.Namespace) -> dict[str, Any] | None:
         if not value:
             return _simple_insufficient("CLI_LOCAL_PATH_REQUIRED", "A local checkout path is required for this guarded transition.", option=option, transition_name=args.transition_name)
         if _looks_like_url(value):
-            return _simple_insufficient("CLI_GITHUB_URL_REJECTED", "GitHub URLs are rejected; provide a local checkout path so pinned file bytes and owner tools can be verified.", option=option, transition_name=args.transition_name)
+            return _simple_insufficient("CLI_GITHUB_URL_REJECTED", "GitHub URLs are rejected; provide a local checkout path.", option=option, transition_name=args.transition_name)
         if not Path(value).is_dir():
             return _simple_insufficient("CLI_LOCAL_PATH_NOT_FOUND", "Local checkout path was not found.", option=option, path=value, transition_name=args.transition_name)
     return None
@@ -256,9 +191,7 @@ def _coverage_command(args: argparse.Namespace) -> int:
             "source": getattr(args, "source", None),
             "status": "source_unparseable",
             "rule_count": 0,
-            "diagnostics": [
-                {"code": "PG_BRC_SOURCE_UNPARSEABLE", "severity": "error", "message": str(exc), "path": "$"}
-            ],
+            "diagnostics": [{"code": "PG_BRC_SOURCE_UNPARSEABLE", "severity": "error", "message": str(exc), "path": "$"}],
         }
         print(canonical_dumps(payload))
         return 2
@@ -278,7 +211,7 @@ def _emit(payload: dict[str, Any], fmt: str) -> None:
         if "status" in payload:
             print(render_plain_summary(payload), end="")
         else:
-            print("هسته قطعی و Architect → CE به‌صورت functional در CLI فعال‌اند؛ CE → Builder، Builder → Responsive و Final Evidence Gate فقط به‌صورت guarded/fail-closed در CLI موجودند و شواهد real non-synthetic همچنان insufficient_evidence است.")
+            print("هسته قطعی و گذارهای guarded از service مشترک استفاده می‌کنند.")
         return
     print(canonical_dumps(payload))
 
