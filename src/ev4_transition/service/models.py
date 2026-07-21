@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from ev4_transition.io.secure_snapshot import JsonInputSnapshot
 
 ProjectGateServiceStatus = Literal["accepted", "invalid", "insufficient_evidence", "repair_needed"]
 TransitionChoice = Literal[
@@ -44,6 +47,7 @@ class RepoPaths:
     ce_repo_path: str | None = None
     builder_repo_path: str | None = None
     responsive_repo_path: str | None = None
+    kernel_repo_path: str | None = None
 
     def to_dict(self) -> dict[str, str | None]:
         return asdict(self)
@@ -55,7 +59,7 @@ class GateRequest:
     input_json_path: str | None = None
     input_json_text: str | None = None
     input_data: dict[str, Any] | list[Any] | str | int | float | bool | None = None
-    input_snapshot: Any | None = None
+    input_snapshot: "JsonInputSnapshot | None" = None
     repo_paths: RepoPaths = field(default_factory=RepoPaths)
     acquisition_mode: AcquisitionMode = "pinned_owner_file_computation"
     schema_root: str = "schemas"
