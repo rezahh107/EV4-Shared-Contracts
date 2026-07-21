@@ -14,6 +14,7 @@ from ev4_transition.presentation.rtl import bdi_ltr, escape_html, ltr_code_block
 from ev4_transition.service import GateRequest, RepoPaths, ServiceDiagnostic, run_gate_request
 from ev4_transition.service.guidance import build_operator_guidance
 from ev4_transition.service.json_input import parse_json_input
+from ev4_transition.service.transition_contracts import source_stage_for_service
 
 from .components import capability_rows_from_payload, diagnostics_to_rows, status_summary_markdown
 from .state import option_for_label
@@ -22,13 +23,6 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 CAPABILITY_STATUS_PATH = PACKAGE_ROOT / "data" / "capability-status.v1.json"
 LOGGER = logging.getLogger(__name__)
-
-_EXPECTED_SOURCE_STAGE_BY_TRANSITION = {
-    "architect_to_ce": "architect",
-    "ce_to_builder": "ce",
-    "builder_to_responsive": "builder",
-    "final_gate": "responsive",
-}
 
 
 @dataclass(frozen=True)
@@ -76,6 +70,7 @@ def run_operator_check(
     ce_repo_path: str | None = None,
     builder_repo_path: str | None = None,
     responsive_repo_path: str | None = None,
+    kernel_repo_path: str | None = None,
     *,
     acquisition_mode: str = "pinned_owner_file_computation",
     output_dir: str | Path | None = None,
@@ -96,6 +91,7 @@ def run_operator_check(
             ce_repo_path=ce_repo_path,
             builder_repo_path=builder_repo_path,
             responsive_repo_path=responsive_repo_path,
+            kernel_repo_path=kernel_repo_path,
             acquisition_mode=acquisition_mode,
             output_dir=output_dir,
             output_path=output_path,
@@ -139,6 +135,7 @@ def build_gate_request(
     ce_repo_path: str | None = None,
     builder_repo_path: str | None = None,
     responsive_repo_path: str | None = None,
+    kernel_repo_path: str | None = None,
     acquisition_mode: str = "pinned_owner_file_computation",
     output_dir: str | Path | None = None,
     output_path: str | Path | None = None,
@@ -159,6 +156,7 @@ def build_gate_request(
             ce_repo_path=_clean_path(ce_repo_path),
             builder_repo_path=_clean_path(builder_repo_path),
             responsive_repo_path=_clean_path(responsive_repo_path),
+            kernel_repo_path=_clean_path(kernel_repo_path),
         ),
         acquisition_mode=acquisition_mode,  # type: ignore[arg-type]
         output_dir=_clean_path(str(output_dir)) if output_dir is not None else None,
@@ -271,11 +269,11 @@ def _ui_preflight_diagnostics(request: GateRequest) -> list[ServiceDiagnostic]:
     if _looks_like_project_gate_result(value):
         return [
             ServiceDiagnostic(
-                "PG.UI.RESULT_ARTIFACT_USED_AS_SOURCE",
+                "PG.UI.PREFLIGHT_RESULT_JSON_USED_AS_SOURCE",
                 "error",
                 "Project Gate result/report artifact cannot be used as a transition source.",
                 "$",
-                {"transition_choice": choice, "observed_result_type": value.get("result_type")},
+                {"transition_choice": choice, "observed_result_type": value.get("result_type"), "normalized_code": "PG.UI.RESULT_ARTIFACT_USED_AS_SOURCE"},
             )
         ]
     schema = value.get("schema_version")
@@ -299,16 +297,16 @@ def _ui_preflight_diagnostics(request: GateRequest) -> list[ServiceDiagnostic]:
                 {"observed_schema": schema, "acquisition_mode": request.acquisition_mode},
             )
         ]
-    expected_stage = _EXPECTED_SOURCE_STAGE_BY_TRANSITION.get(choice)
+    expected_stage = source_stage_for_service(choice)
     observed_stage = value.get("stage")
     if expected_stage and isinstance(observed_stage, str) and observed_stage != expected_stage:
         return [
             ServiceDiagnostic(
-                "PG.UI.SOURCE_SCHEMA_TRANSITION_MISMATCH",
+                "PG.UI.PREFLIGHT_WRONG_STAGE_FOR_TRANSITION",
                 "error",
                 "Input stage does not match the selected transition.",
                 "$.stage",
-                {"transition_choice": choice, "expected_stage": expected_stage, "observed_stage": observed_stage},
+                {"transition_choice": choice, "expected_stage": expected_stage, "observed_stage": observed_stage, "normalized_code": "PG.UI.SOURCE_SCHEMA_TRANSITION_MISMATCH"},
             )
         ]
     return []
@@ -387,7 +385,7 @@ def _markdown_report(result: dict[str, Any]) -> str:
     lines.extend(f"- {item}" for item in guidance.passed_steps_fa)
     lines.extend(["", "### اقدام بعدی دقیق"])
     lines.extend(f"{index}. {action}" for index, action in enumerate(guidance.next_actions_fa, start=1))
-    lines.extend(["", "## Raw diagnostics", "", "```json", raw_diagnostics, "```", "", "## Raw JSON result", "", "```json", safe_json, "```", ""])
+    lines.extend(["", "## Preflight summary", "", "- Preflight result and authoritative diagnostics are included below.", "", "## Raw diagnostics", "", "```json", raw_diagnostics, "```", "", "## Raw JSON result", "", "```json", safe_json, "```", ""])
     return "\n".join(lines)
 
 
@@ -398,10 +396,24 @@ def _neutralize_markdown_fences(value: str) -> str:
 def _html_report(result: dict[str, Any]) -> str:
     escaped_json = json.dumps(result, ensure_ascii=False, indent=2)
     escaped_diagnostics = json.dumps(result.get("diagnostics", []), ensure_ascii=False, indent=2)
+    guidance = build_operator_guidance(result)
+    identifiers = []
+    for item in result.get("diagnostics", []):
+        if isinstance(item, dict):
+            identifiers.append(
+                f'<li>{bdi_ltr(item.get("code", "UNKNOWN_DIAGNOSTIC"))} — {bdi_ltr(item.get("path", "$"))}</li>'
+            )
+    identifier_html = "".join(identifiers) or "<li>diagnostic ثبت نشده است.</li>"
     return (
         '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>Project Gate Report</title></head><body>'
         '<main lang="fa" dir="rtl"><h1>گزارش Project Gate Operator Panel</h1>'
         f'<p><strong>status:</strong> {bdi_ltr(result.get("status", "invalid"))}</p>'
+        '<h2>راهنمای عملیاتی</h2>'
+        f'<p>{escape_html(guidance.headline_fa)}</p>'
+        '<h2>Preflight summary</h2>'
+        '<p>Preflight result and authoritative diagnostics are included in this report.</p>'
+        '<h2>Diagnostic identifiers</h2>'
+        f'<ul>{identifier_html}</ul>'
         '<h2>Raw diagnostics</h2>'
         f'{ltr_code_block(escaped_diagnostics)}'
         '<h2>Raw JSON result</h2>'
