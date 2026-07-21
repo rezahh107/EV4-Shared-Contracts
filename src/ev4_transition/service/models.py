@@ -55,6 +55,7 @@ class GateRequest:
     input_json_path: str | None = None
     input_json_text: str | None = None
     input_data: dict[str, Any] | list[Any] | str | int | float | bool | None = None
+    input_snapshot: Any | None = None
     repo_paths: RepoPaths = field(default_factory=RepoPaths)
     acquisition_mode: AcquisitionMode = "pinned_owner_file_computation"
     schema_root: str = "schemas"
