@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import ev4_transition.cli as cli
 from ev4_transition.ui.adapters import build_gate_request
@@ -38,6 +39,7 @@ def test_gui_and_cli_construct_equivalent_shared_requests(monkeypatch, tmp_path:
         observed["request"] = request
         return Response()
 
+    monkeypatch.setattr(cli, "run_preflight", lambda request: SimpleNamespace(status="ready", request_fingerprint="token"))
     monkeypatch.setattr(cli, "run_gate_request", fake_run)
     cli.main(
         [

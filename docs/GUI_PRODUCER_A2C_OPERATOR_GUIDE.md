@@ -146,3 +146,26 @@ The repair workflow checks out and verifies the exact PR Head, runs focused and 
 ## Owner acceptance boundary
 
 CI does not prove native Windows dialog behavior, repository checkouts on the owner workstation, or execution of the original non-synthetic Architect export. Owner acceptance remains mandatory and must verify the original source classification, visible route/mode, settings persistence/reset, repository origins and pins, immutable source identity, `ce-input.json`, `project-gate-a2c-receipt.json`, hashes/paths, reports, Browse, Open output folder, and operation without CLI.
+
+## Request-bound authoritative Preflight
+
+Source classification only suggests a compatible transition and acquisition mode. It never grants readiness. Every executable GUI and CLI request is built once as a complete `GateRequest` and evaluated by `service.preflight.run_preflight`.
+
+A `ready` result carries a deterministic request fingerprint covering the transition, acquisition mode, source path and immutable source identity, every repository path including Decision Kernel, output root, schema/lock overrides, downstream publication arguments, timeout, evidence mode, and other dispatch-affecting fields. GUI execution sends that fingerprint back to `run_gate_request`; Runtime captures the current source snapshot, reruns the authoritative Preflight, recomputes the fingerprint, and refuses dispatch when the token is absent or stale.
+
+Any change to an authority-bearing control clears the token immediately, disables Run, and clears the verified attempt-directory state. This includes source, transition, acquisition mode, pasted input, every repository path, and output root. Classification is not an execution authorization.
+
+## Attempt directories and report publication
+
+The service allocates one collision-safe `run-*` directory for every GUI/CLI execution attempt before publishing any result files. A successful Architect → CE attempt contains five verified files. An invalid or blocked attempt contains only the three verified reports:
+
+```text
+<output-root>/run-<unique-id>/
+  result.json
+  report.md
+  report.html
+```
+
+The UI does not write report files. `service.report_publication` stages all three reports, publishes them with no-overwrite links, verifies exact bytes, and rolls the group back when staging, collision, concurrent creation, or post-write verification fails. Download paths are exposed only for verified existing files returned by the service. `Open output folder` consumes the service-returned verified attempt directory rather than parsing editable result JSON.
+
+Existing fixed files directly under `<output-root>` are never replaced by either successful or failed attempts.

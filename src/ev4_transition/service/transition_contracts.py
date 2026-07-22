@@ -13,6 +13,8 @@ class TransitionContract:
     optional_repo_fields: tuple[str, ...] = ()
     producer_transition: str | None = None
     producer_required_repo_fields: tuple[str, ...] = ()
+    downstream_filename: str | None = None
+    receipt_filename: str | None = None
 
 
 _TRANSITIONS: tuple[TransitionContract, ...] = (
@@ -27,6 +29,8 @@ _TRANSITIONS: tuple[TransitionContract, ...] = (
         ("project_gate_repo_path",),
         "architect-to-ce",
         ("project_gate_repo_path", "architect_repo_path", "ce_repo_path"),
+        "ce-input.json",
+        "project-gate-a2c-receipt.json",
     ),
     TransitionContract(
         "ce_to_builder",
@@ -37,6 +41,8 @@ _TRANSITIONS: tuple[TransitionContract, ...] = (
         ("project_gate_repo_path",),
         "ce-to-builder",
         ("project_gate_repo_path", "ce_repo_path", "builder_repo_path"),
+        "builder-input.json",
+        "project-gate-c2b-receipt.json",
     ),
     TransitionContract(
         "builder_to_responsive",
@@ -109,6 +115,8 @@ def repository_path_matrix() -> tuple[dict[str, object], ...]:
             "optional_repo_fields": item.optional_repo_fields,
             "producer_transition": item.producer_transition,
             "producer_required_repo_fields": item.producer_required_repo_fields,
+            "downstream_filename": item.downstream_filename,
+            "receipt_filename": item.receipt_filename,
         }
         for item in _TRANSITIONS
     )

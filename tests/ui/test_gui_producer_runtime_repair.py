@@ -29,8 +29,8 @@ def test_producer_mode_requires_original_file(tmp_path: Path):
     )
 
     assert output.result["status"] == "invalid"
-    assert output.result["diagnostics"][0]["code"] == "PG.UI.PRODUCER_SOURCE_FILE_REQUIRED"
-    assert "فایل اصلی" in output.result["diagnostics"][0]["message"]
+    assert output.result["diagnostics"][0]["code"] == "PG.SERVICE.PREFLIGHT_NOT_READY"
+    assert output.result["attempt_directory"]
 
 
 def test_gui_builds_complete_producer_request(tmp_path: Path):

@@ -8,6 +8,7 @@ from typing import Any
 from ev4_transition.io.secure_snapshot import JsonInputSnapshot, SnapshotError, validate_json_snapshot
 
 from ev4_transition.producer_integration.facade import execute_producer_handoff, inspect_producer_handoff
+from ev4_transition.producer_integration.path_environment import PublicationPaths
 
 from .models import RepoPaths
 
@@ -22,6 +23,7 @@ class ProducerHandoffRequest:
     receipt_path: str | None = None
     schema_root: str = "schemas"
     lock_path: str | None = None
+    publication_paths: PublicationPaths | None = None
 
 
 @dataclass(frozen=True)
@@ -74,6 +76,7 @@ def run_producer_handoff_request(request: ProducerHandoffRequest) -> ProducerHan
         receipt_path=request.receipt_path,
         schema_root=request.schema_root,
         lock_path=request.lock_path,
+        publication_paths=request.publication_paths,
     )
     return _response(result)
 

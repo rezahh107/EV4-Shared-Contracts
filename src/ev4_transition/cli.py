@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -9,18 +10,9 @@ from .bundle_validator import BundleValidator
 from .canonical_json import canonical_dumps, load_json_file
 from .presentation.status_mapping import exit_code_for_status
 from .reports import render_plain_summary
-from .service import GateRequest, RepoPaths, cli_transition_names, contract_for_service, run_gate_request, service_choice_for_cli
+from .service import GateRequest, RepoPaths, cli_transition_names, run_gate_request, run_preflight, service_choice_for_cli
 
 _CAPABILITY_STATUS_PATH = Path(__file__).resolve().parent / "data" / "capability-status.v1.json"
-_REPO_FIELD_TO_ARG = {
-    "project_gate_repo_path": "project_gate_repo",
-    "architect_repo_path": "architect_repo",
-    "ce_repo_path": "ce_repo",
-    "builder_repo_path": "builder_repo",
-    "responsive_repo_path": "responsive_repo",
-    "kernel_repo_path": "kernel_repo",
-}
-
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ev4-transition")
@@ -72,11 +64,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "transition":
         service_choice = service_choice_for_cli(args.transition_name)
-        preflight_failure = _transition_preflight(args, service_choice)
-        if preflight_failure is not None:
-            _emit(preflight_failure, args.format)
-            return _exit_for_status(preflight_failure["status"])
-
         request = GateRequest(
             transition_choice=service_choice,  # type: ignore[arg-type]
             input_json_path=args.bundle,
@@ -94,7 +81,23 @@ def main(argv: list[str] | None = None) -> int:
             output_dir=args.output_dir,
             output_path=args.output,
             receipt_path=args.receipt_output,
+            preflight_mode="external_token",
         )
+        preflight = run_preflight(request)
+        if preflight.status != "ready" or not preflight.request_fingerprint:
+            status, diagnostic = _cli_preflight_failure(preflight)
+            payload = {
+                "schema_version": "project-gate-cli-preflight-result.v1",
+                "status": status,
+                "transition_choice": service_choice,
+                "preflight": preflight.to_dict(),
+                "diagnostics": [diagnostic],
+                "handoff_allowed": False,
+                "output": None,
+            }
+            _emit(payload, args.format)
+            return _exit_for_status(payload["status"])
+        request = replace(request, preflight_fingerprint=preflight.request_fingerprint)
         response = run_gate_request(request)
         payload = _cli_payload(response.to_dict())
         _emit(payload, args.format)
@@ -106,6 +109,41 @@ def main(argv: list[str] | None = None) -> int:
     info = _load_capability_status()
     _emit(info, args.format)
     return 0
+
+
+
+def _cli_preflight_failure(preflight: Any) -> tuple[str, dict[str, Any]]:
+    error_checks = [check for check in preflight.checks if check.status == "error"]
+    def text(check: Any) -> str:
+        return f"{getattr(check, 'id', '')} {getattr(check, 'technical_detail', '')}"
+    combined = " ".join(text(check) for check in error_checks)
+    status = "insufficient_evidence" if any(marker in combined for marker in ("path.", "PG_INT_REPOSITORY_PATH", "PG_INT_GITHUB_URL_REJECTED", "PG_INT_OUTPUT_DIRECTORY_UNAVAILABLE")) else "invalid"
+    selected = next((check for check in error_checks if "PG_INT_GITHUB_URL_REJECTED" in text(check) or (str(getattr(check, "id", "")).startswith("path.") and "github_url" in text(check))), None)
+    code = "CLI_GITHUB_URL_REJECTED" if selected is not None else ""
+    if selected is None:
+        selected = next((check for check in error_checks if "PG_INT_REPOSITORY_PATH_NOT_FOUND" in text(check) or (str(getattr(check, "id", "")).startswith("path.") and "does_not_exist" in text(check))), None)
+        code = "CLI_LOCAL_PATH_NOT_FOUND" if selected is not None else ""
+    if selected is None:
+        selected = next((check for check in error_checks if "PG_INT_REPOSITORY_PATH_REQUIRED" in text(check) or (str(getattr(check, "id", "")).startswith("path.") and ".missing" in text(check))), None)
+        code = "CLI_LOCAL_PATH_REQUIRED" if selected is not None else ""
+    if selected is None:
+        selected = error_checks[0] if error_checks else None
+        code = "CLI_AUTHORITATIVE_PREFLIGHT_NOT_READY"
+    check_id = str(getattr(selected, "id", ""))
+    field = next((name for name in ("project_gate_repo_path", "architect_repo_path", "ce_repo_path", "builder_repo_path", "responsive_repo_path", "kernel_repo_path") if name in check_id), None)
+    option = "--" + field.removesuffix("_path").replace("_", "-") if field else None
+    details: dict[str, Any] = {"authoritative_check_ids": [str(getattr(check, "id", "")) for check in error_checks]}
+    if option:
+        details["option"] = option
+    if code == "CLI_LOCAL_PATH_NOT_FOUND" and selected is not None:
+        details["path"] = str(getattr(selected, "technical_detail", ""))
+    return status, {
+        "code": code,
+        "severity": "insufficient_evidence" if status == "insufficient_evidence" else "error",
+        "message": preflight.summary_fa,
+        "path": "$.preflight",
+        "details": details,
+    }
 
 
 def _cli_payload(response: dict[str, Any]) -> dict[str, Any]:
@@ -126,56 +164,6 @@ def _cli_payload(response: dict[str, Any]) -> dict[str, Any]:
         "output": None,
     }
 
-
-def _transition_preflight(args: argparse.Namespace, service_choice: str | None = None) -> dict[str, Any] | None:
-    choice = service_choice or service_choice_for_cli(args.transition_name)
-    contract = contract_for_service(choice)
-    repo_fields = contract.producer_required_repo_fields if args.acquisition_mode == "producer_emitted_gate_artifact" else contract.required_repo_fields
-    for repo_field in repo_fields:
-        arg_field = _REPO_FIELD_TO_ARG[repo_field]
-        value = getattr(args, arg_field, None)
-        if repo_field == "project_gate_repo_path" and not value:
-            value = "."
-            setattr(args, arg_field, value)
-        if isinstance(value, str):
-            value = value.strip()
-            setattr(args, arg_field, value)
-        option = "--" + arg_field.replace("_", "-")
-        if not value:
-            return _simple_insufficient(
-                "CLI_LOCAL_PATH_REQUIRED",
-                "A local checkout path is required for this guarded transition.",
-                option=option,
-                transition_name=args.transition_name,
-            )
-        if _looks_like_url(value):
-            return _simple_insufficient(
-                "CLI_GITHUB_URL_REJECTED",
-                "GitHub URLs are rejected; provide a local checkout path.",
-                option=option,
-                transition_name=args.transition_name,
-            )
-        if not Path(value).is_dir():
-            return _simple_insufficient(
-                "CLI_LOCAL_PATH_NOT_FOUND",
-                "Local checkout path was not found.",
-                option=option,
-                path=value,
-                transition_name=args.transition_name,
-            )
-    return None
-
-
-def _looks_like_url(value: str) -> bool:
-    lowered = value.lower()
-    return lowered.startswith(("http://", "https://", "git@")) or "github.com" in lowered
-
-
-def _simple_insufficient(code: str, message: str, **details: Any) -> dict[str, Any]:
-    return {
-        "status": "insufficient_evidence",
-        "diagnostics": [{"code": code, "severity": "insufficient_evidence", "message": message, "path": "$", "details": details}],
-    }
 
 
 def _load_capability_status() -> dict[str, Any]:

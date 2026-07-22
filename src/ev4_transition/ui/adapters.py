@@ -5,16 +5,12 @@ from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-import shutil
-import tempfile
 from typing import Any
 
 from ev4_transition.canonical_json import canonical_dumps, load_json_file
 from ev4_transition.presentation.rtl import bdi_ltr, escape_html, ltr_code_block
-from ev4_transition.service import GateRequest, RepoPaths, ServiceDiagnostic, run_gate_request
+from ev4_transition.service import GateRequest, RepoPaths, ServiceDiagnostic, run_gate_request, run_preflight
 from ev4_transition.service.guidance import build_operator_guidance
-from ev4_transition.service.json_input import parse_json_input
-from ev4_transition.service.transition_contracts import source_stage_for_service
 
 from .components import capability_rows_from_payload, diagnostics_to_rows, status_summary_markdown
 from .state import option_for_label
@@ -76,6 +72,7 @@ def run_operator_check(
     output_dir: str | Path | None = None,
     output_path: str | Path | None = None,
     receipt_path: str | Path | None = None,
+    preflight_fingerprint: str | None = None,
 ) -> UiRunOutput:
     """Run the selected UI action through the authoritative Project Gate service."""
 
@@ -96,14 +93,11 @@ def run_operator_check(
             output_dir=output_dir,
             output_path=output_path,
             receipt_path=receipt_path,
+            preflight_fingerprint=preflight_fingerprint,
         )
-        preflight_diagnostics = _ui_preflight_diagnostics(request)
-        if preflight_diagnostics:
-            result = _preflight_result(choice, preflight_diagnostics)
-        else:
-            response = run_gate_request(request)
-            result = _result_from_response(response)
-            result["ui_acquisition_mode"] = acquisition_mode
+        response = run_gate_request(request)
+        result = _result_from_response(response)
+        result["ui_acquisition_mode"] = acquisition_mode
     except Exception as exc:  # Defensive UI boundary; primary view must not expose traceback.
         LOGGER.exception("Unhandled exception in UI operator check")
         result = ErrorState(
@@ -113,7 +107,7 @@ def run_operator_check(
             error_type=type(exc).__name__,
         ).to_result(choice)
     try:
-        return _finalize(result, output_dir)
+        return _finalize(result)
     except Exception as exc:  # Final rendering containment.
         LOGGER.exception("Critical failure while finalizing UI operator output")
         fallback = ErrorState(
@@ -140,6 +134,11 @@ def build_gate_request(
     output_dir: str | Path | None = None,
     output_path: str | Path | None = None,
     receipt_path: str | Path | None = None,
+    preflight_fingerprint: str | None = None,
+    schema_root: str = "schemas",
+    lock_path: str | None = None,
+    timeout_seconds: float = 30,
+    require_real_evidence: bool = True,
 ) -> GateRequest:
     option = option_for_label(transition_label)
     input_text = pasted_json if pasted_json and pasted_json.strip() else None
@@ -162,6 +161,12 @@ def build_gate_request(
         output_dir=_clean_path(str(output_dir)) if output_dir is not None else None,
         output_path=_clean_path(str(output_path)) if output_path is not None else None,
         receipt_path=_clean_path(str(receipt_path)) if receipt_path is not None else None,
+        schema_root=schema_root,
+        lock_path=_clean_path(lock_path),
+        timeout_seconds=timeout_seconds,
+        require_real_evidence=require_real_evidence,
+        preflight_fingerprint=preflight_fingerprint,
+        preflight_mode="external_token",
     )
 
 
@@ -175,31 +180,6 @@ def load_capability_payload(path: str | Path = CAPABILITY_STATUS_PATH) -> dict[s
 def build_capability_rows(path: str | Path = CAPABILITY_STATUS_PATH) -> list[list[str]]:
     return capability_rows_from_payload(load_capability_payload(path))
 
-
-def render_download_artifacts(result: dict[str, Any], output_dir: str | Path | None = None) -> list[str]:
-    directory = Path(output_dir) if output_dir is not None else Path(tempfile.mkdtemp(prefix="ev4_project_gate_ui_"))
-    written_paths: list[Path] = []
-    try:
-        directory.mkdir(parents=True, exist_ok=True)
-        files = {
-            "result.json": canonical_dumps(deepcopy(result)),
-            "report.md": _markdown_report(result),
-            "report.html": _html_report(result),
-        }
-        paths: list[str] = []
-        for name, content in files.items():
-            path = directory / name
-            path.write_text(content, encoding="utf-8")
-            written_paths.append(path)
-            paths.append(str(path))
-        return paths
-    except OSError as exc:
-        LOGGER.error("Failed to render download artifacts: %s", exc)
-        for path in written_paths:
-            path.unlink(missing_ok=True)
-        if output_dir is None:
-            shutil.rmtree(directory, ignore_errors=True)
-        return []
 
 
 def _minimal_output(result: dict[str, Any]) -> UiRunOutput:
@@ -236,118 +216,36 @@ def _result_from_response(response: Any) -> dict[str, Any]:
         "capabilities_snapshot": payload.get("capabilities_snapshot"),
         "download_filenames": payload.get("download_filenames", {}),
         "published_download_paths": list(payload.get("download_paths") or []),
+        "attempt_directory": payload.get("attempt_directory"),
+        "publication_state": payload.get("publication_state"),
+        "published_artifacts": list(payload.get("published_artifacts") or []),
         "report_bundle": payload.get("report_bundle", {}),
         "output": engine_result.get("output") if isinstance(engine_result, dict) else None,
     }
 
 
+
 def _ui_preflight_diagnostics(request: GateRequest) -> list[ServiceDiagnostic]:
-    choice = str(request.transition_choice)
-    if choice in {"validate_bundle", "inspect_capabilities"}:
-        return []
-    if request.acquisition_mode == "producer_emitted_gate_artifact":
-        if request.input_json_text is not None or request.input_data is not None or not request.input_json_path:
-            return [
-                ServiceDiagnostic(
-                    "PG.UI.PRODUCER_SOURCE_FILE_REQUIRED",
-                    "error",
-                    "در حالت producer_emitted_gate_artifact باید فایل اصلی Producer Gate Export را بارگذاری کنید؛ paste متن JSON مجاز نیست.",
-                    "$.input_json_path",
-                    {"acquisition_mode": request.acquisition_mode},
-                )
-            ]
-        parsed = parse_json_input(input_json_path=request.input_json_path)
-    else:
-        parsed = parse_json_input(
-            input_json_path=request.input_json_path,
-            input_json_text=request.input_json_text,
-            input_data=request.input_data,
+    """Compatibility view of authoritative preflight diagnostics; never grants readiness."""
+
+    result = run_preflight(request)
+    diagnostics: list[ServiceDiagnostic] = []
+    for check in result.checks:
+        if check.status != "error":
+            continue
+        diagnostics.append(
+            ServiceDiagnostic(
+                check.id,
+                "error",
+                check.message_fa,
+                "$.preflight",
+                {
+                    "technical_detail": check.technical_detail,
+                    "classification": check.classification,
+                },
+            )
         )
-    if parsed.diagnostics or not isinstance(parsed.value, dict):
-        return []
-    value = parsed.value
-    if _looks_like_project_gate_result(value):
-        return [
-            ServiceDiagnostic(
-                "PG.UI.PREFLIGHT_RESULT_JSON_USED_AS_SOURCE",
-                "error",
-                "Project Gate result/report artifact cannot be used as a transition source.",
-                "$",
-                {"transition_choice": choice, "observed_result_type": value.get("result_type"), "normalized_code": "PG.UI.RESULT_ARTIFACT_USED_AS_SOURCE"},
-            )
-        ]
-    schema = value.get("schema_version")
-    if request.acquisition_mode == "producer_emitted_gate_artifact" and schema != "producer-gate-export.v1":
-        return [
-            ServiceDiagnostic(
-                "PG.UI.SOURCE_SCHEMA_MODE_MISMATCH",
-                "error",
-                "The uploaded source schema is not compatible with producer_emitted_gate_artifact.",
-                "$.schema_version",
-                {"observed_schema": schema, "acquisition_mode": request.acquisition_mode},
-            )
-        ]
-    if request.acquisition_mode != "producer_emitted_gate_artifact" and schema == "producer-gate-export.v1":
-        return [
-            ServiceDiagnostic(
-                "PG.UI.SOURCE_SCHEMA_MODE_MISMATCH",
-                "error",
-                "Producer Gate Export requires producer_emitted_gate_artifact mode.",
-                "$.schema_version",
-                {"observed_schema": schema, "acquisition_mode": request.acquisition_mode},
-            )
-        ]
-    expected_stage = source_stage_for_service(choice)
-    observed_stage = value.get("stage")
-    if expected_stage and isinstance(observed_stage, str) and observed_stage != expected_stage:
-        return [
-            ServiceDiagnostic(
-                "PG.UI.PREFLIGHT_WRONG_STAGE_FOR_TRANSITION",
-                "error",
-                "Input stage does not match the selected transition.",
-                "$.stage",
-                {"transition_choice": choice, "expected_stage": expected_stage, "observed_stage": observed_stage, "normalized_code": "PG.UI.SOURCE_SCHEMA_TRANSITION_MISMATCH"},
-            )
-        ]
-    return []
-
-
-def _looks_like_project_gate_result(value: dict[str, Any]) -> bool:
-    result_type = value.get("result_type")
-    if isinstance(result_type, str) and result_type.startswith(("service_", "ui_")):
-        return True
-    if "engine_result" in value and "transition_choice" in value and "diagnostics" in value:
-        return True
-    return value.get("schema_version") in {"ev4-project-gate-ui-result.v1", "project-gate-service-result.v1"}
-
-
-def _preflight_result(choice: str, diagnostics: list[ServiceDiagnostic]) -> dict[str, Any]:
-    return {
-        "schema_version": "ev4-project-gate-ui-result.v1",
-        "result_type": "ui_preflight_result",
-        "transition_choice": choice,
-        "status": _status_from_diagnostics(diagnostics),
-        "user_message_fa": "❌ پیش‌بررسی UI قبل از اجرای transition متوقف شد.",
-        "next_action_fa": "ورودی، acquisition mode یا transition را طبق diagnostic اصلاح کن و دوباره اجرا کن.",
-        "diagnostics": [diagnostic.to_dict() for diagnostic in diagnostics],
-        "engine_result": None,
-        "capabilities_snapshot": None,
-        "download_filenames": {},
-        "published_download_paths": [],
-        "report_bundle": {},
-        "output": None,
-    }
-
-
-def _status_from_diagnostics(diagnostics: list[ServiceDiagnostic]) -> str:
-    severities = {diagnostic.severity for diagnostic in diagnostics}
-    if "error" in severities:
-        return "invalid"
-    if "insufficient_evidence" in severities:
-        return "insufficient_evidence"
-    if "warning" in severities:
-        return "repair_needed"
-    return "accepted"
+    return diagnostics
 
 
 def _uploaded_path(uploaded_file: Any | None) -> str | None:
@@ -422,25 +320,8 @@ def _html_report(result: dict[str, Any]) -> str:
     )
 
 
-def _finalize(result: dict[str, Any], output_dir: str | Path | None) -> UiRunOutput:
-    published = [str(path) for path in result.get("published_download_paths", []) if _existing_file(path)]
-    report_directory: str | Path | None = output_dir
-    if published:
-        report_directory = str(Path(published[0]).parent)
-    reports = render_download_artifacts(result, report_directory)
-    downloads = published + [path for path in reports if path not in published]
-    if not reports:
-        result = deepcopy(result)
-        result.setdefault("diagnostics", []).append(
-            {
-                "code": "PG.UI.REPORT_WRITE_FAILED",
-                "severity": "error",
-                "message": "نوشتن فایل‌های گزارش انجام نشد؛ لینک دانلود موفق نمایش داده نمی‌شود.",
-                "path": "$.downloads",
-                "details": {"next_action": "مجوز نوشتن output directory را بررسی کن."},
-            }
-        )
-        result["status"] = "invalid"
+def _finalize(result: dict[str, Any]) -> UiRunOutput:
+    downloads = [str(path) for path in result.get("published_download_paths", []) if _existing_file(path)]
     capability_payload = result.get("capabilities_snapshot") if isinstance(result.get("capabilities_snapshot"), dict) else load_capability_payload()
     return UiRunOutput(
         result=result,

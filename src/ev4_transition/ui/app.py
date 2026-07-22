@@ -119,6 +119,46 @@ def operator_run_outputs(output: Any) -> tuple[Any, Any, Any, str, Any]:
     return output.status_markdown, output.diagnostics_rows, output.capability_rows, output.json_preview, output.download_paths
 
 
+def run_authoritative_preflight(
+    selected_transition: str,
+    selected_mode: str,
+    pasted: str | None,
+    uploaded: Any | None,
+    project_gate: str | None,
+    architect: str | None,
+    ce: str | None,
+    builder: str | None,
+    responsive: str | None,
+    kernel: str | None,
+    output: str | None,
+):
+    request = build_gate_request(
+        selected_transition,
+        pasted_json=pasted,
+        uploaded_file=uploaded,
+        project_gate_repo_path=project_gate,
+        architect_repo_path=architect,
+        ce_repo_path=ce,
+        builder_repo_path=builder,
+        responsive_repo_path=responsive,
+        kernel_repo_path=kernel,
+        acquisition_mode=selected_mode,
+        output_dir=output,
+    )
+    result = run_preflight(request)
+    return result, result.request_fingerprint if result.status == "ready" else None
+
+
+def invalidate_preflight_state():
+    return (
+        None,
+        {"interactive": False},
+        '<section class="ev4-preflight-result" lang="fa" dir="rtl"><p>ورودی تغییر کرد؛ Preflight قبلی نامعتبر شد.</p></section>',
+        None,
+        {"interactive": False},
+    )
+
+
 def build_demo():
     try:
         import gradio as gr
@@ -128,6 +168,8 @@ def build_demo():
     settings = load_settings()
     with gr.Blocks(title="EV4 Project Gate Local Operator Panel", theme=operator_gradio_theme(gr), css=operator_panel_css()) as demo:
         gr.HTML(operator_header_html())
+        preflight_token = gr.State(None)
+        verified_attempt_directory = gr.State(None)
 
         with gr.Group(elem_classes=["ev4-section"]):
             source_file = gr.File(label="فایل اصلی JSON / Original JSON file", file_types=[".json"], type="filepath")
@@ -180,40 +222,25 @@ def build_demo():
             html = f'<section class="ev4-status-content ev4-classification" lang="fa" dir="rtl"><p>{message}</p><p><b>schema:</b> <bdi dir="ltr">{schema}</bdi></p></section>'
             selected_transition = payload.get("selected_transition") or transition_choices()[0]
             selected_mode = payload.get("selected_acquisition_mode") or "pinned_owner_file_computation"
-            return html, gr.update(value=selected_transition), gr.update(value=selected_mode), gr.update(interactive=False)
+            return (
+                html,
+                gr.update(value=selected_transition),
+                gr.update(value=selected_mode),
+                gr.update(interactive=False),
+                None,
+                '<section class="ev4-preflight-result" lang="fa" dir="rtl"><p>پس از classification، Preflight authoritative را اجرا کنید.</p></section>',
+                None,
+                gr.update(interactive=False),
+            )
 
         def _preflight(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output):
-            classification = classify_source_file(uploaded, project_gate) if uploaded else None
-            if selected_mode == "producer_emitted_gate_artifact":
-                ready = bool(
-                    classification
-                    and classification.get("status") == "source_classified"
-                    and classification.get("selected_transition") == selected_transition
-                    and not (pasted and pasted.strip())
-                    and all(str(value or "").strip() for value in (project_gate, architect, ce, output))
-                )
-                summary = classification.get("message_fa", "") if classification else "فایل اصلی Producer Gate Export لازم است."
-                if pasted and pasted.strip():
-                    summary = "PG.UI.PRODUCER_SOURCE_FILE_REQUIRED — در حالت producer-emitted متن paste‌شده مجاز نیست."
-                return f'<section class="ev4-preflight-result" lang="fa" dir="rtl"><p>{escape(summary)}</p><p>ready: <bdi dir="ltr">{str(ready).lower()}</bdi></p></section>', gr.update(interactive=ready)
-            request = build_gate_request(
-                selected_transition,
-                pasted_json=pasted,
-                uploaded_file=uploaded,
-                project_gate_repo_path=project_gate,
-                architect_repo_path=architect,
-                ce_repo_path=ce,
-                builder_repo_path=builder,
-                responsive_repo_path=responsive,
-                kernel_repo_path=kernel,
-                acquisition_mode=selected_mode,
-                output_dir=output,
+            result, token = run_authoritative_preflight(
+                selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output
             )
-            result = run_preflight(request)
-            ready = result.status == "ready"
-            return preflight_result_html(result), gr.update(interactive=ready)
+            ready = result.status == "ready" and bool(token)
+            return preflight_result_html(result), gr.update(interactive=ready), token
 
-        def _run(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output):
+        def _run(selected_transition, selected_mode, pasted, uploaded, project_gate, architect, ce, builder, responsive, kernel, output, token):
             result = run_operator_check(
                 selected_transition,
                 pasted_json=pasted,
@@ -226,21 +253,43 @@ def build_demo():
                 kernel_repo_path=kernel,
                 acquisition_mode=selected_mode,
                 output_dir=output,
+                preflight_fingerprint=token,
             )
-            open_enabled = bool(result.download_paths and Path(result.download_paths[0]).parent.is_dir())
-            return (*operator_run_outputs(result), gr.update(interactive=open_enabled))
+            attempt = result.result.get("attempt_directory")
+            open_enabled = bool(attempt and Path(str(attempt)).is_dir())
+            return (*operator_run_outputs(result), gr.update(interactive=open_enabled), attempt)
 
-        source_file.change(_classify, inputs=[source_file, project_gate_path], outputs=[source_classification, transition, acquisition_mode, run_button])
-        project_gate_path.change(_classify, inputs=[source_file, project_gate_path], outputs=[source_classification, transition, acquisition_mode, run_button])
+        def _invalidate():
+            token, run_update, html, attempt, open_update = invalidate_preflight_state()
+            return token, gr.update(**run_update), html, attempt, gr.update(**open_update)
+
+        source_file.change(
+            _classify,
+            inputs=[source_file, project_gate_path],
+            outputs=[source_classification, transition, acquisition_mode, run_button, preflight_token, preflight_summary, verified_attempt_directory, open_folder_button],
+        )
+        project_gate_path.change(
+            _classify,
+            inputs=[source_file, project_gate_path],
+            outputs=[source_classification, transition, acquisition_mode, run_button, preflight_token, preflight_summary, verified_attempt_directory, open_folder_button],
+        )
+        for authority_input in (
+            transition, acquisition_mode, json_text, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir
+        ):
+            authority_input.change(
+                _invalidate,
+                outputs=[preflight_token, run_button, preflight_summary, verified_attempt_directory, open_folder_button],
+            )
+
         preflight_button.click(
             _preflight,
             inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir],
-            outputs=[preflight_summary, run_button],
+            outputs=[preflight_summary, run_button, preflight_token],
         )
         run_button.click(
             _run,
-            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir],
-            outputs=[status_summary, diagnostics, capabilities, json_preview, downloads, open_folder_button],
+            inputs=[transition, acquisition_mode, json_text, source_file, project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir, preflight_token],
+            outputs=[status_summary, diagnostics, capabilities, json_preview, downloads, open_folder_button, verified_attempt_directory],
         )
 
         for button, textbox in (
@@ -261,9 +310,9 @@ def build_demo():
         )
         reset_button.click(
             _reset_settings_callback,
-            outputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir, transition, acquisition_mode, settings_status, run_button],
+            outputs=[project_gate_path, architect_path, ce_path, builder_path, responsive_path, kernel_path, output_dir, transition, acquisition_mode, settings_status, run_button, preflight_token, preflight_summary, verified_attempt_directory, open_folder_button],
         )
-        open_folder_button.click(open_output_folder, inputs=[json_preview], outputs=[open_folder_status])
+        open_folder_button.click(open_output_folder, inputs=[verified_attempt_directory], outputs=[open_folder_status])
 
     return demo
 
@@ -310,17 +359,19 @@ def _reset_settings_callback():
         value["default_acquisition_mode"],
         "تنظیمات به defaults بازگردانده شد.",
         {"interactive": False},
+        None,
+        '<section class="ev4-preflight-result" lang="fa" dir="rtl"><p>تنظیمات تغییر کرد؛ Preflight قبلی نامعتبر شد.</p></section>',
+        None,
+        {"interactive": False},
     )
 
 
-def open_output_folder(result_json: str | None) -> str:
+def open_output_folder(attempt_directory: str | None) -> str:
     try:
-        payload = json.loads(result_json or "{}")
-        paths = payload.get("published_download_paths") or []
-        if not paths:
+        if not attempt_directory or not str(attempt_directory).strip():
             return "پوشه خروجی معتبر هنوز ایجاد نشده است."
-        directory = Path(paths[0]).resolve().parent
-        if not directory.is_dir():
+        directory = Path(str(attempt_directory)).resolve(strict=True)
+        if not directory.is_dir() or not directory.name.startswith("run-"):
             return "پوشه خروجی معتبر وجود ندارد."
         open_directory(directory)
         return f"پوشه باز شد: `{directory}`"

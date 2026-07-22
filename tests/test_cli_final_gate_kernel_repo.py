@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import ev4_transition.cli as cli
 
@@ -101,6 +102,7 @@ def test_final_gate_cli_forwards_exact_kernel_checkout(monkeypatch, tmp_path: Pa
         observed["request"] = request
         return Response()
 
+    monkeypatch.setattr(cli, "run_preflight", lambda request: SimpleNamespace(status="ready", request_fingerprint="token"))
     monkeypatch.setattr(cli, "run_gate_request", fake_run_gate_request)
 
     return_code = cli.main([

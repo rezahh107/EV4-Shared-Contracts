@@ -9,6 +9,7 @@ from ev4_transition.io.secure_snapshot import JsonInputSnapshot, SnapshotError, 
 from .. import _legacy_facade as _legacy
 from ..path_environment import (
     PublicationPathError,
+    PublicationPaths,
     prepare_publication_paths,
     validate_project_gate_root,
     validate_repository_checkout,
@@ -44,6 +45,7 @@ def execute_producer_handoff(
     receipt_path: str | Path | None = None,
     schema_root: str | Path = "schemas",
     lock_path: str | Path | None = None,
+    publication_paths: PublicationPaths | None = None,
 ) -> dict[str, Any]:
     """Execute one producer-emitted lifecycle with one publication-path authority."""
 
@@ -118,7 +120,7 @@ def execute_producer_handoff(
         return _legacy._operator_failure(inspection, diagnostic, "project_gate_files_unavailable")
 
     try:
-        publication_paths = prepare_publication_paths(
+        selected_publication_paths = publication_paths or prepare_publication_paths(
             output_dir,
             output_filename=route["output_filename"],
             receipt_filename=route["receipt_filename"],
@@ -141,8 +143,8 @@ def execute_producer_handoff(
             ce_repo=normalized["ce_repo"],
             builder_repo=normalized["builder_repo"],
             project_gate_repo=root,
-            output_path=publication_paths.downstream_artifact,
-            receipt_path=publication_paths.receipt,
+            output_path=selected_publication_paths.downstream_artifact,
+            receipt_path=selected_publication_paths.receipt,
             registry_path=root / _legacy._ROUTING_FILES[0],
             targets_path=root / _legacy._ROUTING_FILES[1],
             repository_root=root,
@@ -163,13 +165,13 @@ def execute_producer_handoff(
     result["routing"] = deepcopy(inspection["routing"])
     result["source_snapshot"] = deepcopy(inspection["source_snapshot"])
     result["publication_paths"] = {
-        "output_root": str(publication_paths.output_root),
-        "execution_directory": str(publication_paths.execution_directory),
-        "downstream_artifact": str(publication_paths.downstream_artifact),
-        "receipt": str(publication_paths.receipt),
-        "result": str(publication_paths.result),
-        "report_markdown": str(publication_paths.report_markdown),
-        "report_html": str(publication_paths.report_html),
+        "output_root": str(selected_publication_paths.output_root),
+        "execution_directory": str(selected_publication_paths.execution_directory),
+        "downstream_artifact": str(selected_publication_paths.downstream_artifact),
+        "receipt": str(selected_publication_paths.receipt),
+        "result": str(selected_publication_paths.result),
+        "report_markdown": str(selected_publication_paths.report_markdown),
+        "report_html": str(selected_publication_paths.report_html),
     }
     return _legacy._with_operator_artifacts(result)
 

@@ -188,6 +188,7 @@ def test_cli_producer_emitted_c2b_routes_through_shared_service(tmp_path, monkey
         captured["request"] = request
         return Response()
 
+    monkeypatch.setattr(cli_module, "run_preflight", lambda request: SimpleNamespace(status="ready", request_fingerprint="token"))
     monkeypatch.setattr(cli_module, "run_gate_request", fake_run_gate_request)
     monkeypatch.setattr(cli_module, "_emit", lambda payload, fmt: None)
 

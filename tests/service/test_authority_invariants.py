@@ -58,8 +58,9 @@ def test_snapshot_and_file_requests_use_same_producer_service_authority(monkeypa
     run_gate_request(GateRequest(input_json_path=str(source), input_snapshot=snapshot, **base))
 
     assert len(observed) == 2
-    assert observed[0].source_snapshot is None
+    assert observed[0].source_snapshot is not None
     assert observed[1].source_snapshot is snapshot
+    assert observed[0].source_snapshot.sha256_file_bytes == observed[1].source_snapshot.sha256_file_bytes
     assert observed[0].repo_paths == observed[1].repo_paths
     assert observed[0].source_path == observed[1].source_path == str(source)
 

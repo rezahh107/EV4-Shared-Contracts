@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import json
 from pathlib import Path
 from typing import Any, Literal
@@ -36,6 +36,8 @@ class PreflightResult:
     transition_choice: str
     checks: list[PreflightCheck]
     summary_fa: str
+    request_fingerprint: str | None = None
+    source_identity: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -43,6 +45,8 @@ class PreflightResult:
             "transition_choice": self.transition_choice,
             "checks": [check.to_dict() for check in self.checks],
             "summary_fa": self.summary_fa,
+            "request_fingerprint": self.request_fingerprint,
+            "source_identity": dict(self.source_identity),
         }
 
 

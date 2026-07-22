@@ -18,6 +18,7 @@ TransitionChoice = Literal[
 ]
 AcquisitionMode = Literal["pinned_owner_file_computation", "producer_emitted_gate_artifact"]
 InputSource = Literal["file_path", "json_text", "dict", "missing"]
+PreflightMode = Literal["service_immediate", "external_token"]
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,8 @@ class GateRequest:
     required_evidence_ids: list[str] = field(default_factory=list)
     timeout_seconds: float = 30
     require_real_evidence: bool = True
+    preflight_fingerprint: str | None = None
+    preflight_mode: PreflightMode = "service_immediate"
 
 
 @dataclass(frozen=True)
@@ -98,6 +101,9 @@ class GateResponse:
     user_message_fa: str
     next_action_fa: str
     download_paths: list[str] = field(default_factory=list)
+    attempt_directory: str | None = None
+    publication_state: str = "not_attempted"
+    published_artifacts: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -109,6 +115,9 @@ class GateResponse:
             "report_bundle": self.report_bundle.to_dict(),
             "download_filenames": dict(self.download_filenames),
             "download_paths": list(self.download_paths),
+            "attempt_directory": self.attempt_directory,
+            "publication_state": self.publication_state,
+            "published_artifacts": deepcopy(self.published_artifacts),
             "user_message_fa": self.user_message_fa,
             "next_action_fa": self.next_action_fa,
         }

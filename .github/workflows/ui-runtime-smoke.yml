@@ -62,6 +62,7 @@ jobs:
             tests/boundary/test_import_purity.py \
             tests/boundary/test_native_ui_runners.py \
             tests/boundary/test_evidence_packaging.py \
+            tests/boundary/test_ui_publication_authority.py \
             tests/packaging/test_runner_packaging.py \
             tests/test_cli_final_gate_kernel_repo.py \
             -vv --junitxml="$EVIDENCE_DIR/focused-junit.xml" \

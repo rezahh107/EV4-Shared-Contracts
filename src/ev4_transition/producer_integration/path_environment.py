@@ -14,14 +14,21 @@ _REPORT_FILENAMES = ("result.json", "report.md", "report.html")
 
 
 @dataclass(frozen=True)
-class PublicationPaths:
+class AttemptPaths:
     output_root: Path
     execution_directory: Path
-    downstream_artifact: Path
-    receipt: Path
     result: Path
     report_markdown: Path
     report_html: Path
+
+    def report_paths(self) -> tuple[Path, ...]:
+        return (self.result, self.report_markdown, self.report_html)
+
+
+@dataclass(frozen=True)
+class PublicationPaths(AttemptPaths):
+    downstream_artifact: Path
+    receipt: Path
 
     def all_paths(self) -> tuple[Path, ...]:
         return (
@@ -258,17 +265,11 @@ def validate_publication_root(
     return root, None
 
 
-def prepare_publication_paths(
+def prepare_attempt_paths(
     output_root: str | Path | None,
     *,
-    output_filename: str,
-    receipt_filename: str,
-    output_path: str | Path | None = None,
-    receipt_path: str | Path | None = None,
     workspace: str | Path | None = None,
-) -> PublicationPaths:
-    _require_route_owned_filename(output_path, output_filename, "$.output_path")
-    _require_route_owned_filename(receipt_path, receipt_filename, "$.receipt_path")
+) -> AttemptPaths:
     root, diagnostic = validate_publication_root(output_root, create=True, workspace=workspace)
     if diagnostic is not None or root is None:
         raise PublicationPathError(diagnostic or _diag(
@@ -279,11 +280,9 @@ def prepare_publication_paths(
         ))
     try:
         execution = Path(tempfile.mkdtemp(prefix="run-", dir=root)).resolve(strict=True)
-        paths = PublicationPaths(
+        paths = AttemptPaths(
             output_root=root,
             execution_directory=execution,
-            downstream_artifact=_safe_child(execution, output_filename, "$.output_path"),
-            receipt=_safe_child(execution, receipt_filename, "$.receipt_path"),
             result=_safe_child(execution, _REPORT_FILENAMES[0], "$.result_path"),
             report_markdown=_safe_child(execution, _REPORT_FILENAMES[1], "$.report_markdown_path"),
             report_html=_safe_child(execution, _REPORT_FILENAMES[2], "$.report_html_path"),
@@ -299,7 +298,38 @@ def prepare_publication_paths(
                 error_type=type(exc).__name__,
             )
         ) from exc
-    for candidate in paths.all_paths():
+    _assert_attempt_children(paths.execution_directory, paths.report_paths())
+    return paths
+
+
+def prepare_publication_paths(
+    output_root: str | Path | None,
+    *,
+    output_filename: str,
+    receipt_filename: str,
+    output_path: str | Path | None = None,
+    receipt_path: str | Path | None = None,
+    workspace: str | Path | None = None,
+    attempt_paths: AttemptPaths | None = None,
+) -> PublicationPaths:
+    _require_route_owned_filename(output_path, output_filename, "$.output_path")
+    _require_route_owned_filename(receipt_path, receipt_filename, "$.receipt_path")
+    attempt = attempt_paths or prepare_attempt_paths(output_root, workspace=workspace)
+    paths = PublicationPaths(
+        output_root=attempt.output_root,
+        execution_directory=attempt.execution_directory,
+        result=attempt.result,
+        report_markdown=attempt.report_markdown,
+        report_html=attempt.report_html,
+        downstream_artifact=_safe_child(attempt.execution_directory, output_filename, "$.output_path"),
+        receipt=_safe_child(attempt.execution_directory, receipt_filename, "$.receipt_path"),
+    )
+    _assert_attempt_children(paths.execution_directory, paths.all_paths())
+    return paths
+
+
+def _assert_attempt_children(execution: Path, candidates: tuple[Path, ...]) -> None:
+    for candidate in candidates:
         try:
             candidate.relative_to(execution)
         except ValueError as exc:
@@ -313,7 +343,6 @@ def prepare_publication_paths(
                     derived_path=str(candidate),
                 )
             ) from exc
-    return paths
 
 
 def _require_route_owned_filename(value: str | Path | None, expected: str, path_expr: str) -> None:

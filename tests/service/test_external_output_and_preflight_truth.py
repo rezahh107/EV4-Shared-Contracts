@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,7 +14,7 @@ from ev4_transition.io.safe_publication import publish_staged_json, stage_canoni
 from ev4_transition.service.dispatcher import run_gate_request
 from ev4_transition.service.models import GateRequest, RepoPaths
 from ev4_transition.service.preflight import run_preflight
-from ev4_transition.ui.adapters import run_operator_check
+from ev4_transition.ui.adapters import build_gate_request, run_operator_check
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -79,6 +80,14 @@ def test_real_gui_service_path_publishes_five_files_under_external_sibling_root(
     monkeypatch.chdir(project_gate)
     monkeypatch.setattr(facade, "intake_producer_export", lambda *args, **kwargs: _accepted_intake())
     monkeypatch.setattr(facade, "transition_producer_export", _publishing_transition)
+    monkeypatch.setattr(environment_preflight, "inspect_producer_handoff_request", _accepted_inspection)
+    request = build_gate_request(
+        "Architect → CE", uploaded_file=str(source), project_gate_repo_path=str(project_gate),
+        architect_repo_path=str(architect), ce_repo_path=str(ce),
+        acquisition_mode="producer_emitted_gate_artifact", output_dir=str(output_root),
+    )
+    preflight = run_preflight(request)
+    assert preflight.status == "ready"
 
     result = run_operator_check(
         "Architect → CE",
@@ -88,6 +97,7 @@ def test_real_gui_service_path_publishes_five_files_under_external_sibling_root(
         ce_repo_path=str(ce),
         acquisition_mode="producer_emitted_gate_artifact",
         output_dir=str(output_root),
+        preflight_fingerprint=preflight.request_fingerprint,
     )
 
     assert result.result["status"] == "accepted"
@@ -137,9 +147,12 @@ def test_producer_preflight_truth_and_runtime_revalidation(monkeypatch, tmp_path
     assert changed.status == "blocked"
 
     monkeypatch.setattr(facade, "intake_producer_export", lambda *args, **kwargs: _accepted_intake())
-    runtime = run_gate_request(request)
-    assert runtime.status == "insufficient_evidence"
-    assert not output_root.exists()
+    runtime = run_gate_request(replace(request, preflight_mode="external_token", preflight_fingerprint=ready.request_fingerprint))
+    assert runtime.status == "invalid"
+    assert output_root.exists()
+    attempt = Path(runtime.attempt_directory)
+    assert attempt.parent == output_root
+    assert {path.name for path in attempt.iterdir()} == {"result.json", "report.md", "report.html"}
 
 
 @pytest.mark.parametrize(
@@ -214,7 +227,7 @@ def test_cli_output_dir_is_the_selected_publication_root(monkeypatch, tmp_path: 
                 "service_diagnostics": [],
             }
 
-    monkeypatch.setattr(cli, "_transition_preflight", lambda *args, **kwargs: None)
+    monkeypatch.setattr(cli, "run_preflight", lambda request: SimpleNamespace(status="ready", request_fingerprint="token"))
 
     def fake_run(request):
         captured["request"] = request
