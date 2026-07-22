@@ -36,6 +36,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+          show-progress: false
 
       - name: Assert exact tested head and classify scope
         id: scope
@@ -82,15 +83,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - name: Checkout exact Project Gate source
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ needs.skeleton.outputs.tested_head }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Assert exact tested head
-        run: test "$(git rev-parse HEAD)" = "${{ needs.skeleton.outputs.tested_head }}"
+      - name: Fetch exact Project Gate source quietly
+        shell: bash
+        env:
+          TESTED_HEAD: ${{ needs.skeleton.outputs.tested_head }}
+        run: |
+          set -euo pipefail
+          git init --quiet .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --quiet --depth=1 origin "$TESTED_HEAD"
+          git checkout --quiet --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$TESTED_HEAD"
 
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
@@ -98,21 +101,27 @@ jobs:
           version: "0.7.22"
           enable-cache: true
 
-      - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version-file: .python-version
-
       - name: Install locked project
         run: |
-          uv lock --check
-          uv sync --locked --extra dev --extra ui
+          uv lock --check --quiet
+          uv sync --locked --extra dev --extra ui --quiet
 
       - name: Compile Python sources
         run: uv run python -m compileall -q src tests
 
       - name: Run full internal quality suite once
-        run: uv run pytest -vv
+        shell: bash
+        run: |
+          set +e
+          uv run pytest -vv > "$RUNNER_TEMP/pytest.log" 2>&1
+          pytest_status=$?
+          set -e
+          if [[ "$pytest_status" -ne 0 ]]; then
+            echo "Pytest failed; newest diagnostic lines follow first:"
+            tail -n 300 "$RUNNER_TEMP/pytest.log" | tac
+            exit "$pytest_status"
+          fi
+          tail -n 20 "$RUNNER_TEMP/pytest.log"
 
       - name: Run core CLI smokes
         shell: bash
@@ -143,7 +152,7 @@ jobs:
           uv venv "$clean_venv"
           wheel_path="$(find "$RUNNER_TEMP/dist" -maxdepth 1 -name '*.whl' -print -quit)"
           test -n "$wheel_path"
-          uv pip install --python "$clean_venv/bin/python" "$wheel_path" "gradio>=4,<6"
+          uv pip install --python "$clean_venv/bin/python" "$wheel_path" "gradio>=4,<6" --quiet
           (
             cd "$RUNNER_TEMP"
             "$clean_venv/bin/python" - <<'PY'
@@ -188,9 +197,10 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           ref: ${{ needs.skeleton.outputs.tested_head }}
-          fetch-depth: 0
+          fetch-depth: 1
           path: EV4-Project-Gate
           persist-credentials: false
+          show-progress: false
 
       - name: Assert exact tested head
         run: test "$(git -C EV4-Project-Gate rev-parse HEAD)" = "${{ needs.skeleton.outputs.tested_head }}"
@@ -201,14 +211,9 @@ jobs:
           version: "0.7.22"
           enable-cache: true
 
-      - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version-file: EV4-Project-Gate/.python-version
-
       - name: Install locked Project Gate package
         working-directory: EV4-Project-Gate
-        run: uv sync --locked --extra dev --extra ui
+        run: uv sync --locked --extra dev --extra ui --quiet
 
       - name: Checkout Architect owner repository
         if: matrix.boundary == 'architect_to_ce'
@@ -218,6 +223,7 @@ jobs:
           ref: be9bdea9ae246b1587043f2582c1a950ea2a6ec5
           path: EV4-Architect-Repo
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout CE owner repository for Architect boundary
         if: matrix.boundary == 'architect_to_ce'
@@ -227,6 +233,7 @@ jobs:
           ref: 6650c31304e5a0472b276c36018c1df8f42ac983
           path: EV4-Constructability-Engineer-Repo
           persist-credentials: false
+          show-progress: false
 
       - name: Verify Architect to CE boundary
         if: matrix.boundary == 'architect_to_ce'
@@ -249,6 +256,7 @@ jobs:
           ref: 6650c31304e5a0472b276c36018c1df8f42ac983
           path: EV4-Constructability-Engineer-Repo
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout Builder owner repository for CE boundary
         if: matrix.boundary == 'ce_to_builder'
@@ -258,6 +266,7 @@ jobs:
           ref: b599c000118dcbe77572d6f387da5da0f46d1f91
           path: EV4-Builder-Assistant-Repo
           persist-credentials: false
+          show-progress: false
 
       - name: Verify CE to Builder boundary
         if: matrix.boundary == 'ce_to_builder'
@@ -280,6 +289,7 @@ jobs:
           ref: 69a2c61edf6d06b4418ad770fcefbfdffcf275d6
           path: EV4-Builder-Assistant-Repo
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout Responsive owner repository
         if: matrix.boundary == 'builder_to_responsive' || matrix.boundary == 'final_gate'
@@ -289,6 +299,7 @@ jobs:
           ref: df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a
           path: EV4-Responsive-Architect
           persist-credentials: false
+          show-progress: false
 
       - name: Verify Builder to Responsive boundary
         if: matrix.boundary == 'builder_to_responsive'
@@ -319,9 +330,10 @@ jobs:
         with:
           repository: rezahh107/EV4-Decision-Kernel
           ref: 76a82e28543ff8f0babca11b7d7dccac96b92894
-          fetch-depth: 0
+          fetch-depth: 1
           path: EV4-Decision-Kernel
           persist-credentials: false
+          show-progress: false
 
       - name: Setup Node for Kernel boundary only
         if: matrix.boundary == 'kernel_intake'
@@ -358,6 +370,7 @@ jobs:
           ref: be9bdea9ae246b1587043f2582c1a950ea2a6ec5
           path: producers/architect
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout CE producer
         if: matrix.boundary == 'producer_integration'
@@ -367,6 +380,7 @@ jobs:
           ref: 6650c31304e5a0472b276c36018c1df8f42ac983
           path: producers/ce
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout Builder producer
         if: matrix.boundary == 'producer_integration'
@@ -376,6 +390,7 @@ jobs:
           ref: 45459d0246f5d14486867224d26c2d2ba8a563b6
           path: producers/builder
           persist-credentials: false
+          show-progress: false
 
       - name: Checkout Responsive producer
         if: matrix.boundary == 'producer_integration'
@@ -385,6 +400,7 @@ jobs:
           ref: 28a995a603a5a383b8592d6beae7db8943f20acf
           path: producers/responsive
           persist-credentials: false
+          show-progress: false
 
       - name: Verify producer integration boundary
         if: matrix.boundary == 'producer_integration'
