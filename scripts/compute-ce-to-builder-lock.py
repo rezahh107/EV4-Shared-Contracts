@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +54,7 @@ def main() -> int:
     args = parser.parse_args()
     lock = load_json_file(args.lock)
     computed = compute_lock(lock, Path(args.ce_repo), Path(args.builder_repo))
-    Path(args.output).write_text(canonical_dumps(computed) + "\n", encoding="utf-8")
+    Path(args.output).write_text(json.dumps(computed, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
     print(canonical_dumps({"status": "computed", "output": args.output, "roles": [item["role"] for item in computed["files"]]}))
     return 0
 
