@@ -1,34 +1,15 @@
 import json
-import re
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-UV_WORKFLOWS = [
-    ".github/workflows/validate.yml",
-    ".github/workflows/prompt-05.yml",
-    ".github/workflows/prompt-06.yml",
-    ".github/workflows/ui-runtime-smoke.yml",
-]
-OWNER_VALIDATOR_STEPS_USE_PROJECT_GATE_PYTHON = {
-    (".github/workflows/validate.yml", "Official Architect validator fixture suite"),
-    (".github/workflows/validate.yml", "Official CE validator fixture suite"),
-    (".github/workflows/prompt-05.yml", "Run pinned official Responsive validators"),
-}
-BARE_PYTHON_COMMAND_RE = re.compile(r"(^|[;&|()]\s*)(python|pytest|ev4-transition)\b")
-PROJECT_GATE_PYTHON = "${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python"
+VALIDATE_WORKFLOW = ROOT / ".github/workflows/validate.yml"
+REUSABLE_WORKFLOW = ROOT / ".github/workflows/verify-vendored-common-contract.yml"
 
 
-def _workflow(relative: str) -> dict:
-    return yaml.safe_load((ROOT / relative).read_text(encoding="utf-8"))
-
-
-def _run_lines(step: dict) -> list[str]:
-    run = step.get("run")
-    if not isinstance(run, str):
-        return []
-    return [line.strip() for line in run.splitlines() if line.strip() and not line.strip().startswith("#")]
+def _workflow(path: Path) -> dict:
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
 def test_personal_use_package_files_exist():
@@ -56,7 +37,13 @@ def test_personal_use_samples_are_synthetic_json():
 
 def test_personal_use_docs_explain_statuses_and_outputs():
     guide = (ROOT / "docs/PERSONAL_USE_GUIDE.md").read_text(encoding="utf-8")
-    for token in ["accepted", "invalid", "insufficient_evidence", "repair_needed", "outputs/runs/<timestamp-or-run-id>/"]:
+    for token in [
+        "accepted",
+        "invalid",
+        "insufficient_evidence",
+        "repair_needed",
+        "outputs/runs/<timestamp-or-run-id>/",
+    ]:
         assert token in guide
 
 
@@ -79,14 +66,11 @@ def test_uv_default_setup_artifacts_and_docs_are_present():
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'requires-python = ">=3.11"' in pyproject
     assert "[project.optional-dependencies]" in pyproject
-    assert "[dependency-groups]" not in pyproject
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "## Default setup with uv" in readme
-    assert "uv sync --extra dev --extra ui" in readme
-    assert "not uv dependency groups" in readme
-    assert "### Fallback if uv is unavailable" in readme
-    assert readme.index("## Default setup with uv") < readme.index("### Fallback if uv is unavailable")
+    assert "## Setup" in readme
+    assert "uv sync --locked --extra dev --extra ui" in readme
+    assert "Fallback when `uv` is unavailable" in readme
 
 
 def test_windows_uv_setup_script_is_safe_and_copy_ready():
@@ -102,79 +86,48 @@ def test_windows_uv_setup_script_is_safe_and_copy_ready():
         assert token in script
 
 
-def test_ci_uses_uv_lock_sync_and_run_for_python_workflows():
-    for relative in UV_WORKFLOWS:
-        text = (ROOT / relative).read_text(encoding="utf-8")
-        assert "astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b" in text
-        assert "uv lock --check" in text
-        assert "uv sync --locked --extra dev --extra ui" in text
-        assert "python -m pip install" not in text
+def test_unified_workflow_uses_locked_uv_and_one_core_suite():
+    text = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b" in text
+    assert "uv lock --check" in text
+    assert "uv sync --locked --extra dev --extra ui" in text
+    assert text.count("uv run pytest -vv") == 1
+    assert text.count("Build wheel once") == 1
+    assert text.count("Clean-install package and construct UI once") == 1
+    assert "python -m pip install" not in text
 
 
-def test_uv_workflow_jobs_install_uv_before_uv_commands():
-    for relative in UV_WORKFLOWS:
-        workflow = _workflow(relative)
-        for job_name, job in workflow["jobs"].items():
-            steps = job.get("steps", [])
-            setup_uv_indexes = [
-                index
-                for index, step in enumerate(steps)
-                if isinstance(step, dict) and str(step.get("uses", "")).startswith("astral-sh/setup-uv@")
-            ]
-            uv_command_indexes = [
-                index
-                for index, step in enumerate(steps)
-                if isinstance(step, dict) and any("uv " in line for line in _run_lines(step))
-            ]
-            if uv_command_indexes:
-                assert setup_uv_indexes, f"{relative}:{job_name} uses uv without setup-uv"
-                assert min(setup_uv_indexes) < min(uv_command_indexes), f"{relative}:{job_name} runs uv before setup-uv"
+def test_unified_workflow_keeps_owner_validators_and_real_node_boundary():
+    text = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    for token in [
+        "scripts/check-architect-stage-payload.py",
+        "scripts/validate-ce-architect-stage-intake.py",
+        "scripts/ce-to-builder-smoke.py",
+        "validation/e2e/run_builder_responsive_input_boundary_check.py",
+        "validation/e2e/run_responsive_tree_architecture_refactor_check.py",
+        "scripts/kernel-decision-intake-bridge.mjs",
+        "npm run validate:mvk",
+        "Setup Node for Kernel boundary only",
+    ]:
+        assert token in text
+    assert not (ROOT / "package.json").exists()
+    assert not (ROOT / "scripts/validate.js").exists()
+    assert not (ROOT / "scripts/status.js").exists()
 
 
-def test_uv_workflow_python_commands_run_through_uv():
-    for relative in UV_WORKFLOWS:
-        workflow = _workflow(relative)
-        for job_name, job in workflow["jobs"].items():
-            for step in job.get("steps", []):
-                if not isinstance(step, dict):
-                    continue
-                step_name = str(step.get("name", ""))
-                for line in _run_lines(step):
-                    if line.startswith("uv run ") or line.startswith("uv lock ") or line.startswith("uv sync "):
-                        continue
-                    if (relative, step_name) in OWNER_VALIDATOR_STEPS_USE_PROJECT_GATE_PYTHON:
-                        assert line.startswith('"$PROJECT_GATE_PYTHON" '), f"{relative}:{step_name}: {line}"
-                        continue
-                    assert not BARE_PYTHON_COMMAND_RE.search(line), f"{relative}:{job_name}:{step_name}: {line}"
+def test_unified_workflow_topology_and_permissions_are_lean():
+    workflow = _workflow(VALIDATE_WORKFLOW)
+    jobs = workflow["jobs"]
+    assert set(jobs) == {"skeleton", "python-core", "affected-boundaries", "quality-gate"}
+    assert workflow["permissions"] == {"contents": "read"}
+    text = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+    assert "actions/upload-artifact" not in text
+    assert "contents: write" not in text
+    assert "status-after-merge" not in text
 
 
-def test_node_skeleton_validation_uses_uv_managed_python_for_project_gate_checks():
-    text = (ROOT / "scripts/validate.js").read_text(encoding="utf-8")
-    assert "const pythonCmd = 'uv';" in text
-    assert "'run', '--locked', 'python', script" in text
-    assert "'python3'" not in text
-
-
-def test_external_owner_validator_steps_keep_owner_workdir_and_project_gate_python_boundary():
-    validate = _workflow(".github/workflows/validate.yml")
-    python_core_steps = validate["jobs"]["python-core"]["steps"]
-    owner_steps = {step["name"]: step for step in python_core_steps if step.get("name") in {
-        "Official Architect validator fixture suite",
-        "Official CE validator fixture suite",
-    }}
-    assert owner_steps["Official Architect validator fixture suite"]["working-directory"] == "EV4-Architect-Repo"
-    assert owner_steps["Official Architect validator fixture suite"]["env"]["PROJECT_GATE_PYTHON"] == PROJECT_GATE_PYTHON
-    assert owner_steps["Official Architect validator fixture suite"]["run"] == '"$PROJECT_GATE_PYTHON" scripts/check-architect-stage-payload.py'
-    assert owner_steps["Official CE validator fixture suite"]["working-directory"] == "EV4-Constructability-Engineer-Repo"
-    assert owner_steps["Official CE validator fixture suite"]["env"]["PROJECT_GATE_PYTHON"] == PROJECT_GATE_PYTHON
-    assert owner_steps["Official CE validator fixture suite"]["run"] == '"$PROJECT_GATE_PYTHON" scripts/validate-ce-architect-stage-intake.py'
-
-    prompt_05 = _workflow(".github/workflows/prompt-05.yml")
-    responsive_step = next(
-        step for step in prompt_05["jobs"]["prompt-05"]["steps"]
-        if step.get("name") == "Run pinned official Responsive validators"
-    )
-    assert responsive_step["working-directory"] == "EV4-Responsive-Architect"
-    assert responsive_step["env"]["PROJECT_GATE_PYTHON"] == PROJECT_GATE_PYTHON
-    assert '"$PROJECT_GATE_PYTHON" validation/e2e/run_builder_responsive_input_boundary_check.py' in responsive_step["run"]
-    assert '"$PROJECT_GATE_PYTHON" validation/e2e/run_responsive_tree_architecture_refactor_check.py' in responsive_step["run"]
+def test_reusable_external_contract_workflow_remains_public():
+    assert REUSABLE_WORKFLOW.is_file()
+    text = REUSABLE_WORKFLOW.read_text(encoding="utf-8")
+    assert "workflow_call:" in text
+    assert "verify-vendored-common-contract.py" in text
