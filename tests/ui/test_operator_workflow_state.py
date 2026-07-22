@@ -98,6 +98,45 @@ def test_controlled_failure_has_distinct_workflow_state() -> None:
     assert "خطای کنترل‌شده" in failed.detail_fa
 
 
+def test_prepared_operation_cannot_dispatch_twice(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    import ev4_transition.ui.app_callbacks as callbacks_module
+    from ev4_transition.ui.app_callbacks import build_operator_callbacks
+    from ev4_transition.ui.app_support import PreparedUiOperation
+
+    class FakeGr:
+        @staticmethod
+        def update(**kwargs):
+            return kwargs
+
+        @staticmethod
+        def skip():
+            return object()
+
+    started = begin_workflow(initial_workflow_state())
+    revision = started.operation_revision or 0
+    running = mark_running(started, started.operation_id, revision)
+    prepared = PreparedUiOperation(
+        operation_id=started.operation_id,
+        input_revision=revision,
+        acquisition_mode="producer_emitted_gate_artifact",
+        transaction=SimpleNamespace(authorization_ready=True),
+    )
+    called = {"dispatch": False}
+
+    def forbidden_dispatch(_transaction):
+        called["dispatch"] = True
+        raise AssertionError("the same prepared operation must not dispatch twice")
+
+    monkeypatch.setattr(callbacks_module, "execute_authoritative_gate_transaction", forbidden_dispatch)
+    executed, updated, _html = build_operator_callbacks(FakeGr()).execute(prepared, running)
+
+    assert executed.stale is True
+    assert updated.status == "stale"
+    assert called["dispatch"] is False
+
+
 def test_operator_docs_match_unified_non_authorizing_preview() -> None:
     root = Path(__file__).resolve().parents[2]
     quick = (root / "docs/LOCAL_OPERATOR_PANEL_QUICK_START.fa.md").read_text(encoding="utf-8")
