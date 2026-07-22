@@ -58,6 +58,7 @@ This section is updated by GitHub Actions after a pull request is merged. It rec
 
 | PR | Title | Head branch | Head commit | Merge commit | Skeleton Health | Recorded by |
 |---|---|---|---|---|---|---|
+| `#59` | `feat: unify authoritative Preflight and Project Gate execution` | `fix/unified-authoritative-preflight-run` | `33dda019487e93075ee6af245714a63968c5e4fd` | `6d6c5895696090cb7f621ff834ce3c7efc6a1a2c` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#58` | `fix: unify GUI producer-emitted A2C runtime` | `fix/gui-producer-emitted-a2c-runtime` | `9e883bbdc8347dccc4c1ba0a95db0b9186d7d038` | `4ad658aa6b485db06abd1454df81a149255a6bda` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#57` | `docs: add comprehensive Persian operator panel user guide` | `project-gate-prompt-08-operator-user-guide` | `8a2d50f4e51f5fab1a906826f95829d2076ebc32` | `c20298dbd2b0e5cae80aa7d17a2b3f71af6824a9` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
 | `#56` | `feat: add unified producer handoff workflow` | `feature/project-gate-unified-producer-handoff` | `4f9ec32873ce35b6cbbc22bc9c05761e5a756d0a` | `ca9793869eb7dff255bbadd7fef039a5bf4197f5` | `CI_PASSED` | `rezahh107 on rezahh107/EV4-Project-Gate` |
