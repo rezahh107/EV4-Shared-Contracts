@@ -114,25 +114,29 @@ A PR must report:
 
 Do not claim validation or CI success without exact-head evidence. Do not merge unless explicitly authorized.
 
-## Temporary Shared UX/UI Policy
+## Temporary Shared UX/UI Policy Adapter
 
-For cross-repository verification involving UX/UI Rule references, read and apply only the verifier portion of:
-
-```text
-policies/EV4_TEMP_CROSS_REPO_UX_UI_STANDARDS_POLICY_r001.md
-```
-
-Pinned identity:
+Use `policies/EV4_TEMP_CROSS_REPO_UX_UI_STANDARDS_POLICY_r002.md` only as a supplemental verifier reference below repository and owner-contract authority.
 
 ```yaml
-policy_id: EV4-TEMP-CROSS-REPO-UX-UI-STANDARDS-POLICY-r001
-revision: r001
-sha256: fd023d9b815b6d525539d595700a1768245ae83cca401c71fb61ba22d4f76483
-git_blob_sha: b52182c54577189d1b7832199fb699ee67f7d7fb
+policy_id: EV4-TEMP-CROSS-REPO-UX-UI-STANDARDS-POLICY-r002
+revision: r002
+filename: EV4_TEMP_CROSS_REPO_UX_UI_STANDARDS_POLICY_r002.md
+sha256: f09b6978e10833c1ab3c3e35a9128db894684c5ed9cd876fa87699016b6def95
+repository_role: project_gate
+local_consumption_scope: policy identity, Rule references, allowed evaluation states, required reasons, owners, test obligations, and evidence-boundary claims carried by active owner contracts
+role_must:
+  - verify policy identity and revision
+  - validate referenced Rule IDs and allowed states
+  - require reasons, owners and test obligations where applicable
+  - reject unsupported conformance and evidence-boundary claims
+role_must_not:
+  - select visual design
+  - replace Architect, CE, Builder or Responsive judgment
+  - treat Schema validity as proof of product quality
+  - promote architecture evidence into runtime evidence
 ```
 
-Project Gate may verify policy identity, referenced Rule IDs, allowed statuses, required rationale or ownership fields, downstream test obligations, prohibited conformance claims, and repository-role boundaries only when an active owner contract actually carries those fields.
+Keep nonmaterial routing internal. Represent material identity failures, unsupported claims, missing owners, and missing test obligations through existing Project Gate diagnostics or a concise visible status when authorization or owner action is affected. Do not create a competing Rule registry, local design validator, transition, capability claim, or hidden-storage mechanism.
 
-Policy presence, Markdown validity, Rule-ID recognition, or evaluation-shape validity does not activate a new transition, extend an owner Schema, prove design quality, prove semantic correctness, prove runtime behavior, or establish WCAG, ISO, usability, or production conformance. Project Gate must not select, score, reinterpret, or repair UX/UI decisions.
-
-Do not create a competing Rule registry, local semantic validator, transition field, capability claim, or hard gate solely from this temporary policy. `HEURISTIC` and `PREFERRED_DEFAULT` rules are not automatic blocking results. This policy becomes historical only after an explicitly adopted, pinned Kernel replacement exists.
+`r001` remains an immutable historical revision. A filename, ID, revision, byte, or digest mismatch is `TEMP_UX_UI_POLICY_IDENTITY_MISMATCH`. This adapter does not create Kernel adoption or a parallel approval path.
