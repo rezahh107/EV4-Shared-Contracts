@@ -132,14 +132,6 @@ jobs:
           fi
           tail -n 20 "$RUNNER_TEMP/pytest.log"
 
-      - name: Upload temporary pytest diagnostic
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: temporary-pytest-diagnostic
-          path: ${{ runner.temp }}/pytest.log
-          if-no-files-found: error
-
       - name: Run core CLI smokes
         shell: bash
         run: |
