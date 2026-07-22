@@ -34,5 +34,5 @@ jobs:
       - name: Install locked project
         run: uv sync --locked --extra dev --extra ui --quiet
 
-      - name: Report first full-suite failure
+      - name: Report first full-suite failure after stable declaration repair
         run: uv run pytest -x -q --tb=short
