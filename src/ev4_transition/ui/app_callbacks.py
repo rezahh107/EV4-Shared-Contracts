@@ -151,11 +151,18 @@ def build_operator_callbacks(gr: Any) -> OperatorCallbacks:
                 failed=True,
             )
             return ExecutedUiOperation(current_state.operation_id, current_state.input_revision, "unknown", failed=True, error_type="MissingPreparedOperation"), failed_state, workflow_state_html(failed_state)
+        if not prepared.transaction.authorization_ready:
+            return ExecutedUiOperation(prepared.operation_id, prepared.input_revision, prepared.acquisition_mode, blocked=True), current_state, workflow_state_html(current_state)
+        if current_state.status != "checking":
+            stale_state = invalidate_workflow(
+                current_state,
+                relevant=True,
+                detail_fa="این prepared operation قبلاً شروع شده یا دیگر فعال نیست؛ dispatch تکراری انجام نشد.",
+            )
+            return ExecutedUiOperation(prepared.operation_id, prepared.input_revision, prepared.acquisition_mode, stale=True), stale_state, workflow_state_html(stale_state)
         running_state = mark_running(current_state, prepared.operation_id, prepared.input_revision)
         if running_state.status == "stale":
             return ExecutedUiOperation(prepared.operation_id, prepared.input_revision, prepared.acquisition_mode, stale=True), running_state, workflow_state_html(running_state)
-        if not prepared.transaction.authorization_ready:
-            return ExecutedUiOperation(prepared.operation_id, prepared.input_revision, prepared.acquisition_mode, blocked=True), current_state, workflow_state_html(current_state)
         try:
             transaction = execute_authoritative_gate_transaction(prepared.transaction)
             if transaction.response is None:
