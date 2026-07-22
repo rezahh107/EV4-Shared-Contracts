@@ -67,3 +67,25 @@ assert adapters._ui_preflight_diagnostics is before_preflight
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_ui_extraction_import_order_is_circularity_free() -> None:
+    script = """
+import sys
+import ev4_transition.ui.app_support
+assert 'ev4_transition.ui.app' not in sys.modules
+import ev4_transition.ui.app_callbacks
+assert 'ev4_transition.ui.app' not in sys.modules
+import ev4_transition.ui.app as app
+assert callable(app.build_demo)
+assert callable(app.workflow_state_html)
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=ROOT,
+        env={"PYTHONPATH": str(ROOT / "src")},
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr

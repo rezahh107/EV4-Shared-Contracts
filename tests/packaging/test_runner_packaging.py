@@ -35,6 +35,12 @@ def test_built_wheel_contains_required_runner_modules(built_wheel: Path) -> None
     with zipfile.ZipFile(built_wheel) as archive:
         names = set(archive.namelist())
     assert set(REQUIRED_PACKAGED_RUNNER_MODULES) <= names
+    assert {
+        "ev4_transition/ui/app.py",
+        "ev4_transition/ui/app_support.py",
+        "ev4_transition/ui/app_callbacks.py",
+        "ev4_transition/ui/adapters.py",
+    } <= names
 
 
 def test_installed_wheel_imports_ui_and_all_runners(built_wheel: Path, tmp_path: Path) -> None:
@@ -52,6 +58,8 @@ from ev4_transition.runners.native_dialog import select_directory
 from ev4_transition.runners.open_output_folder import open_directory
 from ev4_transition.runners.git_archive import run_git
 from ev4_transition.ui.app import build_demo
+demo = build_demo()
+assert demo is not None
 assert select_directory and open_directory and run_git and build_demo
 print('PACKAGED_IMPORT_OK')
 """

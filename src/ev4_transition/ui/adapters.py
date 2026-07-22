@@ -119,6 +119,14 @@ def run_operator_check(
         return _minimal_output(fallback)
 
 
+def ui_output_from_response(response: Any, acquisition_mode: str) -> UiRunOutput:
+    """Render an already-authorized service response without rebuilding its request."""
+
+    result = _result_from_response(response)
+    result["ui_acquisition_mode"] = acquisition_mode
+    return _finalize(result)
+
+
 def build_gate_request(
     transition_label: str | None,
     *,
