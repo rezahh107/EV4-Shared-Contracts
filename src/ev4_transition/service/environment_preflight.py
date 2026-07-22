@@ -18,7 +18,6 @@ from .transition_contracts import contract_for_service, lock_path_for_service, p
 _ROUTING_FILES = (
     "contracts/producer-adoption/ev4-producer-adoption-set.v1.json",
     "contracts/transition-targets/ev4-transition-targets.v1.json",
-    "docs/evidence/JOIN_EVIDENCE_PACKET_v1.json",
 )
 _LABEL = {
     "project_gate_repo_path": "مسیر Project Gate repo",
