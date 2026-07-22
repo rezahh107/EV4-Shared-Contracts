@@ -3,7 +3,24 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ev4_transition.service import GateRequest, run_gate_request
+
 ROOT = Path(__file__).resolve().parents[1]
+PROHIBITED_STATIC_KEYS = {
+    "current_main",
+    "current_main_sha",
+    "current_main_head",
+    "current_main_head_ci",
+    "observed_head_sha",
+    "current_pr_state",
+    "current_branch_state",
+    "current_workflow_run",
+    "current_workflow_run_id",
+    "head_sha",
+    "pr_head_sha",
+    "workflow_run_id",
+    "workflow_runs",
+}
 
 
 def run_cli(*args):
@@ -31,6 +48,29 @@ def run_script(script: str, *args: str):
         capture_output=True,
         check=False,
     )
+
+
+def _all_keys(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield key
+            yield from _all_keys(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _all_keys(child)
+
+
+def _copy_capability_repository(tmp_path: Path) -> Path:
+    for relative in (
+        "src/ev4_transition/data/capability-status.v1.json",
+        "README.md",
+        "AGENTS.md",
+    ):
+        source = ROOT / relative
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    return tmp_path / "src/ev4_transition/data/capability-status.v1.json"
 
 
 def test_cli_json_output_valid_bundle():
@@ -92,10 +132,22 @@ def test_cli_inspect_reports_layered_ce_to_builder_truth():
     assert "ce-to-builder" in payload["public_cli_transitions"]
 
 
-def test_cli_inspect_does_not_overclaim_real_ce_to_builder_handoff():
+def test_cli_inspect_returns_static_capability_truth_only():
     payload = json.loads(run_cli("inspect").stdout)
     assert payload["capabilities"]["ce_to_builder"]["real_non_synthetic_handoff"] == "insufficient_evidence"
-    assert payload["evidence"]["current_main_head_ci"]["status"] == "insufficient_evidence"
+    assert "evidence" not in payload
+    assert "kroad_011" not in payload
+    assert "pg_int" not in payload
+    assert PROHIBITED_STATIC_KEYS.isdisjoint(set(_all_keys(payload)))
+
+
+def test_service_capability_inspection_returns_static_truth_only():
+    response = run_gate_request(GateRequest(transition_choice="inspect_capabilities"))
+    assert response.status == "accepted"
+    assert response.engine_result is not None
+    payload = response.engine_result["capabilities"]
+    assert payload["schema_version"] == "ev4-project-gate-capability-status.v1"
+    assert PROHIBITED_STATIC_KEYS.isdisjoint(set(_all_keys(payload)))
 
 
 def test_capability_truth_gate_passes_single_authority_repository():
@@ -105,22 +157,33 @@ def test_capability_truth_gate_passes_single_authority_repository():
 
 
 def test_capability_truth_gate_detects_missing_required_capability(tmp_path):
-    for relative in (
-        "src/ev4_transition/data/capability-status.v1.json",
-        "README.md",
-        "AGENTS.md",
-    ):
-        source = ROOT / relative
-        target = tmp_path / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-    authority_path = tmp_path / "src/ev4_transition/data/capability-status.v1.json"
+    authority_path = _copy_capability_repository(tmp_path)
     authority = json.loads(authority_path.read_text(encoding="utf-8"))
     del authority["capabilities"]["ce_to_builder"]
     authority_path.write_text(json.dumps(authority), encoding="utf-8")
     completed = run_script("scripts/check-capability-truth.py", str(tmp_path))
     assert completed.returncode == 1
     assert "ce_to_builder" in completed.stdout
+
+
+def test_capability_truth_gate_rejects_current_main_sha(tmp_path):
+    authority_path = _copy_capability_repository(tmp_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    authority["capabilities"]["architect_to_ce"]["current_main_sha"] = "0" * 40
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    completed = run_script("scripts/check-capability-truth.py", str(tmp_path))
+    assert completed.returncode == 1
+    assert "current_main_sha" in completed.stdout
+
+
+def test_capability_truth_gate_rejects_nested_observed_head_sha(tmp_path):
+    authority_path = _copy_capability_repository(tmp_path)
+    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+    authority["capabilities"]["architect_to_ce"]["observation"] = {"observed_head_sha": "1" * 40}
+    authority_path.write_text(json.dumps(authority), encoding="utf-8")
+    completed = run_script("scripts/check-capability-truth.py", str(tmp_path))
+    assert completed.returncode == 1
+    assert "observed_head_sha" in completed.stdout
 
 
 def test_lean_pipeline_has_no_removed_automation_or_duplicate_workflows():
@@ -144,7 +207,7 @@ def test_lean_pipeline_has_no_removed_automation_or_duplicate_workflows():
         assert not (ROOT / relative).exists(), relative
 
 
-def test_unified_workflow_runs_core_once_and_keeps_reusable_contract():
+def test_unified_workflow_runs_core_once_and_preserves_legacy_check_names():
     workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
     assert workflow.count("Run full internal quality suite once") == 1
     assert workflow.count("Build wheel once") == 1
@@ -152,16 +215,22 @@ def test_unified_workflow_runs_core_once_and_keeps_reusable_contract():
     assert "actions/upload-artifact" not in workflow
     assert "contents: write" not in workflow
     assert "Setup Node for Kernel boundary only" in workflow
+    assert "  skeleton:\n    name: skeleton\n" in workflow
+    assert "  python-core:\n    name: python-core\n" in workflow
     reusable = ROOT / ".github/workflows/verify-vendored-common-contract.yml"
     assert reusable.is_file()
     assert "workflow_call:" in reusable.read_text(encoding="utf-8")
 
 
-def test_cli_inspect_reports_builder_responsive_and_final_gate_truth():
+def test_cli_inspect_reports_stable_builder_responsive_and_final_gate_truth():
     payload = json.loads(run_cli("inspect").stdout)
-    assert payload["capabilities"]["builder_to_responsive"]["verification_state"] == "verified_by_exact_head_ci"
-    assert payload["capabilities"]["final_evidence_gate"]["verification_state"] == "verified_by_exact_head_ci"
-    assert payload["capabilities"]["final_evidence_gate"]["real_non_synthetic_evidence"] == "insufficient_evidence"
+    responsive = payload["capabilities"]["builder_to_responsive"]
+    final_gate = payload["capabilities"]["final_evidence_gate"]
+    assert responsive["official_responsive_validator_integration"] == "implemented"
+    assert final_gate["official_responsive_validator_integration"] == "implemented"
+    assert final_gate["real_non_synthetic_evidence"] == "insufficient_evidence"
+    assert "verification_state" not in responsive
+    assert "verification_state" not in final_gate
 
 
 def test_cli_guarded_ce_to_builder_requires_local_paths():
