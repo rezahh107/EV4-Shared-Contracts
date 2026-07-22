@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ev4_transition.presentation.theme_tokens import THEME_TOKENS, css_custom_properties
 from ev4_transition.runners.native_dialog import select_directory
@@ -11,28 +11,17 @@ from ev4_transition.runners.open_output_folder import open_directory
 from ev4_transition.service import (
     PreparedAuthoritativeGateTransaction,
     effective_repository_fields,
-    execute_authoritative_gate_transaction,
     prepare_authoritative_gate_transaction,
 )
 
-from .adapters import build_capability_rows, build_gate_request, ui_output_from_response
-from .components import CAPABILITY_HEADERS, DIAGNOSTIC_HEADERS
-from .operator_settings import load_settings, reset_settings, save_settings, settings_path
-from .preflight_components import preflight_diagnostic_rows, preflight_result_html
-from .source_preflight import classify_source_file
+from .adapters import build_gate_request
+from .operator_settings import reset_settings, save_settings
 from .state import (
     WORKFLOW_LABELS_FA,
     OperatorWorkflowState,
-    begin_workflow,
-    block_workflow,
-    complete_workflow,
     initial_workflow_state,
     invalidate_workflow,
-    mark_running,
-    operation_is_current,
     option_for_label,
-    record_preview,
-    transition_choices,
 )
 
 HEADER_WARNING_FA = (
@@ -227,11 +216,17 @@ def invalidate_preflight_state(
     *,
     relevant: bool = True,
 ):
-    """Compatibility wrapper returning the new explicit workflow invalidation state."""
+    """Preserve the legacy no-argument facade while supporting explicit state invalidation.
 
-    current = state or initial_workflow_state()
-    updated = invalidate_workflow(current, relevant=relevant)
-    return updated, {"interactive": not current.active}, stale_preflight_html(), None, {"interactive": False}
+    The old UI used the first tuple item as a persistent token slot.  A no-argument
+    call therefore still returns ``None`` in that position.  New code passes an
+    explicit workflow state and receives the updated state instead.
+    """
+
+    if state is None:
+        return None, {"interactive": False}, stale_preflight_html(), None, {"interactive": False}
+    updated = invalidate_workflow(state, relevant=relevant)
+    return updated, {"interactive": not state.active}, stale_preflight_html(), None, {"interactive": False}
 
 
 def _path_row(gr: Any, label: str, value: str):
@@ -287,16 +282,18 @@ def _reset_settings_callback(current_state: OperatorWorkflowState):
     )
 
 
-def open_output_folder(attempt_directory: str | None) -> str:
+def open_output_folder(
+    attempt_directory: str | None,
+    *,
+    opener: Callable[[Path], None] = open_directory,
+) -> str:
     try:
         if not attempt_directory or not str(attempt_directory).strip():
             return "پوشه خروجی معتبر هنوز ایجاد نشده است."
         directory = Path(str(attempt_directory)).resolve(strict=True)
         if not directory.is_dir() or not directory.name.startswith("run-"):
             return "پوشه خروجی معتبر وجود ندارد."
-        open_directory(directory)
+        opener(directory)
         return f"پوشه باز شد: `{directory}`"
     except Exception as exc:
         return f"باز کردن پوشه ممکن نشد: `{type(exc).__name__}`"
-
-
