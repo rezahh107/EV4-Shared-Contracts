@@ -1,7 +1,7 @@
 # راهنمای جامع پنل محلی EV4 Project Gate
 
-> زبان: فارسی  
-> رابط هدف: `EV4 Project Gate Local Operator Panel`  
+> زبان: فارسی
+> رابط هدف: `EV4 Project Gate Local Operator Panel`
 > فایل اصلی UI: `src/ev4_transition/ui/app.py`
 
 این سند اجزای پنل محلی Project Gate را از بالا به پایین توضیح می‌دهد و برای کاربری نوشته شده است که می‌خواهد بدون استفاده مستقیم از CLI، یک ورودی JSON را بررسی کند، مسیر repositoryهای محلی را بدهد، نتیجه فارسی را بفهمد و گزارش‌ها را دانلود کند.
@@ -40,13 +40,14 @@ Project Gate یک checkpoint و orchestrator است؛ جای Architect، CE، Bu
 2. Acquisition mode را انتخاب کن
 3. JSON صحیح را upload یا paste کن
 4. مسیر local checkoutهای لازم را وارد کن
-5. Preflight را اجرا کن
-6. خطاهای Preflight را اصلاح کن
-7. بررسی اصلی Project Gate را اجرا کن
-8. خلاصه نتیجه را بخوان
-9. Diagnostics را در صورت نیاز باز کن
-10. result.json و گزارش‌ها را دانلود کن
-11. فقط artifact مستقل و رسمی workflow همان transition را به مرحله بعد بده
+5. در صورت نیاز preview تشخیصی Preflight را اجرا کن
+6. `blocked` یا `warnings` را اصلاح کن
+7. دکمه `بررسی و اجرای Authoritative Project Gate` را بزن
+8. پنل یک request را freeze می‌کند، Preflight authoritative را اجرا می‌کند و فقط با fingerprint معتبر به backend می‌رود
+9. backend همان request و source را مستقلاً دوباره اعتبارسنجی می‌کند
+10. خلاصه نتیجه و Diagnostics را بخوان
+11. result.json و گزارش‌ها را دانلود کن
+12. فقط artifact مستقل و رسمی workflow همان transition را به مرحله بعد بده
 ```
 
 `result.json` و مقدار تو‌در‌توی `result.output` ورودی semantic مرحله بعد نیستند. در transitionهایی که workflow انتشار رسمی دارند، فقط artifact مستقل منتشرشده و post-write-verified مجاز است.
@@ -232,16 +233,19 @@ src/ev4_transition/data/capability-status.v1.json
 
 در پیاده‌سازی فعلی، dispatch کامل برخی transitionها در این mode به immutable source snapshot و checkoutهای دقیق بیشتری نیاز دارد؛ در نبود آن‌ها نتیجه باید `insufficient_evidence` بماند، نه اینکه evidence ساخته یا mode عوض شود.
 
-### 17. دکمه `اجرای بررسی Project Gate`
+### 17. دکمه `بررسی و اجرای Authoritative Project Gate`
 
-اجرای اصلی را شروع می‌کند. این دکمه:
+این دکمه primary action و یک تراکنش واحد است:
 
-1. ورودی‌های صفحه را جمع می‌کند؛
-2. درخواست service را می‌سازد؛
-3. بررسی یا transition انتخاب‌شده را اجرا می‌کند؛
-4. خلاصه نتیجه، Diagnostics، Capabilities، JSON preview و فایل‌های دانلود را به‌روزرسانی می‌کند.
+1. ورودی‌های فعلی را در یک `GateRequest` منطقی freeze می‌کند؛
+2. Authoritative Preflight را از service اجرا می‌کند؛
+3. فقط در وضعیت دقیق `ready` و با fingerprint غیرخالی ادامه می‌دهد؛
+4. fingerprint را به همان request متصل می‌کند؛
+5. dispatcher backend همان request و source snapshot را دوباره اعتبارسنجی می‌کند؛
+6. فقط پس از موفقیت این مرزها transition را dispatch می‌کند؛
+7. خلاصه نتیجه، Diagnostics، Capabilities، JSON preview و فایل‌های دانلود را به‌روزرسانی می‌کند.
 
-Preflight و اجرای اصلی دو عملیات جدا هستند.
+هیچ persistent UI authorization token نگهداری نمی‌شود. تغییر هر input مؤثر هنگام `checking` نتیجه را `stale` می‌کند و اجرای قدیمی نباید ادامه یابد.
 
 فضای خاکستری اطراف یا زیر دکمه بخشی از layout Gradio است و قابلیت مستقلی ندارد.
 
@@ -369,30 +373,30 @@ EV4-Responsive-Architect
 
 مسیرهای غیرلازم در Preflight نباید خطای مسدودکننده محسوب شوند.
 
-کنترل‌های ریز انتهای بعضی inputها ممکن است متعلق به مرورگر یا Gradio باشند و معنای قراردادی مستقلی در Project Gate ندارند.
+کنترل‌های ریز انتهای بعضی inputها ممکن است متعلق به مرورگر یا Gradio باشند و معنای قراردادی مستقیمی در Project Gate ندارند.
 
 ---
 
-## 3.6 بررسی آماده‌سازی یا Preflight
+## 3.6 Authoritative Preflight و preview تشخیصی
 
-### 30. عنوان `بررسی آماده‌سازی مسیرها / Preflight`
+### 30. عنوان `Preflight diagnostic preview`
 
-یک بررسی سبک و read-only قبل از اجرای اصلی است.
+این بخش یک preview اختیاری و read-only است. preview برای فهم diagnostics مفید است، اما مجوز اجرای ماندگار صادر یا ذخیره نمی‌کند.
 
 تصویر ذهنی:
 
 ```text
-Preflight = بررسی وسایل و ورودی‌های لازم
-Gate Run = اجرای بررسی واقعی
+Preview = نمایش diagnostics بدون authorization ماندگار
+Primary action = Preflight تازه + fingerprint تازه + backend revalidation + Gate Run
 ```
 
 ### 31. متن توضیح Preflight
 
-یادآوری می‌کند که Preflight مسیرها، فایل‌های لازم و شکل کلی JSON را بررسی می‌کند، اما جای Gate واقعی را نمی‌گیرد.
+Preflight مسیرها، فایل‌های لازم و شکل کلی JSON را بررسی می‌کند. validation authority در service باقی می‌ماند و callbackهای Gradio نسخه جداگانه‌ای از این قواعد ندارند.
 
-### 32. دکمه `بررسی مسیرها و ورودی‌ها`
+### 32. دکمه `فقط نمایش Authoritative Preflight`
 
-موارد زیر را بررسی می‌کند:
+موارد زیر را به‌صورت diagnostic preview بررسی می‌کند:
 
 - وجود و parse شدن JSON؛
 - object بودن JSON؛
@@ -405,9 +409,9 @@ Gate Run = اجرای بررسی واقعی
 - وجود فایل‌های pin‌شده لازم؛
 - وجود lock manifest مربوطه.
 
-### 33. محدودیت Preflight
+### 33. محدودیت preview
 
-Preflight این موارد را انجام نمی‌دهد:
+این preview موارد زیر را انجام نمی‌دهد:
 
 - hash verification کامل؛
 - schema validation نهایی؛
@@ -437,7 +441,7 @@ blocked
 | `↷` | برای transition فعلی لازم نیست |
 | `؟` | نامشخص |
 
-هر check ممکن است جزئیات فنی، classification و اقدام پیشنهادی نیز داشته باشد.
+هر check ممکن است جزئیات فنی، classification و اقدام پیشنهادی نیز داشته باشد. `warnings` مانند `blocked` مجوز dispatch نمی‌دهد. `ready` در preview نیز authorization carrier نیست؛ دکمه اصلی همیشه Preflight و fingerprint تازه می‌سازد.
 
 ---
 
@@ -661,8 +665,8 @@ report.html
 1. `Validate Stage Evidence Bundle` را انتخاب کن.
 2. `pinned_owner_file_computation` را نگه دار.
 3. JSON را upload یا paste کن.
-4. Preflight را اجرا کن.
-5. بررسی اصلی را اجرا کن.
+4. در صورت نیاز preview را ببین.
+5. `بررسی و اجرای Authoritative Project Gate` را بزن.
 6. انتظار تولید downstream output نداشته باش.
 
 ## 4.2 می‌خواهم Architect → CE را اجرا کنم
@@ -670,9 +674,9 @@ report.html
 1. `Architect → CE` را انتخاب کن.
 2. source bundle با `stage=architect` را وارد کن.
 3. مسیر local Architect و CE را بده.
-4. Preflight را اجرا کن.
-5. خطاهای path، lock یا file را رفع کن.
-6. Gate را اجرا کن و نتیجه UI را فقط برای status، Diagnostics و evidence بررسی کن.
+4. در صورت نیاز preview را ببین.
+5. خطاهای path، lock یا file را رفع کن؛ `warnings` نیز non-authorizing است.
+6. دکمه اصلی unified transaction را اجرا کن و نتیجه UI را فقط برای status، Diagnostics و evidence بررسی کن.
 7. `result.json` یا مقدار تو‌در‌توی `result.output` را به‌عنوان CE input استفاده، استخراج، copy یا بازسازی نکن.
 8. workflow رسمی `docs/PG_A2C_OPERATOR_WORKFLOW.md` را اجرا کن و فقط artifact مستقل `ce-input.json` را که به‌صورت canonical، atomic و post-write-verified منتشر شده است به CE بده.
 9. `project-gate-a2c-receipt.json` را جداگانه برای audit و diagnosis نگه دار؛ receipt، CE semantic input نیست.
@@ -781,6 +785,6 @@ python -m ev4_transition.ui.app
 - status semantics؛
 - Diagnostics columns؛
 - download artifactها؛
-- Preflight behavior.
+- Authoritative Preflight، preview non-authorizing و unified transaction behavior.
 
 این سند نباید capability جدید، evidence جدید یا readiness claim جدیدی اضافه کند که در کد و capability source رسمی repository پشتیبانی نشده است.
