@@ -1,4 +1,4 @@
-name: Temporary C2B Diagnosis
+name: Temporary Boundary Diagnosis
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-c2b:
+  diagnose-final-kernel:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact Project Gate Head
@@ -21,21 +21,22 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Checkout pinned CE
+      - name: Checkout pinned Responsive
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          repository: rezahh107/EV4-Constructability-Engineer-Repo
-          ref: 6650c31304e5a0472b276c36018c1df8f42ac983
-          path: EV4-Constructability-Engineer-Repo
+          repository: rezahh107/EV4-Responsive-Architect
+          ref: df74c7ba2ffbed1a4136b5ea6be6ce30db4e161a
+          path: EV4-Responsive-Architect
           persist-credentials: false
           show-progress: false
 
-      - name: Checkout pinned Builder
+      - name: Checkout pinned Decision Kernel
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          repository: rezahh107/EV4-Builder-Assistant-Repo
-          ref: b599c000118dcbe77572d6f387da5da0f46d1f91
-          path: EV4-Builder-Assistant-Repo
+          repository: rezahh107/EV4-Decision-Kernel
+          ref: 76a82e28543ff8f0babca11b7d7dccac96b92894
+          path: EV4-Decision-Kernel
+          fetch-depth: 1
           persist-credentials: false
           show-progress: false
 
@@ -45,40 +46,63 @@ jobs:
           version: "0.7.22"
           enable-cache: false
 
+      - name: Setup Node for Kernel diagnosis
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+
       - name: Install Project Gate
         working-directory: EV4-Project-Gate
         run: uv sync --locked --extra dev --extra ui --quiet
 
-      - name: Capture C2B command results
+      - name: Capture Final Gate and Kernel command results
         working-directory: EV4-Project-Gate
         shell: bash
         env:
-          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
-          EV4_BUILDER_REPO: ${{ github.workspace }}/EV4-Builder-Assistant-Repo
+          EV4_RESPONSIVE_REPO: ${{ github.workspace }}/EV4-Responsive-Architect
+          EV4_KERNEL_REPO: ${{ github.workspace }}/EV4-Decision-Kernel
         run: |
           set +e
-          : > c2b-diagnostic.log
+          : > boundary-diagnostic.log
           overall=0
           run_check() {
             name="$1"
             shift
-            echo "=== $name ===" >> c2b-diagnostic.log
-            "$@" >> c2b-diagnostic.log 2>&1
+            echo "=== $name ===" >> boundary-diagnostic.log
+            "$@" >> boundary-diagnostic.log 2>&1
             status=$?
-            echo "exit_code=$status" >> c2b-diagnostic.log
+            echo "exit_code=$status" >> boundary-diagnostic.log
             if [[ "$status" -ne 0 ]]; then overall=1; fi
           }
-          run_check focused_tests uv run pytest -q tests/transitions/test_ce_to_builder.py tests/producer_integration/test_pg_c2b_dispatch.py
-          run_check compute_lock uv run python scripts/compute-ce-to-builder-lock.py --ce-repo "$EV4_CE_REPO" --builder-repo "$EV4_BUILDER_REPO" --output /tmp/c2b-lock.json
-          run_check compare_lock cmp /tmp/c2b-lock.json contracts/locks/ce-to-builder-transition.v1.lock.json
-          run_check verify_lock uv run python scripts/verify-ce-to-builder-lock.py --ce-repo "$EV4_CE_REPO" --builder-repo "$EV4_BUILDER_REPO"
-          run_check owner_smoke uv run python scripts/ce-to-builder-smoke.py --ce-repo "$EV4_CE_REPO" --builder-repo "$EV4_BUILDER_REPO" --fixture "$EV4_CE_REPO/tests/role-alignment/valid/executable_visual_reference_package.json"
+
+          run_check final_tests uv run pytest -q tests/transitions/test_final_gate.py tests/reports/test_decision_receipts.py
+          run_check final_compute_lock uv run python scripts/compute-final-gate-lock.py --project-gate-repo . --responsive-repo "$EV4_RESPONSIVE_REPO" --output /tmp/final-gate-lock.json
+          run_check final_byte_compare cmp /tmp/final-gate-lock.json contracts/locks/final-gate.v1.lock.json
+          run_check final_semantic_compare uv run python -c 'from ev4_transition.canonical_json import load_json_file; assert load_json_file("/tmp/final-gate-lock.json") == load_json_file("contracts/locks/final-gate.v1.lock.json")'
+
+          run_check kernel_install bash -lc 'cd "$EV4_KERNEL_REPO" && npm ci --ignore-scripts'
+          run_check kernel_mvk bash -lc 'cd "$EV4_KERNEL_REPO" && npm run validate:mvk'
+          run_check kernel_compute_lock uv run python scripts/compute-kernel-decision-intake-lock.py --kernel-repo "$EV4_KERNEL_REPO" --output /tmp/kernel-lock.json
+          run_check kernel_byte_compare cmp /tmp/kernel-lock.json contracts/locks/kernel-decision-intake.v1.lock.json
+          run_check kernel_semantic_compare uv run python -c 'from ev4_transition.canonical_json import load_json_file; assert load_json_file("/tmp/kernel-lock.json") == load_json_file("contracts/locks/kernel-decision-intake.v1.lock.json")'
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const fixture = JSON.parse(fs.readFileSync(process.env.EV4_KERNEL_REPO + '/kernel/fixtures/valid/l2_decision_correctness/layout_structure_auto_resolved_flexbox_pass.json', 'utf8'));
+          fs.writeFileSync('/tmp/kernel-bridge-input.json', JSON.stringify({
+            decision_record: fixture.input.decision_record,
+            resolver_input: fixture.input.resolver_input,
+            audit_context: { claims: [] }
+          }));
+          NODE
+          run_check kernel_bridge node scripts/kernel-decision-intake-bridge.mjs --kernel-repo "$EV4_KERNEL_REPO" --input /tmp/kernel-bridge-input.json
+          run_check kernel_tests uv run pytest -q tests/kernel_decision_intake tests/test_cli_final_gate_kernel_repo.py tests/planning/test_decision_escape_routes_schema.py
           exit "$overall"
 
-      - name: Upload temporary C2B diagnostic
+      - name: Upload temporary boundary diagnostic
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: temporary-c2b-diagnostic
-          path: EV4-Project-Gate/c2b-diagnostic.log
+          name: temporary-boundary-diagnostic
+          path: EV4-Project-Gate/boundary-diagnostic.log
           if-no-files-found: error
