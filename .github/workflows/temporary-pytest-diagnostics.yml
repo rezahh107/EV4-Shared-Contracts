@@ -11,27 +11,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Isolate Architect to CE boundary failure
+      - name: Checkout exact Project Gate source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          path: EV4-Project-Gate
+          persist-credentials: false
+          show-progress: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        with:
+          version: "0.7.22"
+          enable-cache: true
+
+      - name: Install locked Project Gate package
+        working-directory: EV4-Project-Gate
+        run: uv sync --locked --extra dev --extra ui --quiet
+
+      - name: Checkout Architect owner repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: rezahh107/EV4-Architect-Repo
+          ref: be9bdea9ae246b1587043f2582c1a950ea2a6ec5
+          path: EV4-Architect-Repo
+          persist-credentials: false
+          show-progress: false
+
+      - name: Checkout CE owner repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: rezahh107/EV4-Constructability-Engineer-Repo
+          ref: 6650c31304e5a0472b276c36018c1df8f42ac983
+          path: EV4-Constructability-Engineer-Repo
+          persist-credentials: false
+          show-progress: false
+
+      - name: Mirror exact A2C command block
+        working-directory: EV4-Project-Gate
         shell: bash
         env:
-          TESTED_HEAD: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
         run: |
           set -euo pipefail
-          git init --quiet .
-          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --quiet --depth=1 origin "$TESTED_HEAD"
-          git checkout --quiet --detach FETCH_HEAD
-          python -m pip install --quiet uv==0.7.22
-          uv sync --locked --extra dev --extra ui --quiet
-
-          architect="$RUNNER_TEMP/EV4-Architect-Repo"
-          ce="$RUNNER_TEMP/EV4-Constructability-Engineer-Repo"
-          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/rezahh107/EV4-Architect-Repo.git" "$architect"
-          git -C "$architect" checkout --quiet be9bdea9ae246b1587043f2582c1a950ea2a6ec5
-          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/rezahh107/EV4-Constructability-Engineer-Repo.git" "$ce"
-          git -C "$ce" checkout --quiet 6650c31304e5a0472b276c36018c1df8f42ac983
-
           run_cmd() {
             name="$1"
             shift
@@ -43,13 +67,13 @@ jobs:
             echo "COMMAND_STATUS ${name}=${status}"
             if [[ "$status" -ne 0 ]]; then
               echo "COMMAND_FAILURE ${name}"
-              tail -n 80 "$log"
+              tail -n 120 "$log"
             fi
           }
 
           run_cmd a2c_pytest uv run pytest -q tests/test_architect_to_ce_transition.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py
-          run_cmd a2c_lock uv run python scripts/verify-architect-to-ce-lock.py --architect-repo "$architect" --ce-repo "$ce"
-          run_cmd a2c_smoke uv run python scripts/transition-smoke.py --architect-repo "$architect" --ce-repo "$ce"
-          run_cmd architect_validator bash -lc "cd '$architect' && '$(pwd)/.venv/bin/python' scripts/check-architect-stage-payload.py"
-          run_cmd ce_validator bash -lc "cd '$ce' && '$(pwd)/.venv/bin/python' scripts/validate-ce-architect-stage-intake.py"
+          run_cmd a2c_lock uv run python scripts/verify-architect-to-ce-lock.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
+          run_cmd a2c_smoke uv run python scripts/transition-smoke.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
+          run_cmd architect_validator bash -lc "cd '$EV4_ARCHITECT_REPO' && '${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python' scripts/check-architect-stage-payload.py"
+          run_cmd ce_validator bash -lc "cd '$EV4_CE_REPO' && '${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python' scripts/validate-ce-architect-stage-intake.py"
           exit 0
