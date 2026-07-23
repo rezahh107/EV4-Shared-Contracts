@@ -47,11 +47,17 @@ def preflight_authorization_diagnostic(
     request: GateRequest,
     result: PreflightResult,
 ) -> ServiceDiagnostic | None:
-    """Fail closed unless runtime is bound to the exact current preflight request."""
+    """Fail closed unless current preflight authorizes the exact request.
 
-    if request.preflight_mode == "service_immediate":
-        return None
+    ``service_immediate`` remains only as a compatibility name for the same-call
+    Preflight → dispatch path. It no longer suppresses non-ready Preflight.
+    ``validate_bundle`` is validation-only and may run diagnostically with warnings;
+    it cannot publish an operational handoff.
+    """
+
     if result.status != "ready":
+        if str(request.transition_choice) == "validate_bundle" and result.status == "warnings":
+            return None
         return ServiceDiagnostic(
             "PG.SERVICE.PREFLIGHT_NOT_READY",
             "error",
@@ -62,6 +68,10 @@ def preflight_authorization_diagnostic(
                 "request_fingerprint": result.request_fingerprint,
             },
         )
+    if request.preflight_mode == "service_immediate":
+        # The fingerprint was computed from this exact immutable request in the same
+        # call. This mode is no longer an authorization bypass.
+        return None
     supplied = request.preflight_fingerprint
     if not supplied:
         return ServiceDiagnostic(
