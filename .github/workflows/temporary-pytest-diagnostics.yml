@@ -49,12 +49,10 @@ jobs:
           show-progress: false
 
       - name: A2C pytest
-        continue-on-error: true
         working-directory: EV4-Project-Gate
         run: uv run pytest -q tests/test_architect_to_ce_transition.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py
 
       - name: A2C lock verification
-        continue-on-error: true
         working-directory: EV4-Project-Gate
         env:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
@@ -62,7 +60,6 @@ jobs:
         run: uv run python scripts/verify-architect-to-ce-lock.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
 
       - name: A2C transition smoke
-        continue-on-error: true
         working-directory: EV4-Project-Gate
         env:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
@@ -70,11 +67,9 @@ jobs:
         run: uv run python scripts/transition-smoke.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
 
       - name: Architect owner validator
-        continue-on-error: true
         working-directory: EV4-Architect-Repo
         run: ${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python scripts/check-architect-stage-payload.py
 
       - name: CE owner validator
-        continue-on-error: true
         working-directory: EV4-Constructability-Engineer-Repo
         run: ${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python scripts/validate-ce-architect-stage-intake.py
