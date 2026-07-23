@@ -48,32 +48,33 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Mirror exact A2C command block
+      - name: A2C pytest
+        continue-on-error: true
         working-directory: EV4-Project-Gate
-        shell: bash
+        run: uv run pytest -q tests/test_architect_to_ce_transition.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py
+
+      - name: A2C lock verification
+        continue-on-error: true
+        working-directory: EV4-Project-Gate
         env:
           EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
           EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
-        run: |
-          set -euo pipefail
-          run_cmd() {
-            name="$1"
-            shift
-            log="$RUNNER_TEMP/${name}.log"
-            set +e
-            "$@" > "$log" 2>&1
-            status=$?
-            set -e
-            echo "COMMAND_STATUS ${name}=${status}"
-            if [[ "$status" -ne 0 ]]; then
-              echo "COMMAND_FAILURE ${name}"
-              tail -n 120 "$log"
-            fi
-          }
+        run: uv run python scripts/verify-architect-to-ce-lock.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
 
-          run_cmd a2c_pytest uv run pytest -q tests/test_architect_to_ce_transition.py tests/producer_integration/test_pg_a2c_io.py tests/producer_integration/test_pg_a2c_dispatch.py
-          run_cmd a2c_lock uv run python scripts/verify-architect-to-ce-lock.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
-          run_cmd a2c_smoke uv run python scripts/transition-smoke.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
-          run_cmd architect_validator bash -lc "cd '$EV4_ARCHITECT_REPO' && '${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python' scripts/check-architect-stage-payload.py"
-          run_cmd ce_validator bash -lc "cd '$EV4_CE_REPO' && '${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python' scripts/validate-ce-architect-stage-intake.py"
-          exit 0
+      - name: A2C transition smoke
+        continue-on-error: true
+        working-directory: EV4-Project-Gate
+        env:
+          EV4_ARCHITECT_REPO: ${{ github.workspace }}/EV4-Architect-Repo
+          EV4_CE_REPO: ${{ github.workspace }}/EV4-Constructability-Engineer-Repo
+        run: uv run python scripts/transition-smoke.py --architect-repo "$EV4_ARCHITECT_REPO" --ce-repo "$EV4_CE_REPO"
+
+      - name: Architect owner validator
+        continue-on-error: true
+        working-directory: EV4-Architect-Repo
+        run: ${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python scripts/check-architect-stage-payload.py
+
+      - name: CE owner validator
+        continue-on-error: true
+        working-directory: EV4-Constructability-Engineer-Repo
+        run: ${{ github.workspace }}/EV4-Project-Gate/.venv/bin/python scripts/validate-ce-architect-stage-intake.py
