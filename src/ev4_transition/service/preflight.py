@@ -84,7 +84,12 @@ def preflight_authorization_diagnostic(
 
 
 def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagnostic:
-    check = next((item for item in result.checks if item.status == "error"), None)
+    check = next(
+        (item for item in result.checks if item.status == "error" and item.id == "request.identity.blocked"),
+        None,
+    )
+    if check is None:
+        check = next((item for item in result.checks if item.status == "error"), None)
     code = "PG.SERVICE.PREFLIGHT_NOT_READY"
     path = "$.preflight"
     message = "Authoritative preflight is not ready for the current request."
