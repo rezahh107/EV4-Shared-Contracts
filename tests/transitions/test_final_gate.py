@@ -81,6 +81,7 @@ def _raw_intake() -> dict:
     bundle["synthetic"] = False
     bundle["produced_by"]["ref"] = "runtime-head"
     bundle["provenance"] = {"source": "owner-runtime", "created_by": "owner-runtime"}
+    bundle["evidence"][0]["kind"] = "report"
     bundle["evidence"][0]["source"] = {"type": "repo_path", "reference": "exports/project.json"}
     packet = bundle["payload"]["data"]["decision_packets"][0]
     for carrier in (packet["decision_record"], packet["resolver_input"]):
