@@ -7,6 +7,7 @@ from typing import Any
 from ev4_transition.io.secure_snapshot import SnapshotError
 
 from .environment_preflight import validate_gate_request_environment
+from .json_input import parse_json_input
 from .models import GateRequest, ServiceDiagnostic
 from .preflight_core import (
     PreflightCheck,
@@ -59,7 +60,7 @@ def preflight_authorization_diagnostic(
     if result.status != "ready":
         if str(request.transition_choice) == "validate_bundle" and result.status == "warnings":
             return None
-        return _diagnostic_from_blocked_preflight(result)
+        return _diagnostic_from_blocked_preflight(request, result)
     if request.preflight_mode == "service_immediate":
         return None
     supplied = request.preflight_fingerprint
@@ -84,7 +85,10 @@ def preflight_authorization_diagnostic(
     return None
 
 
-def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagnostic:
+def _diagnostic_from_blocked_preflight(
+    request: GateRequest,
+    result: PreflightResult,
+) -> ServiceDiagnostic:
     identity_check = next(
         (item for item in result.checks if item.status == "error" and item.id == "request.identity.blocked"),
         None,
@@ -95,6 +99,30 @@ def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagno
         (item for item in result.checks if item.status == "error" and item.id != "request.identity.blocked"),
         identity_check,
     )
+    if check is not None and check.id == "json.source.invalid_or_missing":
+        parsed = parse_json_input(
+            input_json_path=request.input_json_path,
+            input_json_text=request.input_json_text,
+            input_data=request.input_data,
+        )
+        if parsed.diagnostics:
+            original = parsed.diagnostics[0]
+            details = dict(original.details)
+            details.update(
+                {
+                    "preflight_status": result.status,
+                    "request_fingerprint": result.request_fingerprint,
+                    "preflight_check_id": check.id,
+                    "preflight_classification": check.classification,
+                }
+            )
+            return ServiceDiagnostic(
+                original.code,
+                original.severity,
+                original.message,
+                original.path,
+                details,
+            )
     code = "PG.SERVICE.PREFLIGHT_NOT_READY"
     path = "$.preflight"
     message = "Authoritative preflight is not ready for the current request."
@@ -145,10 +173,6 @@ def _extract_preflight_code(check: PreflightCheck | None) -> str | None:
         return "PG.SERVICE.REPO_PATH_INACCESSIBLE"
     if check.id.startswith("path.") and check.id.endswith(".missing"):
         return "PG.SERVICE.REPO_PATH_MISSING"
-    if check.id.startswith("environment."):
-        candidate = check.id.rsplit(".", 1)[-1]
-        if candidate.startswith("PG_"):
-            return candidate
     detail = check.technical_detail
     if isinstance(detail, str) and detail.startswith("code="):
         candidate = detail.removeprefix("code=").split(";", 1)[0].strip()
