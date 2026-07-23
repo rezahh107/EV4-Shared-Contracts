@@ -173,6 +173,8 @@ def _extract_preflight_code(check: PreflightCheck | None) -> str | None:
         return "PG.SERVICE.REPO_PATH_INACCESSIBLE"
     if check.id.startswith("path.") and check.id.endswith(".missing"):
         return "PG.SERVICE.REPO_PATH_MISSING"
+    if check.id.startswith("environment.") and check.id.endswith(".PG_INT_PROJECT_GATE_FILES_UNAVAILABLE"):
+        return "PG_INT_PROJECT_GATE_FILES_UNAVAILABLE"
     detail = check.technical_detail
     if isinstance(detail, str) and detail.startswith("code="):
         candidate = detail.removeprefix("code=").split(";", 1)[0].strip()
