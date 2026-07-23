@@ -89,26 +89,16 @@ def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagno
     path = "$.preflight"
     message = "Authoritative preflight is not ready for the current request."
     if check is not None:
-        if check.id == "json.source.invalid_or_missing" and isinstance(check.technical_detail, str) and check.technical_detail.startswith("PG.SERVICE."):
-            code = check.technical_detail
+        extracted = _extract_preflight_code(check)
+        if extracted:
+            code = extracted
+            message = check.message_fa
+        if check.id.startswith("json.source"):
             path = "$.input"
-            message = check.message_fa
-        elif check.id == "json.source.not_object":
-            code = "PG.SERVICE.JSON_NOT_OBJECT"
-            path = "$.input"
-            message = check.message_fa
-        elif check.id.startswith("path.") and check.id.endswith(".github_url"):
-            code = "PG.SERVICE.REPO_PATH_NOT_LOCAL"
+        elif check.id.startswith("path.") or check.id.startswith("environment."):
             path = "$.repo_paths"
-            message = check.message_fa
-        elif check.id.startswith("path.") and check.id.endswith(".inaccessible"):
-            code = "PG.SERVICE.REPO_PATH_INACCESSIBLE"
-            path = "$.repo_paths"
-            message = check.message_fa
-        elif check.id.startswith("path.") and check.id.endswith(".missing"):
-            code = "PG.SERVICE.REPO_PATH_MISSING"
-            path = "$.repo_paths"
-            message = check.message_fa
+        elif check.id == "request.identity.blocked":
+            path = "$.request_identity"
     details: dict[str, Any] = {
         "preflight_status": result.status,
         "request_fingerprint": result.request_fingerprint,
@@ -122,6 +112,29 @@ def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagno
             }
         )
     return ServiceDiagnostic(code, "error", message, path, details)
+
+
+def _extract_preflight_code(check: PreflightCheck) -> str | None:
+    if check.id == "json.source.invalid_or_missing" and isinstance(check.technical_detail, str) and check.technical_detail.startswith("PG.SERVICE."):
+        return check.technical_detail
+    if check.id == "json.source.not_object":
+        return "PG.SERVICE.JSON_NOT_OBJECT"
+    if check.id.startswith("path.") and check.id.endswith(".github_url"):
+        return "PG.SERVICE.REPO_PATH_NOT_LOCAL"
+    if check.id.startswith("path.") and check.id.endswith(".inaccessible"):
+        return "PG.SERVICE.REPO_PATH_INACCESSIBLE"
+    if check.id.startswith("path.") and check.id.endswith(".missing"):
+        return "PG.SERVICE.REPO_PATH_MISSING"
+    if check.id.startswith("environment."):
+        candidate = check.id.rsplit(".", 1)[-1]
+        if candidate.startswith("PG_"):
+            return candidate
+    detail = check.technical_detail
+    if isinstance(detail, str) and detail.startswith("code="):
+        candidate = detail.removeprefix("code=").split(";", 1)[0].strip()
+        if candidate.startswith("PG"):
+            return candidate
+    return None
 
 
 def _blocked_identity_result(
