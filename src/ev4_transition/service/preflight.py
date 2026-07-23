@@ -104,6 +104,11 @@ def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagno
             path = "$.repo_paths"
         elif check.id == "request.identity.blocked":
             path = "$.request_identity"
+    severity = "insufficient_evidence" if code in {
+        "PG.SERVICE.REPO_PATH_NOT_LOCAL",
+        "PG.SERVICE.REPO_PATH_INACCESSIBLE",
+        "PG.SERVICE.REPO_PATH_MISSING",
+    } else "error"
     details: dict[str, Any] = {
         "preflight_status": result.status,
         "request_fingerprint": result.request_fingerprint,
@@ -116,7 +121,7 @@ def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagno
                 "technical_detail": check.technical_detail,
             }
         )
-    return ServiceDiagnostic(code, "error", message, path, details)
+    return ServiceDiagnostic(code, severity, message, path, details)
 
 
 def _extract_preflight_code(check: PreflightCheck) -> str | None:
