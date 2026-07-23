@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .diagnostics import Diagnostic
+from .diagnostics import Diagnostic, diagnostic
+from .evidence_truth import synthetic_indicators
 from .external_lock import ARCHITECT_REPO, ARCHITECT_RUNTIME_COMMIT, CE_COMMIT, CE_REPO
 from .runners import diagnostics_from_outcome, execute_validator
 from .runners.records import ToolExecutionOutcome
@@ -48,4 +49,17 @@ def execute_ce_validator(
 
 
 def run_ce_validator(repo_root: str | Path, payload: dict[str, Any], source_bundle: dict[str, Any]) -> list[Diagnostic]:
-    return diagnostics_from_outcome(execute_ce_validator(repo_root, payload, source_bundle))
+    diagnostics = diagnostics_from_outcome(execute_ce_validator(repo_root, payload, source_bundle))
+    indicators = synthetic_indicators(source_bundle)
+    if indicators:
+        diagnostics.append(
+            diagnostic(
+                "PG_A2C_SYNTHETIC_OPERATIONAL_HANDOFF_FORBIDDEN",
+                "insufficient_evidence",
+                "Runtime-derived synthetic evidence cannot authorize an operational Architect-to-CE handoff.",
+                "$",
+                classification="synthetic",
+                synthetic_indicators=indicators,
+            )
+        )
+    return diagnostics
