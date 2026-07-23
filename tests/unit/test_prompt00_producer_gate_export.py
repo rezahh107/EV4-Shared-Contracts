@@ -54,6 +54,7 @@ def _operational_export(*, synthetic: bool = False) -> dict:
     final["synthetic"] = synthetic
     final["provenance"] = {"source": "owner-runtime", "created_by": "owner-runtime"}
     final["evidence"][0]["kind"] = "report"
+    final["evidence"][0]["description"] = "Owner runtime report."
     final["evidence"][0]["source"] = {"type": "repo_path", "reference": "artifacts/architect-final.json"}
     final["bundle_id"] = "architect-runtime-bundle"
     if synthetic:
@@ -68,7 +69,9 @@ def _operational_export(*, synthetic: bool = False) -> dict:
             "value": canonical_sha256(final),
         },
     }
-    artifact["validation"]["validator_version"] = "1.1.0"
+    # The artifact contract remains v1.0.0 even though the implementation result
+    # reports a newer internal validator version.
+    artifact["validation"]["validator_version"] = "1.0.0"
     return artifact
 
 
