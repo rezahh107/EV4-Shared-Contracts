@@ -11,14 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-          show-progress: false
       - name: Print concise pytest failures
         shell: bash
+        env:
+          TESTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          git init --quiet .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" fetch --quiet --depth=1 origin "$TESTED_HEAD"
+          git checkout --quiet --detach FETCH_HEAD
           python -m pip install --quiet uv==0.7.22
           uv sync --locked --extra dev --extra ui --quiet
           set +e
