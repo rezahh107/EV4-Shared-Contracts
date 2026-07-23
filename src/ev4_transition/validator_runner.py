@@ -48,10 +48,23 @@ def execute_ce_validator(
     )
 
 
-def run_ce_validator(repo_root: str | Path, payload: dict[str, Any], source_bundle: dict[str, Any]) -> list[Diagnostic]:
+def run_ce_validator(
+    repo_root: str | Path,
+    payload: dict[str, Any],
+    source_bundle: dict[str, Any],
+    *,
+    operational: bool = True,
+) -> list[Diagnostic]:
+    """Run the official CE validator and enforce operational evidence authority.
+
+    ``operational=False`` is restricted to explicit fixture/contract validation. It
+    still runs the official owner validator, but it cannot be used by service,
+    CLI, producer dispatch, or publication paths to authorize a handoff.
+    """
+
     diagnostics = diagnostics_from_outcome(execute_ce_validator(repo_root, payload, source_bundle))
     indicators = synthetic_indicators(source_bundle)
-    if indicators:
+    if operational and indicators:
         diagnostics.append(
             diagnostic(
                 "PG_A2C_SYNTHETIC_OPERATIONAL_HANDOFF_FORBIDDEN",
