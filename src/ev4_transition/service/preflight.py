@@ -58,19 +58,8 @@ def preflight_authorization_diagnostic(
     if result.status != "ready":
         if str(request.transition_choice) == "validate_bundle" and result.status == "warnings":
             return None
-        return ServiceDiagnostic(
-            "PG.SERVICE.PREFLIGHT_NOT_READY",
-            "error",
-            "Authoritative preflight is not ready for the current request.",
-            "$.preflight",
-            {
-                "preflight_status": result.status,
-                "request_fingerprint": result.request_fingerprint,
-            },
-        )
+        return _diagnostic_from_blocked_preflight(result)
     if request.preflight_mode == "service_immediate":
-        # The fingerprint was computed from this exact immutable request in the same
-        # call. This mode is no longer an authorization bypass.
         return None
     supplied = request.preflight_fingerprint
     if not supplied:
@@ -92,6 +81,47 @@ def preflight_authorization_diagnostic(
             },
         )
     return None
+
+
+def _diagnostic_from_blocked_preflight(result: PreflightResult) -> ServiceDiagnostic:
+    check = next((item for item in result.checks if item.status == "error"), None)
+    code = "PG.SERVICE.PREFLIGHT_NOT_READY"
+    path = "$.preflight"
+    message = "Authoritative preflight is not ready for the current request."
+    if check is not None:
+        if check.id == "json.source.invalid_or_missing" and isinstance(check.technical_detail, str) and check.technical_detail.startswith("PG.SERVICE."):
+            code = check.technical_detail
+            path = "$.input"
+            message = check.message_fa
+        elif check.id == "json.source.not_object":
+            code = "PG.SERVICE.JSON_NOT_OBJECT"
+            path = "$.input"
+            message = check.message_fa
+        elif check.id.startswith("path.") and check.id.endswith(".github_url"):
+            code = "PG.SERVICE.REPO_PATH_NOT_LOCAL"
+            path = "$.repo_paths"
+            message = check.message_fa
+        elif check.id.startswith("path.") and check.id.endswith(".inaccessible"):
+            code = "PG.SERVICE.REPO_PATH_INACCESSIBLE"
+            path = "$.repo_paths"
+            message = check.message_fa
+        elif check.id.startswith("path.") and check.id.endswith(".missing"):
+            code = "PG.SERVICE.REPO_PATH_MISSING"
+            path = "$.repo_paths"
+            message = check.message_fa
+    details: dict[str, Any] = {
+        "preflight_status": result.status,
+        "request_fingerprint": result.request_fingerprint,
+    }
+    if check is not None:
+        details.update(
+            {
+                "preflight_check_id": check.id,
+                "preflight_classification": check.classification,
+                "technical_detail": check.technical_detail,
+            }
+        )
+    return ServiceDiagnostic(code, "error", message, path, details)
 
 
 def _blocked_identity_result(
