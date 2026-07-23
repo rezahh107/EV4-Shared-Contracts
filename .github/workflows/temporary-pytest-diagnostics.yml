@@ -31,12 +31,9 @@ jobs:
           from tests.transitions.test_final_gate import _run
 
           result, _value, calls, _responsive, _source, _final_lock, _kernel_lock, _config = _run(Path(tempfile.mkdtemp()))
-          print('FINAL_STATUS=' + str(result.get('status')))
-          print('FINAL_CODES=' + json.dumps([item.get('code') for item in result.get('diagnostics', [])]))
-          print('FINAL_ACCEPTED_REQUIRES=' + json.dumps(result.get('accepted_requires', {}), sort_keys=True))
-          print('FINAL_KERNEL_CALLS=' + str(len(calls)))
           kernel_result = result.get('kernel_decision_intake_result')
+          print('FINAL_STATUS=' + str(result.get('status')))
+          print('FINAL_KERNEL_CALLS=' + str(len(calls)))
           print('FINAL_KERNEL_STATUS=' + str(kernel_result.get('status') if isinstance(kernel_result, dict) else None))
-          if isinstance(kernel_result, dict):
-              print('FINAL_KERNEL_CODES=' + json.dumps([item.get('code') for item in kernel_result.get('diagnostics', [])]))
+          print('FINAL_KERNEL_DIAGNOSTICS=' + json.dumps(kernel_result.get('diagnostics', []) if isinstance(kernel_result, dict) else [], sort_keys=True))
           PY
