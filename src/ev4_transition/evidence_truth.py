@@ -10,6 +10,31 @@ from .canonical_json import canonical_sha256
 
 EvidenceClassification = Literal["real_verified", "synthetic", "insufficient_evidence"]
 OwnerValidationStatus = Literal["accepted", "rejected", "not_available", "not_run"]
+EvidenceProofType = Literal["owner_validator", "runtime_receipt"]
+
+RUNTIME_EVIDENCE_RECEIPT_SCHEMA = "ev4_runtime_evidence_receipt_v1"
+RUNTIME_RECEIPT_SUFFIX = ".receipt.json"
+_BLOCKING_SEVERITIES = {"error", "insufficient_evidence"}
+
+
+@dataclass(frozen=True)
+class EvidencePolicy:
+    proof_type: EvidenceProofType
+    receipt_evidence_type: str | None = None
+
+
+EVIDENCE_POLICY_REGISTRY: dict[str, EvidencePolicy] = {
+    "architect_stage_bundle": EvidencePolicy("owner_validator"),
+    "producer_gate_export": EvidencePolicy("owner_validator"),
+    "builder_output": EvidencePolicy("owner_validator"),
+    "action_batch": EvidencePolicy("owner_validator"),
+    "layout_check": EvidencePolicy("owner_validator"),
+    "completion_gate": EvidencePolicy("owner_validator"),
+    "execution_evidence": EvidencePolicy("owner_validator"),
+    "responsive_output": EvidencePolicy("owner_validator"),
+    "kernel_intake_result": EvidencePolicy("owner_validator"),
+    "viewport_evidence": EvidencePolicy("runtime_receipt", "viewport_artifact"),
+}
 
 
 @dataclass(frozen=True)
@@ -18,9 +43,17 @@ class EvidenceResolution:
     source_kind: str
     source_path: str | None
     embedded_object_present: bool
+    source_resolved: bool
     actual_sha256: str | None
     declared_sha256: str | None
     hash_verified: bool
+    schema_valid: bool
+    claim_binding_valid: bool
+    subject_binding_valid: bool
+    positive_proof_type: EvidenceProofType | None
+    positive_proof_verified: bool
+    synthetic_conflict: bool
+    runtime_receipt_path: str | None = None
     owner_repository: str | None = None
     owner_commit: str | None = None
     owner_validator: str | None = None
@@ -37,9 +70,17 @@ class EvidenceResolution:
             "source_kind": self.source_kind,
             "source_path": self.source_path,
             "embedded_object_present": self.embedded_object_present,
+            "source_resolved": self.source_resolved,
             "actual_sha256": self.actual_sha256,
             "declared_sha256": self.declared_sha256,
             "hash_verified": self.hash_verified,
+            "schema_valid": self.schema_valid,
+            "claim_binding_valid": self.claim_binding_valid,
+            "subject_binding_valid": self.subject_binding_valid,
+            "positive_proof_type": self.positive_proof_type,
+            "positive_proof_verified": self.positive_proof_verified,
+            "synthetic_conflict": self.synthetic_conflict,
+            "runtime_receipt_path": self.runtime_receipt_path,
             "owner_repository": self.owner_repository,
             "owner_commit": self.owner_commit,
             "owner_validator": self.owner_validator,
@@ -98,16 +139,23 @@ def synthetic_indicators(value: Any) -> list[str]:
     return sorted(indicators)
 
 
-def derive_evidence_classification(value: Any, *, source_resolved: bool, hash_verified: bool, owner_validation_status: OwnerValidationStatus, claim_bindings_valid: bool = True) -> EvidenceClassification:
-    if synthetic_indicators(value):
+def derive_evidence_classification(
+    value: Any,
+    *,
+    source_resolved: bool,
+    hash_verified: bool,
+    schema_valid: bool,
+    claim_binding_valid: bool,
+    subject_binding_valid: bool,
+    positive_proof_verified: bool,
+    synthetic_conflict: bool | None = None,
+) -> EvidenceClassification:
+    conflict = bool(synthetic_indicators(value)) if synthetic_conflict is None else synthetic_conflict
+    if conflict:
         return "synthetic"
-    if not source_resolved or not hash_verified:
-        return "insufficient_evidence"
-    if owner_validation_status not in {"accepted", "not_available"}:
-        return "insufficient_evidence"
-    if not claim_bindings_valid:
-        return "insufficient_evidence"
-    return "real_verified"
+    if all((source_resolved, hash_verified, schema_valid, claim_binding_valid, subject_binding_valid, positive_proof_verified)):
+        return "real_verified"
+    return "insufficient_evidence"
 
 
 def verify_evidence_claim(*, claim_id: str, evidence_type: str, owner_repository: str | None, subject_ref: str | None, expected_subject_ref: str | None = None, viewport: str | None = None) -> list[dict[str, Any]]:
@@ -128,7 +176,24 @@ def verify_evidence_claim(*, claim_id: str, evidence_type: str, owner_repository
     return diagnostics
 
 
-def resolve_evidence(*, embedded_object: Any | None = None, artifact_ref: str | None = None, declared_sha256: str | None, repository_root: str | Path | None = None, hash_scope: Literal["canonical_json", "file_bytes"] = "file_bytes", owner_repository: str | None = None, owner_commit: str | None = None, owner_validator: str | None = None, owner_validator_callback: Callable[[Path, Any], tuple[OwnerValidationStatus, list[dict[str, Any]]]] | None = None, claim_id: str | None = None, evidence_type: str | None = None, subject_ref: str | None = None, expected_subject_ref: str | None = None, viewport: str | None = None) -> EvidenceResolution:
+def resolve_evidence(
+    *,
+    embedded_object: Any | None = None,
+    artifact_ref: str | None = None,
+    declared_sha256: str | None,
+    repository_root: str | Path | None = None,
+    hash_scope: Literal["canonical_json", "file_bytes"] = "file_bytes",
+    owner_repository: str | None = None,
+    owner_commit: str | None = None,
+    owner_validator: str | None = None,
+    owner_validator_callback: Callable[[Path, Any], tuple[OwnerValidationStatus, list[dict[str, Any]]]] | None = None,
+    claim_id: str | None = None,
+    evidence_type: str | None = None,
+    subject_ref: str | None = None,
+    expected_subject_ref: str | None = None,
+    viewport: str | None = None,
+    runtime_receipt_ref: str | None = None,
+) -> EvidenceResolution:
     diagnostics: list[dict[str, Any]] = []
     value: Any = None
     source_path: Path | None = None
@@ -137,9 +202,7 @@ def resolve_evidence(*, embedded_object: Any | None = None, artifact_ref: str | 
     source_resolved = False
 
     if embedded_object is not None:
-        value = embedded_object
-        source_kind = "embedded"
-        source_resolved = True
+        value, source_kind, source_resolved = embedded_object, "embedded", True
         try:
             actual_sha256 = canonical_sha256(embedded_object)
         except Exception as exc:
@@ -181,27 +244,179 @@ def resolve_evidence(*, embedded_object: Any | None = None, artifact_ref: str | 
         diagnostics.append(_diag("PG.EVIDENCE.HASH_MISMATCH", "error", "$.artifact_sha256", "Declared SHA-256 does not match the resolved evidence bytes.", declared=declared_sha256, actual=actual_sha256))
 
     owner_status: OwnerValidationStatus = "not_available" if owner_validator_callback is None else "not_run"
+    owner_diagnostics: list[dict[str, Any]] = []
     if source_resolved and value is not None and owner_validator_callback is not None and source_path is not None:
         try:
-            owner_status, owner_diags = owner_validator_callback(source_path, value)
-            diagnostics.extend(owner_diags)
+            owner_status, owner_diagnostics = owner_validator_callback(source_path, value)
+            diagnostics.extend(owner_diagnostics)
         except Exception as exc:
             owner_status = "rejected"
             diagnostics.append(_diag("PG.EVIDENCE.OWNER_VALIDATOR_FAILED", "error", "$.owner_validator", "Official owner validator execution failed.", error_type=type(exc).__name__))
 
-    claim_diags: list[dict[str, Any]] = []
+    claim_diagnostics: list[dict[str, Any]] = []
     if claim_id and evidence_type:
-        claim_diags = verify_evidence_claim(claim_id=claim_id, evidence_type=evidence_type, owner_repository=owner_repository, subject_ref=subject_ref, expected_subject_ref=expected_subject_ref, viewport=viewport)
-        diagnostics.extend(claim_diags)
+        claim_diagnostics = verify_evidence_claim(claim_id=claim_id, evidence_type=evidence_type, owner_repository=owner_repository, subject_ref=subject_ref, expected_subject_ref=expected_subject_ref, viewport=viewport)
+        diagnostics.extend(claim_diagnostics)
+    elif claim_id or evidence_type:
+        diagnostics.append(_diag("PG.EVIDENCE.CLAIM_BINDING_INCOMPLETE", "error", "$.claim_class", "Evidence type and claim class must be supplied together."))
+
+    policy = EVIDENCE_POLICY_REGISTRY.get(evidence_type or "")
+    if policy is None:
+        diagnostics.append(_diag("PG.EVIDENCE.POLICY_REQUIRED", "insufficient_evidence", "$.evidence_type", "Operational evidence requires an explicit positive-proof policy.", evidence_type=evidence_type))
+
+    schema_diagnostics: list[dict[str, Any]] = []
+    subject_diagnostics: list[dict[str, Any]] = []
+    runtime_receipt_path: Path | None = None
+    receipt_value: Any = None
+    schema_valid = False
+    positive_proof_verified = False
+
+    if policy and policy.proof_type == "owner_validator":
+        positive_proof_verified = owner_status == "accepted" and not _has_blocking(owner_diagnostics)
+        schema_valid = positive_proof_verified
+        if not positive_proof_verified:
+            diagnostics.append(_diag("PG.EVIDENCE.OWNER_VALIDATOR_REQUIRED", "insufficient_evidence", "$.owner_validator", "The evidence policy requires an accepted official owner validator.", evidence_type=evidence_type, owner_validation_status=owner_status))
+    elif policy and policy.proof_type == "runtime_receipt":
+        schema_diagnostics, subject_diagnostics = _validate_runtime_artifact(value, subject_ref=subject_ref, viewport=viewport)
+        diagnostics.extend(schema_diagnostics)
+        diagnostics.extend(subject_diagnostics)
+        schema_valid = not _has_blocking(schema_diagnostics)
+        positive_proof_verified, runtime_receipt_path, receipt_value, receipt_diagnostics = _validate_runtime_receipt(
+            repository_root=repository_root,
+            artifact_ref=artifact_ref,
+            runtime_receipt_ref=runtime_receipt_ref,
+            receipt_evidence_type=policy.receipt_evidence_type,
+            actual_sha256=actual_sha256,
+            declared_sha256=declared_sha256,
+            owner_commit=owner_commit,
+            subject_ref=subject_ref,
+            viewport=viewport,
+            artifact_value=value,
+        )
+        diagnostics.extend(receipt_diagnostics)
+
+    claim_binding_valid = bool(claim_id and evidence_type) and not _has_blocking(claim_diagnostics)
+    subject_binding_valid = claim_binding_valid and not _has_blocking(subject_diagnostics)
 
     indicators = synthetic_indicators(value)
-    classification = derive_evidence_classification(value, source_resolved=source_resolved, hash_verified=hash_verified, owner_validation_status=owner_status, claim_bindings_valid=not any(item.get("severity") == "error" for item in claim_diags))
+    indicators.extend(f"receipt:{item}" for item in synthetic_indicators(receipt_value))
+    indicators = sorted(set(indicators))
+    synthetic_conflict = bool(indicators)
+    classification = derive_evidence_classification(
+        value,
+        source_resolved=source_resolved,
+        hash_verified=hash_verified,
+        schema_valid=schema_valid,
+        claim_binding_valid=claim_binding_valid,
+        subject_binding_valid=subject_binding_valid,
+        positive_proof_verified=positive_proof_verified,
+        synthetic_conflict=synthetic_conflict,
+    )
     if classification == "synthetic":
         diagnostics.append(_diag("PG.EVIDENCE.SYNTHETIC_DERIVED", "insufficient_evidence", "$", "Runtime-derived evidence classification is synthetic.", indicators=indicators))
     elif classification == "insufficient_evidence" and not diagnostics:
         diagnostics.append(_diag("PG.EVIDENCE.INSUFFICIENT", "insufficient_evidence", "$", "Evidence could not be verified sufficiently for operational authority."))
 
-    return EvidenceResolution(classification=classification, source_kind=source_kind, source_path=str(source_path) if source_path else None, embedded_object_present=embedded_object is not None, actual_sha256=actual_sha256, declared_sha256=declared_sha256, hash_verified=hash_verified, owner_repository=owner_repository, owner_commit=owner_commit, owner_validator=owner_validator, owner_validation_status=owner_status, claim_classes=(claim_id,) if claim_id else (), subject_refs=(subject_ref,) if subject_ref else (), synthetic_indicators=tuple(indicators), diagnostics=tuple(diagnostics), value=value)
+    return EvidenceResolution(
+        classification=classification,
+        source_kind=source_kind,
+        source_path=str(source_path) if source_path else None,
+        embedded_object_present=embedded_object is not None,
+        source_resolved=source_resolved,
+        actual_sha256=actual_sha256,
+        declared_sha256=declared_sha256,
+        hash_verified=hash_verified,
+        schema_valid=schema_valid,
+        claim_binding_valid=claim_binding_valid,
+        subject_binding_valid=subject_binding_valid,
+        positive_proof_type=policy.proof_type if policy else None,
+        positive_proof_verified=positive_proof_verified,
+        synthetic_conflict=synthetic_conflict,
+        runtime_receipt_path=str(runtime_receipt_path) if runtime_receipt_path else None,
+        owner_repository=owner_repository,
+        owner_commit=owner_commit,
+        owner_validator=owner_validator,
+        owner_validation_status=owner_status,
+        claim_classes=(claim_id,) if claim_id else (),
+        subject_refs=(subject_ref,) if subject_ref else (),
+        synthetic_indicators=tuple(indicators),
+        diagnostics=tuple(diagnostics),
+        value=value,
+    )
+
+
+def _validate_runtime_artifact(value: Any, *, subject_ref: str | None, viewport: str | None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    schema_diagnostics: list[dict[str, Any]] = []
+    subject_diagnostics: list[dict[str, Any]] = []
+    if not isinstance(value, dict):
+        return [_diag("PG.EVIDENCE.RUNTIME_ARTIFACT_INVALID", "error", "$", "Runtime viewport evidence must be a JSON object.")], []
+    for field_name in ("evidence_ref", "viewport", "run_id", "status"):
+        if not isinstance(value.get(field_name), str) or not value.get(field_name):
+            schema_diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_ARTIFACT_SCHEMA_INVALID", "error", f"$.{field_name}", "Runtime viewport evidence is missing a required non-empty field.", field=field_name))
+    if value.get("status") != "confirmed":
+        schema_diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_ARTIFACT_STATUS_INVALID", "error", "$.status", "Runtime viewport evidence status must be confirmed.", actual=value.get("status")))
+    if subject_ref is not None and value.get("evidence_ref") != subject_ref:
+        subject_diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_ARTIFACT_SUBJECT_MISMATCH", "error", "$.evidence_ref", "Runtime viewport artifact does not bind the expected subject.", expected=subject_ref, actual=value.get("evidence_ref")))
+    if viewport is not None and value.get("viewport") != viewport:
+        subject_diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_ARTIFACT_VIEWPORT_MISMATCH", "error", "$.viewport", "Runtime viewport artifact does not bind the expected viewport.", expected=viewport, actual=value.get("viewport")))
+    return schema_diagnostics, subject_diagnostics
+
+
+def _validate_runtime_receipt(
+    *,
+    repository_root: str | Path | None,
+    artifact_ref: str | None,
+    runtime_receipt_ref: str | None,
+    receipt_evidence_type: str | None,
+    actual_sha256: str | None,
+    declared_sha256: str | None,
+    owner_commit: str | None,
+    subject_ref: str | None,
+    viewport: str | None,
+    artifact_value: Any,
+) -> tuple[bool, Path | None, Any, list[dict[str, Any]]]:
+    diagnostics: list[dict[str, Any]] = []
+    if repository_root is None or not artifact_ref:
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_CONTEXT_REQUIRED", "insufficient_evidence", "$.runtime_receipt_ref", "Runtime receipt validation requires a repository root and artifact reference."))
+        return False, None, None, diagnostics
+    receipt_ref = runtime_receipt_ref or f"{artifact_ref}{RUNTIME_RECEIPT_SUFFIX}"
+    receipt_path, path_diagnostics = _safe_resolve(Path(repository_root), receipt_ref)
+    diagnostics.extend(path_diagnostics)
+    if receipt_path is None:
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_REQUIRED", "insufficient_evidence", "$.runtime_receipt_ref", "A deterministic runtime receipt is required for viewport evidence.", runtime_receipt_ref=receipt_ref))
+        return False, None, None, diagnostics
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_JSON_INVALID", "error", "$.runtime_receipt_ref", "Runtime receipt is not valid JSON.", runtime_receipt_ref=receipt_ref))
+        return False, receipt_path, None, diagnostics
+    except (OSError, UnicodeDecodeError) as exc:
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_READ_FAILED", "insufficient_evidence", "$.runtime_receipt_ref", "Runtime receipt could not be read.", runtime_receipt_ref=receipt_ref, error_type=type(exc).__name__))
+        return False, receipt_path, None, diagnostics
+    if not isinstance(receipt, dict):
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_INVALID", "error", "$.runtime_receipt_ref", "Runtime receipt must be a JSON object."))
+        return False, receipt_path, receipt, diagnostics
+
+    expected_run_id = artifact_value.get("run_id") if isinstance(artifact_value, dict) else None
+    expected = {
+        "schema": RUNTIME_EVIDENCE_RECEIPT_SCHEMA,
+        "evidence_type": receipt_evidence_type,
+        "viewport": viewport,
+        "run_id": expected_run_id,
+        "subject_ref": subject_ref,
+        "artifact_ref": artifact_ref,
+        "artifact_sha256": actual_sha256,
+        "producer_commit": owner_commit,
+        "capture_status": "completed",
+        "validation_status": "accepted",
+    }
+    for field_name, expected_value in expected.items():
+        actual_value = receipt.get(field_name)
+        if expected_value is None or actual_value != expected_value:
+            diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_BINDING_MISMATCH", "error", f"$.runtime_receipt.{field_name}", "Runtime receipt does not match the resolved artifact context.", field=field_name, expected=expected_value, actual=actual_value))
+    if declared_sha256 != actual_sha256:
+        diagnostics.append(_diag("PG.EVIDENCE.RUNTIME_RECEIPT_ARTIFACT_HASH_UNVERIFIED", "error", "$.runtime_receipt.artifact_sha256", "Runtime receipt cannot authorize an artifact whose declared and actual hashes differ.", declared=declared_sha256, actual=actual_sha256))
+    return not _has_blocking(diagnostics), receipt_path, receipt, diagnostics
 
 
 def _safe_resolve(root: Path, artifact_ref: str) -> tuple[Path | None, list[dict[str, Any]]]:
@@ -218,6 +433,10 @@ def _safe_resolve(root: Path, artifact_ref: str) -> tuple[Path | None, list[dict
         diagnostics.append(_diag("PG.EVIDENCE.NOT_REGULAR_FILE", "error", "$.artifact_ref", "Referenced evidence must be a regular file.", artifact_ref=artifact_ref))
         return None, diagnostics
     return candidate, diagnostics
+
+
+def _has_blocking(diagnostics: list[dict[str, Any]]) -> bool:
+    return any(item.get("severity") in _BLOCKING_SEVERITIES for item in diagnostics)
 
 
 def _is_sha256(value: str) -> bool:
