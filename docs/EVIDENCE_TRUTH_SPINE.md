@@ -184,7 +184,7 @@ On failure, the helper:
 
 - preserves the original publication diagnostic;
 - rolls back every linked final path;
-- removes every staged temporary file;
+- removes every staged temporary file, including preflight-collision paths;
 - fsyncs affected directories after rollback;
 - reports rollback and cleanup errors separately;
 - reports exact persisted paths if rollback itself fails.
