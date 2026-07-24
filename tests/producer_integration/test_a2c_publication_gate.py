@@ -177,3 +177,58 @@ def test_authorized_handoff_uses_one_grouped_publication(tmp_path: Path, monkeyp
     assert result["receipt"]["status"] == "published_verified"
     assert [item.final_path for item in staged] == [output, receipt]
     assert grouped_calls == [staged]
+
+
+def test_group_failure_returns_invalid_without_published_artifacts(tmp_path: Path, monkeypatch):
+    _configure_authorized_transition(monkeypatch)
+    output = tmp_path / "ce-input.json"
+    receipt = tmp_path / "project-gate-a2c-receipt.json"
+
+    monkeypatch.setattr(
+        a2c_dispatch,
+        "resolve_publication_paths",
+        lambda **_kwargs: (output, receipt),
+    )
+    monkeypatch.setattr(a2c_dispatch, "load_lock", lambda *_args: {})
+    monkeypatch.setattr(
+        a2c_dispatch,
+        "_build_receipt",
+        lambda **_kwargs: {"receipt_id": "A2C-RECEIPT-1"},
+    )
+
+    def stage(path: Path, payload: dict):
+        temporary = path.with_name(f".{path.name}.tmp")
+        temporary.write_text("staged", encoding="utf-8")
+        return SimpleNamespace(
+            final_path=path,
+            temporary_path=temporary,
+            payload=payload,
+        )
+
+    def fail_group(_items):
+        raise a2c_dispatch.PublicationError(
+            "PG.REPORT.OUTPUT_CREATED_CONCURRENTLY",
+            "forced grouped publication failure",
+            rollback_complete=True,
+            persisted_paths=[],
+            persisted_temporary_paths=[],
+        )
+
+    monkeypatch.setattr(a2c_dispatch, "stage_canonical_json", stage)
+    monkeypatch.setattr(a2c_dispatch, "verify_snapshot_unchanged", lambda *_args: None)
+    monkeypatch.setattr(a2c_dispatch, "publish_staged_group", fail_group)
+
+    result = _call(tmp_path, handoff_allowed=True)
+
+    assert result["status"] == "invalid"
+    assert result["publication_allowed"] is False
+    assert result["handoff_allowed"] is False
+    assert result["downstream_artifact"] == {"status": "not_published"}
+    assert result["receipt"] == {"status": "not_generated"}
+    assert not output.exists()
+    assert not receipt.exists()
+    assert not list(tmp_path.glob(".*.tmp"))
+    assert any(
+        item["code"] == "PG.REPORT.OUTPUT_CREATED_CONCURRENTLY"
+        for item in result["diagnostics"]
+    )
