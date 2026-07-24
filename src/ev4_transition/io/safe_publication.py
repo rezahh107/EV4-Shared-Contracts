@@ -149,23 +149,23 @@ def publish_staged_group(staged_items: list[StagedJson]) -> list[dict[str, Any]]
 
     Records are returned only after every final path is linked, directory state
     is synced, every final byte sequence is verified, and every temporary file
-    is removed. Any failure triggers rollback and reports the exact persisted
-    state when rollback itself cannot complete.
+    is removed. Preflight destination failures also clean every staged file.
     """
 
     if not staged_items:
         return []
-    destinations = [item.final_path for item in staged_items]
-    if len(set(destinations)) != len(destinations):
-        raise PublicationError(
-            "PG.REPORT.PUBLICATION_PATH_COLLISION",
-            "Report artifact destinations must be distinct.",
-        )
-    for destination in destinations:
-        _assert_destination_unused(destination)
 
     published: list[Path] = []
     try:
+        destinations = [item.final_path for item in staged_items]
+        if len(set(destinations)) != len(destinations):
+            raise PublicationError(
+                "PG.REPORT.PUBLICATION_PATH_COLLISION",
+                "Report artifact destinations must be distinct.",
+            )
+        for destination in destinations:
+            _assert_destination_unused(destination)
+
         for staged in staged_items:
             try:
                 os.link(
@@ -212,9 +212,7 @@ def publish_staged_group(staged_items: list[StagedJson]) -> list[dict[str, Any]]
         rollback_errors = _rollback_published(published)
         fsync_errors = _fsync_rollback_directories(published)
         cleanup_errors = _cleanup_temporaries(staged_items)
-        persisted_paths = [
-            str(path) for path in published if _lexists(path)
-        ]
+        persisted_paths = [str(path) for path in published if _lexists(path)]
         persisted_temporary_paths = [
             str(item.temporary_path)
             for item in staged_items
@@ -276,9 +274,7 @@ def _cleanup_temporaries(staged_items: list[StagedJson]) -> list[str]:
         try:
             staged.temporary_path.unlink(missing_ok=True)
         except OSError as exc:
-            errors.append(
-                f"{staged.temporary_path}:{type(exc).__name__}:{exc}"
-            )
+            errors.append(f"{staged.temporary_path}:{type(exc).__name__}:{exc}")
     return errors
 
 
@@ -391,12 +387,7 @@ def _verify_exact_json_bytes(path: Path, expected: bytes) -> None:
     _verify_exact_bytes(path, expected, verify_json=True)
 
 
-def _verify_exact_bytes(
-    path: Path,
-    expected: bytes,
-    *,
-    verify_json: bool,
-) -> None:
+def _verify_exact_bytes(path: Path, expected: bytes, *, verify_json: bool) -> None:
     observed = path.read_bytes()
     if observed != expected:
         raise PublicationError(
