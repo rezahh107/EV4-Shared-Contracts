@@ -105,12 +105,12 @@ def test_handoff_denied_returns_before_any_publication_work(tmp_path: Path, monk
     _configure_authorized_transition(monkeypatch)
 
     def forbidden(*_args, **_kwargs):
-        raise AssertionError("publication path resolution must not run")
+        raise AssertionError("publication work must not run")
 
     monkeypatch.setattr(a2c_dispatch, "resolve_publication_paths", forbidden)
     monkeypatch.setattr(a2c_dispatch, "load_lock", forbidden)
     monkeypatch.setattr(a2c_dispatch, "stage_canonical_json", forbidden)
-    monkeypatch.setattr(a2c_dispatch, "publish_staged_json", forbidden)
+    monkeypatch.setattr(a2c_dispatch, "publish_staged_group", forbidden)
 
     result = _call(tmp_path, handoff_allowed=False)
 
@@ -125,11 +125,12 @@ def test_handoff_denied_returns_before_any_publication_work(tmp_path: Path, monk
     assert not (tmp_path / "project-gate-a2c-receipt.json").exists()
 
 
-def test_authorized_handoff_allows_publication(tmp_path: Path, monkeypatch):
+def test_authorized_handoff_uses_one_grouped_publication(tmp_path: Path, monkeypatch):
     _configure_authorized_transition(monkeypatch)
     output = tmp_path / "ce-input.json"
     receipt = tmp_path / "project-gate-a2c-receipt.json"
-    staged: list[tuple[Path, dict]] = []
+    staged: list[SimpleNamespace] = []
+    grouped_calls: list[list[SimpleNamespace]] = []
 
     monkeypatch.setattr(
         a2c_dispatch,
@@ -144,20 +145,28 @@ def test_authorized_handoff_allows_publication(tmp_path: Path, monkeypatch):
     )
 
     def stage(path: Path, payload: dict):
-        staged.append((path, payload))
-        return SimpleNamespace(path=path, payload=payload)
+        item = SimpleNamespace(
+            final_path=path,
+            temporary_path=path.with_name(f".{path.name}.tmp"),
+            payload=payload,
+        )
+        staged.append(item)
+        return item
+
+    def publish_group(items):
+        grouped_calls.append(list(items))
+        return [
+            {
+                "path": str(item.final_path),
+                "state": "published_verified",
+                "sha256_file_bytes": "f" * 64,
+            }
+            for item in items
+        ]
 
     monkeypatch.setattr(a2c_dispatch, "stage_canonical_json", stage)
     monkeypatch.setattr(a2c_dispatch, "verify_snapshot_unchanged", lambda *_args: None)
-    monkeypatch.setattr(
-        a2c_dispatch,
-        "publish_staged_json",
-        lambda item: {
-            "path": str(item.path),
-            "state": "published_verified",
-            "sha256_file_bytes": "f" * 64,
-        },
-    )
+    monkeypatch.setattr(a2c_dispatch, "publish_staged_group", publish_group)
 
     result = _call(tmp_path, handoff_allowed=True)
 
@@ -166,4 +175,5 @@ def test_authorized_handoff_allows_publication(tmp_path: Path, monkeypatch):
     assert result["handoff_allowed"] is True
     assert result["downstream_artifact"]["status"] == "published_verified"
     assert result["receipt"]["status"] == "published_verified"
-    assert [item[0] for item in staged] == [output, receipt]
+    assert [item.final_path for item in staged] == [output, receipt]
+    assert grouped_calls == [staged]
