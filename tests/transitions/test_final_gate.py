@@ -28,6 +28,7 @@ from ev4_transition.transitions.final_gate import (
     run_final_gate,
     verify_final_gate_lock,
 )
+from ev4_transition.viewport_runtime import OFFICIAL_RUNTIME_NOT_OBSERVED_REASON
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "fixtures/kernel-decision-intake/complete-layout-structure.synthetic.json"
@@ -80,9 +81,15 @@ def _raw_intake() -> dict:
     bundle = _sanitize_runtime(json.loads(BASE.read_text()))
     bundle["synthetic"] = False
     bundle["produced_by"]["ref"] = "runtime-head"
-    bundle["provenance"] = {"source": "owner-runtime", "created_by": "owner-runtime"}
+    bundle["provenance"] = {
+        "source": "owner-runtime",
+        "created_by": "owner-runtime",
+    }
     bundle["evidence"][0]["kind"] = "report"
-    bundle["evidence"][0]["source"] = {"type": "repo_path", "reference": "exports/project.json"}
+    bundle["evidence"][0]["source"] = {
+        "type": "repo_path",
+        "reference": "exports/project.json",
+    }
     packet = bundle["payload"]["data"]["decision_packets"][0]
     for carrier in (packet["decision_record"], packet["resolver_input"]):
         carrier["evidence_refs"][0]["source_type"] = "project_export"
@@ -126,75 +133,132 @@ def _fail(_: dict) -> KernelAuditExecution:
             "audit_status": "fail",
             "human_override_observed": False,
             "resolver_output": {"resolver_status": "auto_resolved"},
-            "diagnostics": [{"code": "L2_SELECTED_OPTION_RESOLVER_MISMATCH", "severity": "error", "source": "semantic", "path": "decision_record.selected_option", "message": "runtime"}],
+            "diagnostics": [
+                {
+                    "code": "L2_SELECTED_OPTION_RESOLVER_MISMATCH",
+                    "severity": "error",
+                    "source": "semantic",
+                    "path": "decision_record.selected_option",
+                    "message": "runtime",
+                }
+            ],
         },
         {"exit_code": 0},
     )
 
 
 def _repos(tmp_path: Path):
-    pg, responsive, kernel = tmp_path / "pg", tmp_path / "responsive", tmp_path / "kernel"
+    pg = tmp_path / "pg"
+    responsive = tmp_path / "responsive"
+    kernel = tmp_path / "kernel"
     for dep in EXPECTED_FINAL_GATE_DEPENDENCIES.values():
         root = pg if dep.repository == PG_REPO else responsive
         if dep.path.endswith(".py"):
             text = f"# {dep.identity_marker}\nprint('responsive ok')\n"
         elif dep.path.endswith(".json") and "responsive-output" in dep.path:
-            text = json.dumps({
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "id": dep.contract_or_schema_id,
-                "marker": dep.identity_marker,
-                "type": "object",
-                "required": ["schema"],
-                "properties": {"schema": {"const": RESPONSIVE_OUTPUT_SCHEMA}},
-                "additionalProperties": True,
-            })
+            text = json.dumps(
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "id": dep.contract_or_schema_id,
+                    "marker": dep.identity_marker,
+                    "type": "object",
+                    "required": ["schema"],
+                    "properties": {"schema": {"const": RESPONSIVE_OUTPUT_SCHEMA}},
+                    "additionalProperties": True,
+                }
+            )
         elif dep.path.endswith(".json"):
-            text = json.dumps({"id": dep.contract_or_schema_id, "marker": dep.identity_marker})
+            text = json.dumps(
+                {
+                    "id": dep.contract_or_schema_id,
+                    "marker": dep.identity_marker,
+                }
+            )
         else:
             text = f"{dep.identity_marker}\n"
         _write(root / dep.path, text)
-    final_lock = {"schema_version": "final-gate-lock.v1", "gate_id": GATE_ID, "files": []}
+    final_lock = {
+        "schema_version": "final-gate-lock.v1",
+        "gate_id": GATE_ID,
+        "files": [],
+    }
     for dep in EXPECTED_FINAL_GATE_DEPENDENCIES.values():
         root = pg if dep.repository == PG_REPO else responsive
-        final_lock["files"].append({
-            "role": dep.role,
-            "repository": dep.repository,
-            "accepted_commit": dep.accepted_commit,
-            "path": dep.path,
-            "contract_or_schema_id": dep.contract_or_schema_id,
-            "sha256_file_bytes": bytes_sha256((root / dep.path).read_bytes()),
-        })
+        final_lock["files"].append(
+            {
+                "role": dep.role,
+                "repository": dep.repository,
+                "accepted_commit": dep.accepted_commit,
+                "path": dep.path,
+                "contract_or_schema_id": dep.contract_or_schema_id,
+                "sha256_file_bytes": bytes_sha256((root / dep.path).read_bytes()),
+            }
+        )
 
     texts = {
-        "decision_record_schema": json.dumps({"$id": "https://ev4.local/schemas/decision-record.v2.schema.json"}),
-        "p0_decision_matrices": json.dumps({"matrix_registry_id": "p0-decision-matrices.v0", "matrices": [{"decision_family_id": "layout_structure"}]}),
-        "resolver_rule_registry": json.dumps({"registry_id": "resolver-rule-registry.v0", "active_rules": [{"decision_family_id": "layout_structure"}]}),
-        "layout_structure_rule": json.dumps({"contract_id": "resolver.contract.layout_structure.mvp.v0", "rule_id": "resolver.rule.layout_structure.mvp.v0", "rule_version": "0.1.0"}),
+        "decision_record_schema": json.dumps(
+            {"$id": "https://ev4.local/schemas/decision-record.v2.schema.json"}
+        ),
+        "p0_decision_matrices": json.dumps(
+            {
+                "matrix_registry_id": "p0-decision-matrices.v0",
+                "matrices": [{"decision_family_id": "layout_structure"}],
+            }
+        ),
+        "resolver_rule_registry": json.dumps(
+            {
+                "registry_id": "resolver-rule-registry.v0",
+                "active_rules": [{"decision_family_id": "layout_structure"}],
+            }
+        ),
+        "layout_structure_rule": json.dumps(
+            {
+                "contract_id": "resolver.contract.layout_structure.mvp.v0",
+                "rule_id": "resolver.rule.layout_structure.mvp.v0",
+                "rule_version": "0.1.0",
+            }
+        ),
         "resolver_implementation": "export function resolveDecision() {}\n",
         "l2_decision_correctness_audit": "export function auditDecisionRecord() {}\n",
     }
     files = []
     for role, dep in EXPECTED_KERNEL_SEMANTIC_DEPENDENCIES.items():
         _write(kernel / dep.path, texts[role])
-        files.append({
-            "role": role,
-            "repository": dep.repository,
-            "accepted_commit": dep.accepted_commit,
-            "path": dep.path,
-            "contract_or_schema_id": dep.contract_or_schema_id,
-            "sha256_file_bytes": bytes_sha256((kernel / dep.path).read_bytes()),
-        })
+        files.append(
+            {
+                "role": role,
+                "repository": dep.repository,
+                "accepted_commit": dep.accepted_commit,
+                "path": dep.path,
+                "contract_or_schema_id": dep.contract_or_schema_id,
+                "sha256_file_bytes": bytes_sha256((kernel / dep.path).read_bytes()),
+            }
+        )
     kernel_lock = {
         "schema_version": KERNEL_LOCK_SCHEMA_VERSION,
         "intake_schema_id": KERNEL_INTAKE_SCHEMA_ID,
-        "kernel_pin": {"repository": KERNEL_REPOSITORY, "accepted_commit": KERNEL_ACCEPTED_COMMIT},
+        "kernel_pin": {
+            "repository": KERNEL_REPOSITORY,
+            "accepted_commit": KERNEL_ACCEPTED_COMMIT,
+        },
         "files": sorted(files, key=lambda item: item["role"]),
     }
-    source = LocalCheckoutContractSource({PG_REPO: pg, RESPONSIVE_REPO: responsive, KERNEL_REPOSITORY: kernel})
+    source = LocalCheckoutContractSource(
+        {
+            PG_REPO: pg,
+            RESPONSIVE_REPO: responsive,
+            KERNEL_REPOSITORY: kernel,
+        }
+    )
     return pg, responsive, kernel, source, final_lock, kernel_lock
 
 
-def _input(responsive: Path, *, include_raw: bool = True, include_lineage: bool = True) -> dict:
+def _input(
+    responsive: Path,
+    *,
+    include_raw: bool = True,
+    include_lineage: bool = True,
+) -> dict:
     output = _output(include_lineage)
     output_ref = "evidence/responsive-output.json"
     bindings = {
@@ -211,7 +275,15 @@ def _input(responsive: Path, *, include_raw: bool = True, include_lineage: bool 
         path = f"evidence/{name}.json"
         bindings[name] = {
             "artifact_ref": path,
-            "artifact_sha256": _json_file(responsive / path, {"evidence_ref": ref, "viewport": name, "status": "confirmed"}),
+            "artifact_sha256": _json_file(
+                responsive / path,
+                {
+                    "evidence_ref": ref,
+                    "viewport": name,
+                    "run_id": "FILE-ONLY-RUN",
+                    "status": "confirmed",
+                },
+            ),
             "subject_ref": ref,
         }
     value = {
@@ -224,13 +296,25 @@ def _input(responsive: Path, *, include_raw: bool = True, include_lineage: bool 
     return value
 
 
-def _run(tmp_path: Path, *, executor=_pass, include_raw: bool = True, include_lineage: bool = True):
+def _run(
+    tmp_path: Path,
+    *,
+    executor=_pass,
+    include_raw: bool = True,
+    include_lineage: bool = True,
+):
     pg, responsive, kernel, source, final_lock, kernel_lock = _repos(tmp_path)
-    value = _input(responsive, include_raw=include_raw, include_lineage=include_lineage)
+    value = _input(
+        responsive,
+        include_raw=include_raw,
+        include_lineage=include_lineage,
+    )
     calls: list[dict] = []
+
     def counted(packet: dict) -> KernelAuditExecution:
         calls.append(packet)
         return executor(packet)
+
     config = FinalGateConfig(
         schema_root=ROOT / "schemas",
         lock=final_lock,
@@ -242,35 +326,107 @@ def _run(tmp_path: Path, *, executor=_pass, include_raw: bool = True, include_li
         kernel_repo_root=kernel,
         kernel_audit_executor=counted,
     )
-    return run_final_gate(value, source, config), value, calls, responsive, source, final_lock, kernel_lock, config
+    return (
+        run_final_gate(value, source, config),
+        value,
+        calls,
+        responsive,
+        source,
+        final_lock,
+        kernel_lock,
+        config,
+    )
 
 
 def _forged_result(kernel_lock: dict) -> dict:
     lock_hash = canonical_sha256(kernel_lock)
-    evidence = {"evidence_id": "EV1", "source_type": "project_export", "reference": "exports/project.json"}
-    hash_record = lambda scope: {"algorithm": "sha256", "scope": scope, "value": ZERO_HASH}
+    evidence = {
+        "evidence_id": "EV1",
+        "source_type": "project_export",
+        "reference": "exports/project.json",
+    }
+
+    def hash_record(scope: str) -> dict:
+        return {"algorithm": "sha256", "scope": scope, "value": ZERO_HASH}
+
     return {
         "schema_version": KERNEL_INTAKE_RESULT_SCHEMA_ID,
         "result_type": "kernel_decision_intake",
         "status": "accepted",
-        "kernel_pin": {"repository": KERNEL_REPOSITORY, "accepted_commit": KERNEL_ACCEPTED_COMMIT, "semantic_lock_sha256": lock_hash},
-        "accepted_requires": {"kernel_pin_verified": True, "semantic_lock_verified": True, "intake_schema_valid": True, "packet_binding_valid": True, "l2_executed_all": True, "no_unsupported_claims": True, "result_schema_valid": True},
+        "kernel_pin": {
+            "repository": KERNEL_REPOSITORY,
+            "accepted_commit": KERNEL_ACCEPTED_COMMIT,
+            "semantic_lock_sha256": lock_hash,
+        },
+        "accepted_requires": {
+            "kernel_pin_verified": True,
+            "semantic_lock_verified": True,
+            "intake_schema_valid": True,
+            "packet_binding_valid": True,
+            "l2_executed_all": True,
+            "no_unsupported_claims": True,
+            "result_schema_valid": True,
+        },
         "diagnostics": [],
         "upstream_diagnostics": [{"packet_id": "P1", "diagnostics": []}],
-        "packet_results": [{
-            "packet_id": "P1", "decision_id": "D1", "decision_family_id": "layout_structure", "status": "accepted", "l2_executed": True, "human_override_observed": False,
-            "project_gate_diagnostics": [], "upstream_diagnostics": [], "resolver_output": {"resolver_status": "auto_resolved"},
-            "decision_record_ref": {"packet_id": "P1", "decision_id": "D1", "sha256": ZERO_HASH},
-            "source_evidence_refs": [evidence], "runtime_evidence_refs": [],
-            "hashes": {"packet_hash": hash_record("packet"), "decision_record_hash": hash_record("decision_record"), "resolver_input_hash": hash_record("resolver_input"), "audit_context_hash": hash_record("audit_context")},
-            "provenance": {"provenance_id": "FORGED"}, "execution_record": {"tool_kind": "validator", "exit_code": 0, "owner_repo": KERNEL_REPOSITORY, "owner_commit": KERNEL_ACCEPTED_COMMIT},
-        }],
-        "derived_counts": {"provisional_count": 0, "human_override_count": 0, "unresolved_decision_count": 0, "accepted_decision_count": 1, "rejected_decision_count": 0},
-        "decision_record_refs": [{"packet_id": "P1", "decision_id": "D1", "sha256": ZERO_HASH}],
+        "packet_results": [
+            {
+                "packet_id": "P1",
+                "decision_id": "D1",
+                "decision_family_id": "layout_structure",
+                "status": "accepted",
+                "l2_executed": True,
+                "human_override_observed": False,
+                "project_gate_diagnostics": [],
+                "upstream_diagnostics": [],
+                "resolver_output": {"resolver_status": "auto_resolved"},
+                "decision_record_ref": {
+                    "packet_id": "P1",
+                    "decision_id": "D1",
+                    "sha256": ZERO_HASH,
+                },
+                "source_evidence_refs": [evidence],
+                "runtime_evidence_refs": [],
+                "hashes": {
+                    "packet_hash": hash_record("packet"),
+                    "decision_record_hash": hash_record("decision_record"),
+                    "resolver_input_hash": hash_record("resolver_input"),
+                    "audit_context_hash": hash_record("audit_context"),
+                },
+                "provenance": {"provenance_id": "FORGED"},
+                "execution_record": {
+                    "tool_kind": "validator",
+                    "exit_code": 0,
+                    "owner_repo": KERNEL_REPOSITORY,
+                    "owner_commit": KERNEL_ACCEPTED_COMMIT,
+                },
+            }
+        ],
+        "derived_counts": {
+            "provisional_count": 0,
+            "human_override_count": 0,
+            "unresolved_decision_count": 0,
+            "accepted_decision_count": 1,
+            "rejected_decision_count": 0,
+        },
+        "decision_record_refs": [
+            {"packet_id": "P1", "decision_id": "D1", "sha256": ZERO_HASH}
+        ],
         "source_evidence_refs": [{"packet_id": "P1", **evidence}],
         "runtime_evidence_refs": [],
-        "hashes": {"source_input_hash": hash_record("source_input"), "semantic_lock_hash": {"algorithm": "sha256", "scope": "semantic_lock", "value": lock_hash}},
-        "provenance": {"source_bundle_id": "forged", "source_bundle_provenance": {"source": "attacker"}, "result_producer": PG_REPO},
+        "hashes": {
+            "source_input_hash": hash_record("source_input"),
+            "semantic_lock_hash": {
+                "algorithm": "sha256",
+                "scope": "semantic_lock",
+                "value": lock_hash,
+            },
+        },
+        "provenance": {
+            "source_bundle_id": "forged",
+            "source_bundle_provenance": {"source": "attacker"},
+            "result_producer": PG_REPO,
+        },
     }
 
 
@@ -278,20 +434,26 @@ def _codes(result: dict) -> set[str]:
     return {item["code"] for item in result["diagnostics"]}
 
 
-def test_valid_verified_claim_set_satisfies_final_gate(tmp_path: Path):
+def test_file_only_viewports_keep_final_gate_insufficient(tmp_path: Path):
     result, _, calls, _, _, _, _, _ = _run(tmp_path)
-    assert result["status"] == "accepted", result
+    assert result["status"] == "insufficient_evidence", result
     assert len(calls) == 1
-    assert result["accepted_requires"]["real_evidence_present"] is True
-    assert result["accepted_requires"]["required_viewports_verified"] is True
+    assert result["accepted_requires"]["real_evidence_present"] is False
+    assert result["accepted_requires"]["required_viewports_verified"] is False
     assert result["kernel_decision_intake_result"]["status"] == "accepted"
     assert result["decision_lineage_authority"] == "informational_projection_only"
     assert is_authoritative_final_gate_result(result)
+    for name in ("desktop", "tablet", "mobile"):
+        resolution = result["evidence_resolutions"][name]
+        assert resolution["classification"] == "insufficient_evidence"
+        assert resolution["positive_proof_type"] == "runtime_execution"
+        assert resolution["positive_proof_verified"] is False
+        assert resolution["reason"] == OFFICIAL_RUNTIME_NOT_OBSERVED_REASON
 
 
 def test_self_declared_real_without_verified_sources_is_rejected(tmp_path: Path):
-    result, value, _, responsive, source, _, _, config = _run(tmp_path / "base")
-    assert result["status"] == "accepted"
+    result, value, _, _, source, _, _, config = _run(tmp_path / "base")
+    assert result["status"] == "insufficient_evidence"
     value.pop("evidence_bindings")
     value["real_evidence"] = True
     value["evidence_status"] = "real"
@@ -312,7 +474,10 @@ def test_synthetic_fixture_relabelled_real_is_rejected(tmp_path: Path):
     value["evidence_bindings"]["responsive_output"]["artifact_sha256"] = _json_file(output_path, output)
     result = run_final_gate(value, source, config)
     assert result["status"] == "insufficient_evidence"
-    assert "PG.EVIDENCE.SYNTHETIC_DERIVED" in _codes(result) or "PG.FINAL.SYNTHETIC_ONLY_EVIDENCE" in _codes(result)
+    assert (
+        "PG.EVIDENCE.SYNTHETIC_DERIVED" in _codes(result)
+        or "PG.FINAL.SYNTHETIC_ONLY_EVIDENCE" in _codes(result)
+    )
 
 
 def test_wrong_responsive_output_hash_is_rejected(tmp_path: Path):
@@ -337,7 +502,10 @@ def test_desktop_evidence_cannot_satisfy_tablet_claim(tmp_path: Path):
     value["evidence_bindings"]["tablet"]["subject_ref"] = "tablet-proof"
     result = run_final_gate(value, source, config)
     assert result["status"] == "invalid"
-    assert "PG.EVIDENCE.CLAIM_VIEWPORT_MISMATCH" in _codes(result) or "PG.FINAL.VIEWPORT_EVIDENCE_MISMATCH" in _codes(result)
+    assert (
+        "PG.EVIDENCE.CLAIM_VIEWPORT_MISMATCH" in _codes(result)
+        or "PG.FINAL.VIEWPORT_EVIDENCE_MISMATCH" in _codes(result)
+    )
 
 
 def test_raw_kernel_intake_remains_mandatory(tmp_path: Path):
@@ -348,7 +516,10 @@ def test_raw_kernel_intake_remains_mandatory(tmp_path: Path):
 
 
 def test_precomputed_result_without_raw_intake_cannot_authenticate(tmp_path: Path):
-    _, value, calls, _, source, _, kernel_lock, config = _run(tmp_path / "base", include_raw=False)
+    _, value, calls, _, source, _, kernel_lock, config = _run(
+        tmp_path / "base",
+        include_raw=False,
+    )
     assert calls == []
     value["kernel_decision_intake_result"] = _forged_result(kernel_lock)
     result = run_final_gate(value, source, config)
@@ -360,7 +531,10 @@ def test_precomputed_kernel_result_drift_remains_rejected(tmp_path: Path):
     first, value, calls, _, source, _, _, config = _run(tmp_path / "base")
     assert len(calls) == 1
     supplied = deepcopy(first["kernel_decision_intake_result"])
-    supplied["derived_counts"] = {**supplied["derived_counts"], "accepted_decision_count": 99}
+    supplied["derived_counts"] = {
+        **supplied["derived_counts"],
+        "accepted_decision_count": 99,
+    }
     value["kernel_decision_intake_result"] = supplied
     result = run_final_gate(value, source, config)
     assert "PG.FINAL.KERNEL_INTAKE_PROJECTION_MISMATCH" in _codes(result)
@@ -376,7 +550,7 @@ def test_nonaccepted_kernel_execution_is_rejected(tmp_path: Path):
 def test_lineage_is_optional_informational_projection(tmp_path: Path):
     result, _, calls, _, _, _, _, _ = _run(tmp_path, include_lineage=False)
     assert len(calls) == 1
-    assert result["status"] == "accepted", result
+    assert result["status"] == "insufficient_evidence", result
     assert result["decision_lineage_authority"] == "informational_projection_only"
 
 
@@ -398,10 +572,15 @@ def test_forbidden_claim_is_rejected(tmp_path: Path):
 def test_final_gate_lock_detects_hash_mismatch(tmp_path: Path):
     _, _, _, source, final_lock, _ = _repos(tmp_path)
     final_lock["files"][0]["sha256_file_bytes"] = "0" * 64
-    assert any(item.code == "PG.FINAL.EXTERNAL_HASH_MISMATCH" for item in verify_final_gate_lock(final_lock, source))
+    assert any(
+        item.code == "PG.FINAL.EXTERNAL_HASH_MISMATCH"
+        for item in verify_final_gate_lock(final_lock, source)
+    )
 
 
 def test_completed_result_is_schema_valid(tmp_path: Path):
     result, _, _, _, _, _, _, _ = _run(tmp_path)
-    schema = json.loads((ROOT / "schemas/final-gate-result/final-gate-result.v1.schema.json").read_text())
+    schema = json.loads(
+        (ROOT / "schemas/final-gate-result/final-gate-result.v1.schema.json").read_text()
+    )
     Draft202012Validator(schema).validate(result)
