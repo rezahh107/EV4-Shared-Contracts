@@ -92,7 +92,7 @@ def test_second_file_post_write_verification_failure_rolls_back_both(tmp_path: P
     assert _temporary_files(tmp_path) == []
 
 
-def test_concurrent_receipt_destination_blocks_group_before_any_project_gate_link(tmp_path: Path):
+def test_concurrent_receipt_destination_blocks_group_and_cleans_staging(tmp_path: Path):
     output, receipt, staged_output, staged_receipt = _staged_pair(tmp_path)
     receipt.write_text("concurrent-owner-content", encoding="utf-8")
 
@@ -100,10 +100,9 @@ def test_concurrent_receipt_destination_blocks_group_before_any_project_gate_lin
         publish_staged_group([staged_output, staged_receipt])
 
     assert caught.value.code == "PG_A2C_OUTPUT_EXISTS"
+    assert caught.value.details["rollback_complete"] is True
     assert not output.exists()
     assert receipt.read_text(encoding="utf-8") == "concurrent-owner-content"
-    staged_output.temporary_path.unlink(missing_ok=True)
-    staged_receipt.temporary_path.unlink(missing_ok=True)
     assert _temporary_files(tmp_path) == []
 
 
